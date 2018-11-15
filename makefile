@@ -15,10 +15,7 @@ DIRC = Containers/
 DIRGEN = Generator/
 
 SOURCES =	\
-	RVisitor.cpp $(DIRC)FunctionDeclParameterCont.cpp $(DIRC)FunctionDeclCont.cpp	\
-	$(DIRC)CXXMethodDeclCont.cpp $(DIRC)CXXRecordDeclAttributeCont.cpp	\
-	$(DIRC)CXXRecordDeclCont.cpp $(DIRC)EnumDeclCont.cpp $(DIRC)ASTUTArchive.cpp	\
-	$(DIRGEN)Boost/ConfigGenerator.cpp $(DIRGEN)Boost/BoostTestGenerator.cpp
+	ASTUTGen.cpp ASTUTMatchers.cpp astut.cpp
 
 OBJECTS = $(SOURCES:.cpp=.o)
 EXES = $(OBJECTS:.o=)
@@ -40,21 +37,12 @@ CLANGLIBS = \
 	-lclangRewriteFrontend
 
 
-RVisitor:	\
-	$(DIRC)FunctionDeclParameterCont.o $(DIRC)FunctionDeclCont.o $(DIRC)CXXMethodDeclCont.o	\
-	$(DIRC)CXXRecordDeclAttributeCont.o $(DIRC)CXXRecordDeclCont.o $(DIRC)EnumDeclCont.o \
-	$(DIRC)ASTUTArchive.o $(DIRGEN)Boost/ConfigGenerator.o $(DIRGEN)Boost/BoostTestGenerator.o  RVisitor.o 
+astut:	\
+	ASTUTGen.o ASTUTMatchers.o astut.o 
 	$(CXX) -o $@ $^ $(CLANGLIBS) $(LLVMLDFLAGS)
 
-RVisitor.o: $(DIRC)FunctionDeclParameterCont.hpp $(DIRC)FunctionDeclCont.hpp	\
-	$(DIRC)CXXMethodDeclCont.hpp $(DIRC)CXXRecordDeclAttributeCont.hpp	\
-	$(DIRC)CXXRecordDeclCont.hpp $(DIRC)EnumDeclCont.hpp $(DIRC)ASTUTArchive.hpp	\
-	$(DIRGEN)Boost/ConfigGenerator.hpp $(DIRGEN)Boost/BoostTestGenerator.hpp	\
-	$(DIRC)FunctionDeclParameterCont.o $(DIRC)FunctionDeclCont.o $(DIRC)CXXMethodDeclCont.o	\
-	$(DIRC)CXXRecordDeclAttributeCont.o $(DIRC)CXXRecordDeclCont.o $(DIRC)EnumDeclCont.o	\
-	$(DIRC)ASTUTArchive.o $(DIRGEN)Boost/ConfigGenerator.o $(DIRGEN)Boost/BoostTestGenerator.o
+astut.o: ASTUTGen.hpp ASTUTMatchers.hpp	\
+	ASTUTGen.o ASTUTMatchers.o
 
 clean:
-	rm -f *.o $(DIRC)*.o  RVisitor
-	rm -f -r GeneratedBACKUP
-	mv Generated GeneratedBACKUP
+	rm -f *.o astut
