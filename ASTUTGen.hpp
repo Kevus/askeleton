@@ -17,7 +17,11 @@
 
 #include "clang/Lex/Lexer.h"
 
+#include "Generator/ConfigGenerator.hpp"
+
 #include <stdio.h>
+#include <string>
+#include <map>
 
 using namespace clang::tooling;
 using namespace llvm;
@@ -29,9 +33,16 @@ using namespace std;
 
 class ASTUTGen : public MatchFinder::MatchCallback
 {
+public:
+	ASTUTGen(){}
+	ASTUTGen(string filename) : filename(filename) {}
+
 	virtual void run(const MatchFinder::MatchResult &Result);
 
-	void apply_FunctionExample(const MatchFinder::MatchResult &Result);
+private:
+	string filename;
+
+	void apply_FD1(const MatchFinder::MatchResult &Result);
 };
 
 #endif

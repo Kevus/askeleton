@@ -15,7 +15,7 @@ DIRC = Containers/
 DIRGEN = Generator/
 
 SOURCES =	\
-	ASTUTGen.cpp ASTUTMatchers.cpp astut.cpp
+	ASTUTGen.cpp ASTUTMatchers.cpp Generator/ConfigGenerator.cpp astut.cpp
 
 OBJECTS = $(SOURCES:.cpp=.o)
 EXES = $(OBJECTS:.o=)
@@ -38,11 +38,11 @@ CLANGLIBS = \
 
 
 astut:	\
-	ASTUTGen.o ASTUTMatchers.o astut.o 
+	ASTUTGen.o ASTUTMatchers.o Generator/ConfigGenerator.o astut.o 
 	$(CXX) -o $@ $^ $(CLANGLIBS) $(LLVMLDFLAGS)
 
-astut.o: ASTUTGen.hpp ASTUTMatchers.hpp	\
-	ASTUTGen.o ASTUTMatchers.o
+astut.o: ASTUTGen.hpp ASTUTMatchers.hpp Generator/ConfigGenerator.hpp	\
+	ASTUTGen.o ASTUTMatchers.o Generator/ConfigGenerator.o
 
 clean:
 	rm -f *.o astut
