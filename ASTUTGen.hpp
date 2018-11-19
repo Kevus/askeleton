@@ -35,14 +35,14 @@ class ASTUTGen : public MatchFinder::MatchCallback
 {
 public:
 	ASTUTGen(){}
-	ASTUTGen(string filename) : filename(filename) {}
 
 	virtual void run(const MatchFinder::MatchResult &Result);
 
 private:
-	string filename;
+	void generateFunctionTest(string source_file, string function_name, ArrayRef<ParmVarDecl *> parameters, string return_type);
 
 	void apply_FD1(const MatchFinder::MatchResult &Result);
+	void apply_MD1(const MatchFinder::MatchResult &Result);
 };
 
 #endif

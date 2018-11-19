@@ -12,6 +12,8 @@
 #include <vector>
 #include <map>
 
+#include <sys/stat.h>
+
 using namespace std;
 
 class ConfigGenerator
@@ -34,6 +36,7 @@ public:
 	void generateTestCase(string funct_name, map<string, string> param_type, string return_type);
 
 private:
+	bool fileExists(const std::string& filename);
 	string getCommentHeader();
 	string deleteAllBeforeChar(string sToReplace, char cToFind);
 

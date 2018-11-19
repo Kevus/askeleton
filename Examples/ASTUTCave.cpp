@@ -19,7 +19,7 @@ public:
     //DELETEprintf("You shouldn't see me!");
   }
 
-  int rareMethod(unsigned int ui_param, float f_param, double d_param)
+  int rareMethod(unsigned int ui_param, float a_param, double d_param)
   {
     double variableDefinedByKevin = privateMethod("hola");
     return 240294;

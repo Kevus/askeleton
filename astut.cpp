@@ -36,6 +36,9 @@ int main(int argc, const char **argv) {
   	Finder.addMatcher(i.second, &Functionality);
   }
 
+  //Reset the results Folder
+  system("cp -r Generated/UT/* Generated_LOG/ && rm -R Generated/UT/*");
+
   return Tool.run(newFrontendActionFactory(&Finder).get());
 
 }
