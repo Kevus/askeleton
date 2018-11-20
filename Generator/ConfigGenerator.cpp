@@ -1,5 +1,11 @@
 #include "ConfigGenerator.hpp"
 
+bool fileExists(const std::string& filename)
+{
+  struct stat buffer;   
+  return (stat (filename.c_str(), &buffer) == 0); 
+}
+
 /**
 ** Default values for generating config file.
 ** It can be seen that every value is a string,
@@ -14,21 +20,34 @@
 **/
 map<string, string> ConfigGenerator::defaultValues = 
 {
-	{"char", ""},
-	{"unsigned char", ""},
-	{"signed char", ""},
-	{"int", "1"},
-	{"unsigned int", "1"},
-	{"signed int", "1"},
-	{"short int", "1"},
-	{"unsigned short int", "1"},
-	{"signed short int", "1"},
-	{"long int", "1"},
-	{"signed long int", "1"},
-	{"unsigned long int", "1"},
-	{"float", "1.0"},
-	{"double", "1.0"},
-	{"long double", "1.0"},
+	{"char", "a"},
+	{"signed char", "a"},
+	{"unsigned char", "a"},
+	{"short", "0"},
+	{"short int", "0"},
+	{"signed short", "0"},
+	{"signed short int", "0"},
+	{"unsigned short", "0"},
+	{"unsigned short int", "0"},
+	{"int", "0"},
+	{"signed int", "0"},
+	{"unsigned", "0"},
+	{"unsigned int", "0"},
+	{"long", "0"},
+	{"long int", "0"},
+	{"signed long", "0"},
+	{"signed long int", "0"},
+	{"unsigned long", "0"},
+	{"unsigned long int", "0"},
+	{"long long", "0"},
+	{"long long int", "0"},
+	{"signed long long", "0"},
+	{"signed long long int", "0"},
+	{"unsigned long long", "0"},
+	{"unsigned long long int", "0"},
+	{"float", "0.0"},
+	{"double", "0.0"},
+	{"long double", "0.0"},
 	{"std::string", ""},
 	{"bool", "false"}
 };
@@ -55,12 +74,6 @@ ConfigGenerator::ConfigGenerator(string f_Name) :
 		cfg_file << f_CommentHeader;
 }
 
-bool ConfigGenerator::fileExists(const std::string& filename)
-{
-  struct stat buffer;   
-  return (stat (filename.c_str(), &buffer) == 0); 
-}
-
 string ConfigGenerator::deleteAllBeforeChar(string sToReplace, char cToFind)
 {
 
@@ -79,10 +92,10 @@ void ConfigGenerator::generateTestCase(string funct_name, map<string, string> pa
 
 		for(auto i : param_type)
 		{
-			cfg_file << "\t" << i.first << "=" << i.second << ",\n";
+			cfg_file << "\t" << i.first << "=" << defaultValues.find(i.second)->second << ";#" << i.second << "\n";
 		}//for
 
-		cfg_file << "\treturn_" << return_type << "=0\n}\n\n";
+		cfg_file << "\treturn_" << return_type << "=" << defaultValues.find(return_type)->second << ";#" << return_type << "\n};\n\n";
 	}//if
 }
 
@@ -127,4 +140,65 @@ string ConfigGenerator::getCommentHeader()
 	// *** END OF THE BANNER ***
 
 	return buffer.str();
+}
+
+//##############################################################
+BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass)
+{
+	// Time utilities
+	auto t = time(nullptr);
+	auto tm = *localtime(&t);
+	ostringstream dateStream;
+
+	valuesToChange.insert(pair<string, string>("{filePath}", filePath));
+	valuesToChange.insert(pair<string, string>("{cfgName}", cfgName));
+
+	dateStream << put_time(&tm, "%d-%m-%Y %H:%M:%S");
+
+	valuesToChange.insert(pair<string, string>("{dateOfGeneration}", dateStream.str()));
+
+	//==========================================================
+	// These methods have not been implemented
+	//==========================================================
+	valuesToChange.insert(pair<string,string>("{includes}", ""));
+	valuesToChange.insert(pair<string,string>("{namespaces}", ""));
+	valuesToChange.insert(pair<string,string>("{readObject}", ""));
+	valuesToChange.insert(pair<string,string>("{newMethods}", ""));
+	//==========================================================
+	//==========================================================
+
+	if (isFromClass)
+	{
+		valuesToChange.insert(pair<string,string>("{className}", cfgName));
+		valuesToChange.insert(pair<string,string>("{classNameTest}", cfgName + "_test;"));
+	}
+
+	generateFixture("Generated/UT/" + cfgName + "/" + cfgName + ".cpp");
+}
+
+void BoostGenerator::generateFixture(string outputPath)
+{
+	if(!fileExists(outputPath))
+	{
+		string templatePath = "Generator/Templates/Fixture.tpl";
+		string fileContent;
+
+		ifstream tplFile (templatePath);
+		ofstream outputFile (outputPath);
+
+		if (tplFile.is_open())
+		{
+			//Read the entire template into memory
+			fileContent = string( (istreambuf_iterator<char>(tplFile)),
+		   	istreambuf_iterator<char>() );
+
+			for(auto i : valuesToChange)
+				boost::replace_all(fileContent, i.first, i.second);
+			
+			outputFile << fileContent;
+
+			outputFile.close();
+			tplFile.close();
+		}//if tpl
+	}//if fileExist
 }

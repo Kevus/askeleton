@@ -32,8 +32,6 @@ void ASTUTGen::generateFunctionTest(string source_file, string function_name, Ar
     }
 
     cfg_gen.generateTestCase(function_name, param_type, return_type);
-
-
 }
 
 void ASTUTGen::apply_FD1(const MatchFinder::MatchResult &Result)
@@ -84,7 +82,6 @@ void ASTUTGen::apply_MD1(const MatchFinder::MatchResult &Result)
 			//In this case, we do not want class functions
 			if(!isa<CXXConstructorDecl>(UT))
 			{
-
 				generateFunctionTest(UT->getParent()->getName(),
 					 UT->getName(),
 					 UT->parameters(),

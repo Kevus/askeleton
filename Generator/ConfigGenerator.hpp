@@ -2,7 +2,9 @@
 #define CONFIGGENERATOR_HPP
 
 #include <string>
+#include <fstream>
 #include <sstream>
+#include <streambuf>
 #include <iostream>
 #include <fstream>
 
@@ -12,9 +14,17 @@
 #include <vector>
 #include <map>
 
+#include <experimental/filesystem>
+
+//Boost libraries
+#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/replace.hpp>
+
 #include <sys/stat.h>
 
 using namespace std;
+
+bool fileExists(const std::string& filename);
 
 class ConfigGenerator
 {
@@ -36,20 +46,28 @@ public:
 	void generateTestCase(string funct_name, map<string, string> param_type, string return_type);
 
 private:
-	bool fileExists(const std::string& filename);
 	string getCommentHeader();
 	string deleteAllBeforeChar(string sToReplace, char cToFind);
 
 	string f_Name;
 	string f_CommentHeader;
-	string f_TestCase;
 
 	ofstream cfg_file;
-	vector<string> generated_configs;
 
 	//Const default values. They will be deleted in future iterations, where
 	//the default values will be calculated during execution.
 	static map<string, string> defaultValues;
+};
+
+class BoostGenerator
+{
+public:
+	BoostGenerator(string filePath, string cfgName, bool isFromClass);
+
+private:
+
+	void generateFixture(string outputPath);
+	map<string, string> valuesToChange;
 };
 
 #endif
