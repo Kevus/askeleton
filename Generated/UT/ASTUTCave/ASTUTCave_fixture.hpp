@@ -7,12 +7,12 @@
 //File generated automatically by AST-UT                                  
 //Template originally created for LATEGEN
 //File to test: /home/kevus/git-fixed/matcher/astutmatcher/Examples/ASTUTCave.cpp
-//DESCRIPTION: This file sets tests cases for FirstClass.
-//DATE: 21-11-2018 08:57:53
+//DESCRIPTION: This file sets tests cases for ASTUTCave.
+//DATE: 21-11-2018 13:44:10
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "/home/kevus/git-fixed/matcher/astutmatcher/Examples/ASTUTCave.cpp"
-#define BOOST_TEST_MODULE FirstClass
+#define BOOST_TEST_MODULE ASTUTCave_TEST
 #include <boost/test/included/unit_test.hpp>
 
 #include <string>
@@ -44,7 +44,7 @@ struct Fixture {
 		
 		stringstream file;
 		file << argv[1];
-		getConfigParameters("FirstClass.cfg");
+		getConfigParameters("ASTUTCave.cfg");
 	}
 
 	~Fixture() {}
@@ -182,7 +182,7 @@ struct Fixture {
 	int argc:
 	char **argv;
 
-	FirstClass FirstClass_test;
+	 
 
 	map<string, map<string, string> > configContent;
 

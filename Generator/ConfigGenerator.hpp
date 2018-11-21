@@ -14,6 +14,7 @@
 #include <vector>
 #include <map>
 
+#include <stdio.h>
 #include <experimental/filesystem>
 
 //Boost libraries
@@ -43,7 +44,8 @@ public:
 	void generateTestCases();
 	vector<string> getGenerated();
 
-	void generateTestCase(string funct_name, map<string, string> param_type, string return_type);
+	void generateTestCase(string funct_name, map<string, string> param_type, 
+		vector<string> insert_order, string return_type);
 
 private:
 	string getCommentHeader();
@@ -64,10 +66,14 @@ class BoostGenerator
 public:
 	BoostGenerator(string filePath, string cfgName, bool isFromClass);
 
-private:
+	void generateBoostAssert(string class_test, string function_name, 
+		map<string, string> param_type, vector<string> insertion_order, string return_type);
 
+private:
+	
 	void generateFixture(string outputPath);
 	map<string, string> valuesToChange;
+	bool isFromClass;
 };
 
 #endif

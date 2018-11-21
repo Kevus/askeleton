@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string>
 #include <map>
+#include <vector>
 
 using namespace clang::tooling;
 using namespace llvm;
@@ -39,7 +40,7 @@ public:
 	virtual void run(const MatchFinder::MatchResult &Result);
 
 private:
-	void generateFunctionTest(string source_file, string function_name, ArrayRef<ParmVarDecl *> parameters, string return_type);
+	void generateFunctionTest(string source_file, string function_name, ArrayRef<ParmVarDecl *> parameters, string return_type, BoostGenerator bGen);
 
 	void apply_FD1(const MatchFinder::MatchResult &Result);
 	void apply_MD1(const MatchFinder::MatchResult &Result);

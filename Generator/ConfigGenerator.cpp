@@ -21,33 +21,33 @@ bool fileExists(const std::string& filename)
 map<string, string> ConfigGenerator::defaultValues = 
 {
 	{"char", "a"},
-	{"signed char", "a"},
-	{"unsigned char", "a"},
+	{"signed_char", "a"},
+	{"unsigned_char", "a"},
 	{"short", "0"},
-	{"short int", "0"},
-	{"signed short", "0"},
-	{"signed short int", "0"},
-	{"unsigned short", "0"},
-	{"unsigned short int", "0"},
+	{"short_int", "0"},
+	{"signed_short", "0"},
+	{"signed_short_int", "0"},
+	{"unsigned_short", "0"},
+	{"unsigned_short_int", "0"},
 	{"int", "0"},
-	{"signed int", "0"},
+	{"signed_int", "0"},
 	{"unsigned", "0"},
-	{"unsigned int", "0"},
+	{"unsigned_int", "0"},
 	{"long", "0"},
-	{"long int", "0"},
-	{"signed long", "0"},
-	{"signed long int", "0"},
-	{"unsigned long", "0"},
-	{"unsigned long int", "0"},
-	{"long long", "0"},
-	{"long long int", "0"},
-	{"signed long long", "0"},
-	{"signed long long int", "0"},
-	{"unsigned long long", "0"},
-	{"unsigned long long int", "0"},
+	{"long_int", "0"},
+	{"signed_long", "0"},
+	{"signed_long_int", "0"},
+	{"unsigned_long", "0"},
+	{"unsigned_long_int", "0"},
+	{"long_long", "0"},
+	{"long_long_int", "0"},
+	{"signed_long_long", "0"},
+	{"signed_long_long_int", "0"},
+	{"unsigned_long_long", "0"},
+	{"unsigned_long_long_int", "0"},
 	{"float", "0.0"},
 	{"double", "0.0"},
-	{"long double", "0.0"},
+	{"long_double", "0.0"},
 	{"std::string", ""},
 	{"bool", "false"}
 };
@@ -84,15 +84,15 @@ string ConfigGenerator::deleteAllBeforeChar(string sToReplace, char cToFind)
 
 }
 
-void ConfigGenerator::generateTestCase(string funct_name, map<string, string> param_type, string return_type)
+void ConfigGenerator::generateTestCase(string funct_name, map<string, string> param_type, vector<string> insert_order, string return_type)
 {
 	if(cfg_file.is_open())
 	{
-		cfg_file << funct_name << ":\n{\n";
+		cfg_file << funct_name << ":\n{\n"; 
 
-		for(auto i : param_type)
+		for(auto i : insert_order)
 		{
-			cfg_file << "\t" << i.first << "=" << defaultValues.find(i.second)->second << ";#" << i.second << "\n";
+			cfg_file << "\t" << i << "=" << defaultValues.find(param_type[i])->second << ";#" << param_type[i] << "\n";
 		}//for
 
 		cfg_file << "\treturn_" << return_type << "=" << defaultValues.find(return_type)->second << ";#" << return_type << "\n};\n\n";
@@ -143,7 +143,7 @@ string ConfigGenerator::getCommentHeader()
 }
 
 //##############################################################
-BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass)
+BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass) : isFromClass(isFromClass)
 {
 	// Time utilities
 	auto t = time(nullptr);
@@ -177,7 +177,7 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass
 		valuesToChange.insert(pair<string,string>("{classNameTest}", ""));
 	}
 
-	generateFixture("Generated/UT/" + cfgName + "/" + cfgName + "_fixture.cpp");
+	generateFixture("Generated/UT/" + cfgName + "/" + cfgName + "_fixture.hpp");
 }
 
 void BoostGenerator::generateFixture(string outputPath)
@@ -194,7 +194,7 @@ void BoostGenerator::generateFixture(string outputPath)
 		{
 			//Read the entire template into memory
 			fileContent = string( (istreambuf_iterator<char>(tplFile)),
-		   	istreambuf_iterator<char>() );
+		   				  istreambuf_iterator<char>() );
 
 			for(auto i : valuesToChange)
 				boost::replace_all(fileContent, i.first, i.second);
@@ -205,4 +205,77 @@ void BoostGenerator::generateFixture(string outputPath)
 			tplFile.close();
 		}//if tpl
 	}//if fileExist
+}
+
+void BoostGenerator::generateBoostAssert(string class_test, string function_name, map<string, string> param_type, vector<string> insertion_order, string return_type)
+{
+	string templatePath = "Generator/Templates/BoostTest.tpl";
+	string outputPath = "Generated/UT/" + class_test + "/" + class_test + "_test.cpp";
+	string fileContent;
+
+
+	bool existFlag = fileExists(outputPath);
+
+
+
+	stringstream test_case;
+
+	ifstream tplFile (templatePath);
+	/*ofstream outputFile (outputPath, ios_base::app);
+			system(("cp " + outputPath + " " + outputPath + "_tmp" + function_name + "DESPUES").c_str());*/
+
+
+
+	if (tplFile.is_open())
+	{
+		//If file doesnt exist, then replace common tags
+		if(!existFlag)
+		{
+			fileContent = string( (istreambuf_iterator<char>(tplFile)),
+						 		   istreambuf_iterator<char>() );
+
+			boost::replace_all(fileContent, "{className}", class_test);
+
+			//==========================================================
+			// These tags are not used yet, so we will simply delete them
+			//==========================================================
+			boost::replace_all(fileContent, "{pointerInitToken}", "");
+			boost::replace_all(fileContent, "{pointerDestroyToken}", "");
+			//==========================================================
+			//==========================================================
+		} else
+		{
+			ifstream tmp_output(outputPath);
+			fileContent = string( (istreambuf_iterator<char>(tmp_output)),
+						 		   istreambuf_iterator<char>() );
+			cout << fileContent << "\n";
+		}
+
+		//Now we will create the assertion sentence
+		test_case << "\t\tBOOST_CHECK_EQUAL(";
+		if (isFromClass) test_case << class_test << ".";
+		test_case << function_name << "(";
+
+		for(auto i : insertion_order)
+		{
+			test_case << "Read_" << param_type[i] << "(\""
+					  << function_name << "." << i << "\")";
+			if (i != insertion_order.back()) test_case << ",";
+		}
+
+		//test_case << "));\n{assert}";
+		test_case << "),Read_" << return_type << "(\"" << function_name << ".return_" << return_type << "\"));\n//{assert}";
+
+		boost::replace_all(fileContent, "//{assert}", test_case.str());
+
+		ofstream outputFile(outputPath);
+		outputFile << fileContent;
+
+		cout << fileContent << "\n";
+
+		tplFile.close();
+		outputFile.close();
+
+	}
+
 }

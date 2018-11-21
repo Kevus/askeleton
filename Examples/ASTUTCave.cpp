@@ -30,6 +30,11 @@ public:
     return 'i';
   }
 
+    char whoReturnsAChar2()
+  {
+    return 'i';
+  }
+
 int public_param;
 
 private:
@@ -60,4 +65,8 @@ class SecondClass : FirstClass
 
 int outsideMethod() {
 	return 1;
+}
+
+int outsideMethod2() {
+  return 1;
 }

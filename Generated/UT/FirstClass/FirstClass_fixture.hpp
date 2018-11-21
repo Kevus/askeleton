@@ -6,13 +6,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 //File generated automatically by AST-UT                                  
 //Template originally created for LATEGEN
-//File to test: FirstClass
+//File to test: /home/kevus/git-fixed/matcher/astutmatcher/Examples/ASTUTCave.cpp
 //DESCRIPTION: This file sets tests cases for FirstClass.
-//DATE: 21-11-2018 08:25:34
+//DATE: 21-11-2018 13:44:10
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "FirstClass"
-#define BOOST_TEST_MODULE FirstClass
+#include "/home/kevus/git-fixed/matcher/astutmatcher/Examples/ASTUTCave.cpp"
+#define BOOST_TEST_MODULE FirstClass_TEST
 #include <boost/test/included/unit_test.hpp>
 
 #include <string>

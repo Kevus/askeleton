@@ -7,21 +7,28 @@ void ASTUTGen::run(const MatchFinder::MatchResult &Result)
 }
 
 //General method for testing functions
-void ASTUTGen::generateFunctionTest(string source_file, string function_name, ArrayRef<ParmVarDecl *> parameters, string return_type)
+void ASTUTGen::generateFunctionTest(string source_file, string function_name, ArrayRef<ParmVarDecl *> parameters, string return_type, BoostGenerator bGen)
 {
 	ConfigGenerator cfg_gen(source_file);
 
 	//Get the parameters
 	map<string, string> param_type;
-	int order = 0;
+	vector<string> insert_order;
+
+	string tmp_type;
 
 	for(auto i : parameters)
     {
-    	param_type.insert(pair<string, string>(to_string(order) + "_" + i->getQualifiedNameAsString(), i->getOriginalType().getAsString()));
-    	order++;
+    	tmp_type = i->getOriginalType().getAsString();
+    	boost::replace_all(tmp_type, " ", "_");
+
+    	param_type.insert(pair<string, string>(i->getQualifiedNameAsString(), tmp_type));
+    	insert_order.push_back(i->getQualifiedNameAsString());
     }
 
-    cfg_gen.generateTestCase(function_name, param_type, return_type);
+    cfg_gen.generateTestCase(function_name, param_type, insert_order, return_type);
+    
+    bGen.generateBoostAssert(source_file, function_name, param_type, insert_order, return_type);
 
 }
 
@@ -48,14 +55,13 @@ void ASTUTGen::apply_FD1(const MatchFinder::MatchResult &Result)
 
 				string filename = source_file.substr(first, last-first);
 
+				BoostGenerator bGen(source_file, filename, false);
+
 				generateFunctionTest(filename,
 									 UT->getName(),
 									 UT->parameters(),
-									 UT->getReturnType().getAsString()
-									 );
-
-				BoostGenerator(source_file, filename, false);
-
+									 UT->getReturnType().getAsString(),
+									 bGen);
 				//Print auxiliary ======================================================================
 	           	llvm::outs() << "Found FunctionDecl at "
 	                         << FullLocation.getSpellingLineNumber() << ":"
@@ -87,13 +93,13 @@ void ASTUTGen::apply_MD1(const MatchFinder::MatchResult &Result)
 				string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
 				string parentname = UT->getParent()->getName();
 
+				BoostGenerator bGen(source_file, parentname, true);
+
 				generateFunctionTest(parentname,
 					 UT->getName(),
 					 UT->parameters(),
-					 UT->getReturnType().getAsString()
-					 );
-
-				BoostGenerator(source_file, parentname, true);
+					 UT->getReturnType().getAsString(),
+					 bGen);
 
 				//Print auxiliary ======================================================================
 	           	llvm::outs() << "Found CxxMethodDecl at "
