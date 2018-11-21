@@ -9,17 +9,7 @@ void ASTUTGen::run(const MatchFinder::MatchResult &Result)
 //General method for testing functions
 void ASTUTGen::generateFunctionTest(string source_file, string function_name, ArrayRef<ParmVarDecl *> parameters, string return_type)
 {
-	//Get the file name
-	unsigned first = source_file.find_last_of('/') + 1;
-	unsigned last = source_file.find_last_of('.');
-	string filename;
-
-	if(first != string::npos && last != string::npos)
-		filename = source_file.substr(first, last-first);
-	else
-		filename = source_file;
-
-	ConfigGenerator cfg_gen(filename);
+	ConfigGenerator cfg_gen(source_file);
 
 	//Get the parameters
 	map<string, string> param_type;
@@ -32,6 +22,7 @@ void ASTUTGen::generateFunctionTest(string source_file, string function_name, Ar
     }
 
     cfg_gen.generateTestCase(function_name, param_type, return_type);
+
 }
 
 void ASTUTGen::apply_FD1(const MatchFinder::MatchResult &Result)
@@ -49,10 +40,21 @@ void ASTUTGen::apply_FD1(const MatchFinder::MatchResult &Result)
 			//In this case, we do not want class functions
 			if(!isa<CXXMethodDecl>(UT))
 			{
-				generateFunctionTest(Context->getSourceManager().getFilename(UT->getLocStart()),
+
+				//Get the file name
+				string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
+				unsigned first = source_file.find_last_of('/') + 1;
+				unsigned last = source_file.find_last_of('.');
+
+				string filename = source_file.substr(first, last-first);
+
+				generateFunctionTest(filename,
 									 UT->getName(),
 									 UT->parameters(),
-									 UT->getReturnType().getAsString());
+									 UT->getReturnType().getAsString()
+									 );
+
+				BoostGenerator(source_file, filename, false);
 
 				//Print auxiliary ======================================================================
 	           	llvm::outs() << "Found FunctionDecl at "
@@ -82,13 +84,19 @@ void ASTUTGen::apply_MD1(const MatchFinder::MatchResult &Result)
 			//In this case, we do not want class functions
 			if(!isa<CXXConstructorDecl>(UT))
 			{
-				generateFunctionTest(UT->getParent()->getName(),
+				string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
+				string parentname = UT->getParent()->getName();
+
+				generateFunctionTest(parentname,
 					 UT->getName(),
 					 UT->parameters(),
-					 UT->getReturnType().getAsString());
+					 UT->getReturnType().getAsString()
+					 );
+
+				BoostGenerator(source_file, parentname, true);
 
 				//Print auxiliary ======================================================================
-	           	llvm::outs() << "Found FunctionDecl at "
+	           	llvm::outs() << "Found CxxMethodDecl at "
 	                         << FullLocation.getSpellingLineNumber() << ":"
 	                         << FullLocation.getSpellingColumnNumber() << " - ";
 

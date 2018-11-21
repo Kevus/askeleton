@@ -171,9 +171,13 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass
 	{
 		valuesToChange.insert(pair<string,string>("{className}", cfgName));
 		valuesToChange.insert(pair<string,string>("{classNameTest}", cfgName + "_test;"));
+	} else
+	{
+		valuesToChange.insert(pair<string,string>("{className}", ""));
+		valuesToChange.insert(pair<string,string>("{classNameTest}", ""));
 	}
 
-	generateFixture("Generated/UT/" + cfgName + "/" + cfgName + ".cpp");
+	generateFixture("Generated/UT/" + cfgName + "/" + cfgName + "_fixture.cpp");
 }
 
 void BoostGenerator::generateFixture(string outputPath)
