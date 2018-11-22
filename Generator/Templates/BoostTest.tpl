@@ -1,4 +1,4 @@
-#include "{className}_Fixture.hpp"
+#include "{className}_fixture.hpp"
 
 BOOST_FIXTURE_TEST_CASE({className}_ReadParams, Fixture)
 {

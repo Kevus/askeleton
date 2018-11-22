@@ -27,7 +27,6 @@ void ASTUTGen::generateFunctionTest(string source_file, string function_name, Ar
     }
 
     cfg_gen.generateTestCase(function_name, param_type, insert_order, return_type);
-    
     bGen.generateBoostAssert(source_file, function_name, param_type, insert_order, return_type);
 
 }
@@ -67,7 +66,7 @@ void ASTUTGen::apply_FD1(const MatchFinder::MatchResult &Result)
 	                         << FullLocation.getSpellingLineNumber() << ":"
 	                         << FullLocation.getSpellingColumnNumber() << " - ";
 
-	            llvm::outs() <<  UT->getNameInfo().getAsString() /*<< " in file " << filename*/ << "\n";
+	            llvm::outs() <<  UT->getNameInfo().getAsString() << " in file " << filename << "\n";
 	            //Print auxiliary ======================================================================
 
 			}
@@ -106,7 +105,7 @@ void ASTUTGen::apply_MD1(const MatchFinder::MatchResult &Result)
 	                         << FullLocation.getSpellingLineNumber() << ":"
 	                         << FullLocation.getSpellingColumnNumber() << " - ";
 
-	            llvm::outs() <<  UT->getNameInfo().getAsString() /*<< " in file " << filename*/ << "\n";
+	            llvm::outs() <<  UT->getNameInfo().getAsString() << " from class " << parentname << "\n";
 	            //Print auxiliary ======================================================================
 
 

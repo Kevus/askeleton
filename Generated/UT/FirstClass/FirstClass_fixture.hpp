@@ -8,7 +8,7 @@
 //Template originally created for LATEGEN
 //File to test: /home/kevus/git-fixed/matcher/astutmatcher/Examples/ASTUTCave.cpp
 //DESCRIPTION: This file sets tests cases for FirstClass.
-//DATE: 21-11-2018 13:44:10
+//DATE: 22-11-2018 11:00:01
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "/home/kevus/git-fixed/matcher/astutmatcher/Examples/ASTUTCave.cpp"
@@ -29,6 +29,7 @@
 //Boost libraries
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/lexical_cast.hpp>
 
 //Aditional includes (only appears if needed)
 
@@ -159,6 +160,217 @@ struct Fixture {
 
 	}
 
+	//==========================================================
+	// EQUIVALENT TYPES:
+	// char
+	// signed char
+	// unsigned char
+	//==========================================================
+	char Read_char(string objectKey)
+	{
+		return boost::lexical_cast<char>(readObject(objectKey));
+	}
+
+	signed char Read_signed_char(string objectKey)
+	{
+		return Read_char(readObject(objectKey));
+	}
+
+	unsigned char Read_unsigned_char(string objectKey)
+	{
+		return Read_char(readObject(objectKey));
+	}
+
+	//==========================================================
+	// EQUIVALENT TYPES:
+	// short
+	// short int
+	// signed short
+	// signed short int
+	//==========================================================
+	short Read_short(string objectKey)
+	{
+		return boost::lexical_cast<short>(readObject(objectKey));
+	}
+
+	short int Read_short_int(string objectKey)
+	{
+		return Read_short(readObject(objectKey));
+	}
+
+	signed short Read_signed_short(string objectKey)
+	{
+		return Read_short(readObject(objectKey));
+	}
+
+	signed short int Read_signed_short_int(string objectKey)
+	{
+		return Read_short(readObject(objectKey));
+	}
+
+	//==========================================================
+	// EQUIVALENT TYPES:
+	// unsigned short
+	// unsigned short int
+	//==========================================================
+	int Read_unsigned_short(string objectKey)
+	{
+		return boost::lexical_cast<unsigned short>(readObject(objectKey));
+	}
+
+	signed Read_unsigned_short_int(string objectKey)
+	{
+		return Read_unsigned_short(readObject(objectKey));
+	}
+
+	//==========================================================
+	// EQUIVALENT TYPES:
+	// int
+	// signed
+	// signed int
+	//==========================================================
+	int Read_int(string objectKey)
+	{
+		return boost::lexical_cast<int>(readObject(objectKey));
+	}
+
+	signed Read_signed(string objectKey)
+	{
+		return Read_int(readObject(objectKey));
+	}
+
+	signed int Read_signed_int(string objectKey)
+	{
+		return Read_int(readObject(objectKey));
+	}
+
+	//==========================================================
+	// EQUIVALENT TYPES
+	// unsigned
+	// unsigned int
+	//==========================================================
+	int Read_unsigned_int(string objectKey)
+	{
+		return boost::lexical_cast<unsigned int>(readObject(objectKey));
+	}
+
+	signed Read_unsigned(string objectKey)
+	{
+		return Read_unsigned_int(readObject(objectKey));
+	}
+
+	//==========================================================
+	// EQUIVALENT TYPES:
+	// long
+	// long int
+	// signed long
+	// signed long int
+	//==========================================================
+	long Read_long(string objectKey)
+	{
+		return boost::lexical_cast<long>(readObject(objectKey));
+	}
+
+	long int Read_long_int(string objectKey)
+	{
+		return Read_long(readObject(objectKey));
+	}
+
+	signed long Read_signed_long(string objectKey)
+	{
+		return Read_long(readObject(objectKey));
+	}
+
+	signed long int Read_signed_long_int(string objectKey)
+	{
+		return Read_long(readObject(objectKey));
+	}
+
+	//==========================================================
+	// EQUIVALENT TYPES:
+	// unsigned long
+	// unsigned long int
+	//==========================================================
+	int Read_unsigned_long(string objectKey)
+	{
+		return boost::lexical_cast<unsigned long>(readObject(objectKey));
+	}
+
+	signed Read_unsigned_long_int(string objectKey)
+	{
+		return Read_unsigned_long(readObject(objectKey));
+	}
+
+	//==========================================================
+	// EQUIVALENT TYPES:
+	// long long
+	// long long int
+	// signed long long
+	// signed long long int
+	//==========================================================
+	long long Read_long_long(string objectKey)
+	{
+		return boost::lexical_cast<long long>(readObject(objectKey));
+	}
+
+	long long int Read_long_long_int(string objectKey)
+	{
+		return Read_long_long(readObject(objectKey));
+	}
+
+	signed long long Read_signed_long_long(string objectKey)
+	{
+		return Read_long_long(readObject(objectKey));
+	}
+
+	signed long long int Read_signed_long_long_int(string objectKey)
+	{
+		return Read_long_long(readObject(objectKey));
+	}
+
+	//==========================================================
+	// EQUIVALENT TYPES:
+	// unsigned long long
+	// unsigned long long int
+	//==========================================================
+	int Read_unsigned_long_long(string objectKey)
+	{
+		return boost::lexical_cast<unsigned long long>(readObject(objectKey));
+	}
+
+	signed Read_unsigned_long_long_int(string objectKey)
+	{
+		return Read_unsigned_long_long(readObject(objectKey));
+	}
+
+	//==========================================================
+	// EQUIVALENT TYPES:
+	// double
+	// long double
+	//==========================================================
+	double Read_double(string objectKey)
+	{
+		return boost::lexical_cast<double>(readObject(objectKey));
+	}
+
+	long double Read_long_double(string objectKey)
+	{
+		return Read_double(readObject(objectKey));
+	}
+
+	//==========================================================
+	// MIXED TYPES
+	//==========================================================
+	float Read_float(string objectKey)
+	{
+		return boost::lexical_cast<float>(readObject(objectKey));
+	}
+
+	string Read_string(string objectKey)
+	{
+		return readObject(objectKey);
+	} 	
+
 	//Date
 	void Date(string value)
 	{
@@ -179,7 +391,7 @@ struct Fixture {
 	
 	
 
-	int argc:
+	int argc;
 	char **argv;
 
 	FirstClass FirstClass_test;

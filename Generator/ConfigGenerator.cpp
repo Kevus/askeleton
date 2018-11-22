@@ -213,18 +213,10 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 	string outputPath = "Generated/UT/" + class_test + "/" + class_test + "_test.cpp";
 	string fileContent;
 
-
-	bool existFlag = fileExists(outputPath);
-
-
-
 	stringstream test_case;
 
+	bool existFlag = fileExists(outputPath);
 	ifstream tplFile (templatePath);
-	/*ofstream outputFile (outputPath, ios_base::app);
-			system(("cp " + outputPath + " " + outputPath + "_tmp" + function_name + "DESPUES").c_str());*/
-
-
 
 	if (tplFile.is_open())
 	{
@@ -248,12 +240,11 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 			ifstream tmp_output(outputPath);
 			fileContent = string( (istreambuf_iterator<char>(tmp_output)),
 						 		   istreambuf_iterator<char>() );
-			cout << fileContent << "\n";
 		}
 
 		//Now we will create the assertion sentence
-		test_case << "\t\tBOOST_CHECK_EQUAL(";
-		if (isFromClass) test_case << class_test << ".";
+		test_case << "\tBOOST_CHECK_EQUAL(";
+		if (isFromClass) test_case << class_test << "_test.";
 		test_case << function_name << "(";
 
 		for(auto i : insertion_order)
@@ -270,8 +261,6 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 
 		ofstream outputFile(outputPath);
 		outputFile << fileContent;
-
-		cout << fileContent << "\n";
 
 		tplFile.close();
 		outputFile.close();

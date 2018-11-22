@@ -6,13 +6,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 //File generated automatically by AST-UT                                  
 //Template originally created for LATEGEN
-//File to test: {filePath}
-//DESCRIPTION: This file sets tests cases for {cfgName}.
-//DATE: {dateOfGeneration}
+//File to test: /home/kevus/git-fixed/matcher/astutmatcher/Examples/ASTUTCave.cpp
+//DESCRIPTION: This file sets tests cases for ASTUTCave.
+//DATE: 22-11-2018 09:41:09
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "{filePath}"
-#define BOOST_TEST_MODULE {cfgName}_TEST
+#include "/home/kevus/git-fixed/matcher/astutmatcher/Examples/ASTUTCave.cpp"
+#define BOOST_TEST_MODULE ASTUTCave_TEST
 #include <boost/test/included/unit_test.hpp>
 
 #include <string>
@@ -32,10 +32,10 @@
 #include <boost/lexical_cast.hpp>
 
 //Aditional includes (only appears if needed)
-{includes}
+
 
 //Aditional namespaces (only appears if needed)
-{namespaces}
+
 using namespace std;
 using namespace boost;
 
@@ -45,7 +45,7 @@ struct Fixture {
 		
 		stringstream file;
 		file << argv[1];
-		getConfigParameters("{cfgName}.cfg");
+		getConfigParameters("ASTUTCave.cfg");
 	}
 
 	~Fixture() {}
@@ -388,13 +388,13 @@ struct Fixture {
 		BOOST_TEST_MESSAGE(ss.str());
 	}
 
-	{readObject}
-	{newMethods}
+	
+	
 
 	int argc;
 	char **argv;
 
-	{className} {classNameTest}
+	 
 
 	map<string, map<string, string> > configContent;
 

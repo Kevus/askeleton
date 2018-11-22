@@ -45,4 +45,4 @@ astut.o: ASTUTGen.hpp ASTUTMatchers.hpp Generator/ConfigGenerator.hpp	\
 	ASTUTGen.o ASTUTMatchers.o Generator/ConfigGenerator.o
 
 clean:
-	rm -f *.o astut
+	rm -f *.o Generator/*.o astut
