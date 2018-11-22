@@ -235,6 +235,10 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 			boost::replace_all(fileContent, "{pointerDestroyToken}", "");
 			//==========================================================
 			//==========================================================
+
+			//Copy makefile for compiling tests
+			system(("cp -r Generator/Templates/makefile Generated/UT/" + class_test + "/").c_str());
+
 		} else
 		{
 			ifstream tmp_output(outputPath);

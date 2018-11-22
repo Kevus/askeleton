@@ -8,7 +8,7 @@
 //Template originally created for LATEGEN
 //File to test: /home/kevus/git-fixed/matcher/astutmatcher/Examples/ASTUTCave.cpp
 //DESCRIPTION: This file sets tests cases for ASTUTCave.
-//DATE: 22-11-2018 09:41:09
+//DATE: 22-11-2018 09:16:08
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "/home/kevus/git-fixed/matcher/astutmatcher/Examples/ASTUTCave.cpp"
@@ -159,28 +159,6 @@ struct Fixture {
 		return returnValue;
 
 	}
-
-	//==========================================================
-	// EQUIVALENT TYPES:
-	// char
-	// signed char
-	// unsigned char
-	//==========================================================
-	char Read_char(string objectKey)
-	{
-		return boost::lexical_cast<char>(readObject(objectKey));
-	}
-
-	signed char Read_signed_char(string objectKey)
-	{
-		return Read_char(readObject(objectKey));
-	}
-
-	unsigned char Read_unsigned_char(string objectKey)
-	{
-		return Read_char(readObject(objectKey));
-	}
-
 	//==========================================================
 	// EQUIVALENT TYPES:
 	// short
@@ -369,7 +347,11 @@ struct Fixture {
 	string Read_string(string objectKey)
 	{
 		return readObject(objectKey);
-	} 	
+	}
+
+
+
+	
 
 	//Date
 	void Date(string value)
