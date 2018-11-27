@@ -213,12 +213,12 @@ struct Fixture {
 	// unsigned short
 	// unsigned short int
 	//==========================================================
-	int Read_unsigned_short(string objectKey)
+	unsigned short Read_unsigned_short(string objectKey)
 	{
 		return boost::lexical_cast<unsigned short>(readObject(objectKey));
 	}
 
-	signed Read_unsigned_short_int(string objectKey)
+	unsigned short int Read_unsigned_short_int(string objectKey)
 	{
 		return Read_unsigned_short(readObject(objectKey));
 	}
@@ -249,12 +249,12 @@ struct Fixture {
 	// unsigned
 	// unsigned int
 	//==========================================================
-	int Read_unsigned_int(string objectKey)
+	unsigned Read_unsigned_int(string objectKey)
 	{
 		return boost::lexical_cast<unsigned int>(readObject(objectKey));
 	}
 
-	signed Read_unsigned(string objectKey)
+	unsigned int Read_unsigned(string objectKey)
 	{
 		return Read_unsigned_int(readObject(objectKey));
 	}
@@ -291,12 +291,12 @@ struct Fixture {
 	// unsigned long
 	// unsigned long int
 	//==========================================================
-	int Read_unsigned_long(string objectKey)
+	unsigned long Read_unsigned_long(string objectKey)
 	{
 		return boost::lexical_cast<unsigned long>(readObject(objectKey));
 	}
 
-	signed Read_unsigned_long_int(string objectKey)
+	unsigned long int Read_unsigned_long_int(string objectKey)
 	{
 		return Read_unsigned_long(readObject(objectKey));
 	}
@@ -333,12 +333,12 @@ struct Fixture {
 	// unsigned long long
 	// unsigned long long int
 	//==========================================================
-	int Read_unsigned_long_long(string objectKey)
+	unsigned long long Read_unsigned_long_long(string objectKey)
 	{
 		return boost::lexical_cast<unsigned long long>(readObject(objectKey));
 	}
 
-	signed Read_unsigned_long_long_int(string objectKey)
+	unsigned long long int Read_unsigned_long_long_int(string objectKey)
 	{
 		return Read_unsigned_long_long(readObject(objectKey));
 	}
@@ -374,7 +374,7 @@ struct Fixture {
 	string Read_string(string objectKey)
 	{
 		return readObject(objectKey);
-	} 
+	}
 
 	//Date
 	void Date(string value)
