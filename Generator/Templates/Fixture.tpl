@@ -366,10 +366,15 @@ struct Fixture {
 		return boost::lexical_cast<float>(readObject(objectKey));
 	}
 
+	bool Read_bool(string objectKey)
+	{
+		return (readObject(objectKey) == "true");
+	}
+
 	string Read_string(string objectKey)
 	{
 		return readObject(objectKey);
-	} 	
+	} 
 
 	//Date
 	void Date(string value)

@@ -48,8 +48,42 @@ map<string, string> ConfigGenerator::defaultValues =
 	{"float", "0.0"},
 	{"double", "0.0"},
 	{"long_double", "0.0"},
-	{"std::string", ""},
-	{"bool", "false"}
+	{"string", "dflt"},
+	{"std::string", "dflt"},
+	{"std::__cxx11::string", "dflt"},
+	{"bool", "false"},
+	{"char_*", "a"},
+	{"signed_char_*", "a"},
+	{"unsigned_char_*", "a"},
+	{"short_*", "0"},
+	{"short_int_*", "0"},
+	{"signed_short_*", "0"},
+	{"signed_short_int_*", "0"},
+	{"unsigned_short_*", "0"},
+	{"unsigned_short_int_*", "0"},
+	{"int_*", "0"},
+	{"signed_int_*", "0"},
+	{"unsigned_*", "0"},
+	{"unsigned_int_*", "0"},
+	{"long_*", "0"},
+	{"long_int_*", "0"},
+	{"signed_long_*", "0"},
+	{"signed_long_int_*", "0"},
+	{"unsigned_long_*", "0"},
+	{"unsigned_long_int_*", "0"},
+	{"long_long_*", "0"},
+	{"long_long_int_*", "0"},
+	{"signed_long_long_*", "0"},
+	{"signed_long_long_int_*", "0"},
+	{"unsigned_long_long_*", "0"},
+	{"unsigned_long_long_int_*", "0"},
+	{"float_*", "0.0"},
+	{"double_*", "0.0"},
+	{"long_double_*", "0.0"},
+	{"string_*", "dflt"},
+	{"std::string_*", "dflt"},
+	{"std::__cxx11::string_*", "dflt"},
+	{"bool_*", "false"}
 };
 
 ConfigGenerator::ConfigGenerator(string f_Name) :
@@ -72,16 +106,6 @@ ConfigGenerator::ConfigGenerator(string f_Name) :
 
 	if(cfg_file.is_open())
 		cfg_file << f_CommentHeader;
-}
-
-string ConfigGenerator::deleteAllBeforeChar(string sToReplace, char cToFind)
-{
-
-	if ( sToReplace.find(cToFind) != string::npos )
-		sToReplace = sToReplace.substr(sToReplace.find_last_of(cToFind) + 1, sToReplace.size());
-
-	return sToReplace;
-
 }
 
 void ConfigGenerator::generateTestCase(string funct_name, map<string, string> param_type, vector<string> insert_order, string return_type)
@@ -212,6 +236,7 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 	string templatePath = "Generator/Templates/BoostTest.tpl";
 	string outputPath = "Generated/UT/" + class_test + "/" + class_test + "_test.cpp";
 	string fileContent;
+	string ptype;
 
 	stringstream test_case;
 

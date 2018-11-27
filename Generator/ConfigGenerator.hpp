@@ -49,7 +49,6 @@ public:
 
 private:
 	string getCommentHeader();
-	string deleteAllBeforeChar(string sToReplace, char cToFind);
 
 	string f_Name;
 	string f_CommentHeader;

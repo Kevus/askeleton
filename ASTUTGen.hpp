@@ -32,6 +32,8 @@ using namespace clang::ast_matchers;
 
 using namespace std;
 
+string deleteAllBeforeChar(string sToReplace, char cToFind);
+
 class ASTUTGen : public MatchFinder::MatchCallback
 {
 public:

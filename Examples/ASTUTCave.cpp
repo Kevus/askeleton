@@ -30,7 +30,7 @@ public:
     return 'i';
   }
 
-    char whoReturnsAChar2()
+    char iObtainAString(string s_param)
   {
     return 'i';
   }
@@ -60,6 +60,22 @@ class SecondClass : FirstClass
   int newMethod()
   {
     return 1;
+  }
+
+public:
+  int * testPointer1(int * a)
+  {
+    return a;
+  }
+
+  int* testPointer2(int *b)
+  {
+    return b;
+  } 
+
+  int* testPointer3(int* c)
+  {
+    return c;
   }
 };
 

@@ -8,7 +8,7 @@
 //Template originally created for LATEGEN
 //File to test: /home/kevus/git-fixed/matcher/astutmatcher/Examples/ASTUTCave.cpp
 //DESCRIPTION: This file sets tests cases for ASTUTCave.
-//DATE: 22-11-2018 09:16:08
+//DATE: 26-11-2018 12:30:02
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "/home/kevus/git-fixed/matcher/astutmatcher/Examples/ASTUTCave.cpp"
@@ -159,6 +159,28 @@ struct Fixture {
 		return returnValue;
 
 	}
+
+	//==========================================================
+	// EQUIVALENT TYPES:
+	// char
+	// signed char
+	// unsigned char
+	//==========================================================
+	char Read_char(string objectKey)
+	{
+		return boost::lexical_cast<char>(readObject(objectKey));
+	}
+
+	signed char Read_signed_char(string objectKey)
+	{
+		return Read_char(readObject(objectKey));
+	}
+
+	unsigned char Read_unsigned_char(string objectKey)
+	{
+		return Read_char(readObject(objectKey));
+	}
+
 	//==========================================================
 	// EQUIVALENT TYPES:
 	// short
@@ -191,12 +213,12 @@ struct Fixture {
 	// unsigned short
 	// unsigned short int
 	//==========================================================
-	int Read_unsigned_short(string objectKey)
+	unsigned short Read_unsigned_short(string objectKey)
 	{
 		return boost::lexical_cast<unsigned short>(readObject(objectKey));
 	}
 
-	signed Read_unsigned_short_int(string objectKey)
+	unsigned short int Read_unsigned_short_int(string objectKey)
 	{
 		return Read_unsigned_short(readObject(objectKey));
 	}
@@ -223,16 +245,38 @@ struct Fixture {
 	}
 
 	//==========================================================
+	// EQUIVALENT TYPES:
+	// int *
+	// signed *
+	// signed int *
+	//==========================================================
+	int* Read_int_*(string objectKey)
+	{
+		int* result = new int(boost::lexical_cast<int>(readObject(objectKey)));
+		return result;
+	}
+
+	signed* Read_signed_*(string objectKey)
+	{
+		return Read_int_*(readObject(objectKey));
+	}
+
+	signed int* Read_signed_int_*(string objectKey)
+	{
+		return Read_int_*(readObject(objectKey));
+	}
+
+	//==========================================================
 	// EQUIVALENT TYPES
 	// unsigned
 	// unsigned int
 	//==========================================================
-	int Read_unsigned_int(string objectKey)
+	unsigned int Read_unsigned_int(string objectKey)
 	{
 		return boost::lexical_cast<unsigned int>(readObject(objectKey));
 	}
 
-	signed Read_unsigned(string objectKey)
+	unsigned Read_unsigned(string objectKey)
 	{
 		return Read_unsigned_int(readObject(objectKey));
 	}
@@ -269,12 +313,12 @@ struct Fixture {
 	// unsigned long
 	// unsigned long int
 	//==========================================================
-	int Read_unsigned_long(string objectKey)
+	unsigned long Read_unsigned_long(string objectKey)
 	{
 		return boost::lexical_cast<unsigned long>(readObject(objectKey));
 	}
 
-	signed Read_unsigned_long_int(string objectKey)
+	unsigned long int Read_unsigned_long_int(string objectKey)
 	{
 		return Read_unsigned_long(readObject(objectKey));
 	}
@@ -311,12 +355,12 @@ struct Fixture {
 	// unsigned long long
 	// unsigned long long int
 	//==========================================================
-	int Read_unsigned_long_long(string objectKey)
+	unsigned long long Read_unsigned_long_long(string objectKey)
 	{
 		return boost::lexical_cast<unsigned long long>(readObject(objectKey));
 	}
 
-	signed Read_unsigned_long_long_int(string objectKey)
+	unsigned long long int Read_unsigned_long_long_int(string objectKey)
 	{
 		return Read_unsigned_long_long(readObject(objectKey));
 	}
@@ -337,6 +381,22 @@ struct Fixture {
 	}
 
 	//==========================================================
+	// EQUIVALENT TYPES:
+	// double*
+	// long double*
+	//==========================================================
+	double* Read_double_*(string objectKey)
+	{
+		double* result = new double(boost::lexical_cast<double>(readObject(objectKey)));
+		return result;
+	}
+
+	long double* Read_long_double_*(string objectKey)
+	{
+		return Read_double_*(readObject(objectKey));
+	}
+
+	//==========================================================
 	// MIXED TYPES
 	//==========================================================
 	float Read_float(string objectKey)
@@ -344,14 +404,29 @@ struct Fixture {
 		return boost::lexical_cast<float>(readObject(objectKey));
 	}
 
+	float* Read_float_*(string objectKey)
+	{
+		float* result = new float(boost::lexical_cast<float>(readObject(objectKey)));
+		return result;
+	}
+
+	bool Read_bool(string objectKey)
+	{
+		return (readObject(objectKey) == "true");
+	}
+
+	bool* Read_bool_*(string objectKey)
+	{
+		bool* result = new bool(readObject(objectKey) == "true");
+		return result;
+	}
+
 	string Read_string(string objectKey)
 	{
 		return readObject(objectKey);
-	}
+	} 	
 
 
-
-	
 
 	//Date
 	void Date(string value)

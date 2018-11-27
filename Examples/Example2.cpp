@@ -1,5 +1,6 @@
 //Example2.cpp
 #include <iostream>
+#include <string>
 #define DEFINITION 10
 #define OTHERDEFINITION 20
 
@@ -31,6 +32,13 @@ class A
 		char b;
 };
 
-class B {};
+class B : A {
+public:	
+	string imfromB()
+	{
+		return "hello";
+	}
+
+};
 
 int OutsideFunction(int par);
