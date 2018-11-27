@@ -1,11 +1,5 @@
 #include "ConfigGenerator.hpp"
 
-bool fileExists(const std::string& filename)
-{
-  struct stat buffer;   
-  return (stat (filename.c_str(), &buffer) == 0); 
-}
-
 /**
 ** Default values for generating config file.
 ** It can be seen that every value is a string,
@@ -89,6 +83,8 @@ map<string, string> ConfigGenerator::defaultValues =
 ConfigGenerator::ConfigGenerator(string f_Name) :
 	f_Name(f_Name)
 {
+	string comment_header = "";
+
 	//We will create the file if it doesn't exist
 	string sys_command = "mkdir -p Generated/UT/" + f_Name;
 	system(sys_command.c_str());
@@ -97,15 +93,13 @@ ConfigGenerator::ConfigGenerator(string f_Name) :
 	bool file_exists = fileExists(sys_command);
 
 	if (!file_exists)
-		f_CommentHeader = getCommentHeader();
-	else
-		f_CommentHeader = "";
+		comment_header = getCommentHeader(f_Name);
 
 	//cfg_file.open(sys_command, (fileExists(sys_command) ? ios_base::app : ios_base::out));
 	cfg_file.open(sys_command, ios_base::app);
 
 	if(cfg_file.is_open())
-		cfg_file << f_CommentHeader;
+		cfg_file << comment_header;
 }
 
 void ConfigGenerator::generateTestCase(string funct_name, map<string, string> param_type, vector<string> insert_order, string return_type)
@@ -123,48 +117,6 @@ void ConfigGenerator::generateTestCase(string funct_name, map<string, string> pa
 	}//if
 }
 
-string ConfigGenerator::getCommentHeader()
-{
-	/**
-	** Comment header, for visibility purposes
-	**/
-	stringstream buffer;
-
-	// Time utilities
-	auto t = time(nullptr);
-	auto tm = *localtime(&t);
-
-	// ASTUT Banner
-	buffer << "#" << string(55, '/') << "\n"
-		   << "#////" << string(47, ' ') << "////\n"
-		   << "#//// AST-UT PROTOTYPE" << string(30, ' ') << "////\n"
-		   << "#//// UNIVERSIDAD DE CADIZ - NAVANTIA SISTEMAS      ////\n"
-		   << "#////" << string(47, ' ') << "////\n"
-		   << "#" << string(55, '/') << "\n"
-		   << "#File generated automatically by AST-UT.\n"
-		   << "#File " << f_Name << ".cfg\n"
-		   << "#Date " << put_time(&tm, "%d-%m-%Y %H:%M:%S") << "\n"
-		   << "#" << string(55, '/') << "\n\n";
-
-    //The banner should look like this:
-
-    /**
-    ** #///////////////////////////////////////////////////////
-	** #////                                               ////
-	** #//// AST-UT PROTOTYPE                              ////
-	** #//// UNIVERSIDAD DE CADIZ - NAVANTIA SISTEMAS      ////
-	** #////                                               ////
-	** #///////////////////////////////////////////////////////
-	** #File generated automatically by AST-UT.
-	** #File <f_Name>.cfg
-	** #Date dd-mm-yyyy hh:MM:ss
-	** #///////////////////////////////////////////////////////
-	**
-	**/
-	// *** END OF THE BANNER ***
-
-	return buffer.str();
-}
 
 //##############################################################
 BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass) : isFromClass(isFromClass)

@@ -21,11 +21,11 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
+#include "../auxiliary_functions.hpp"
+
 #include <sys/stat.h>
 
 using namespace std;
-
-bool fileExists(const std::string& filename);
 
 class ConfigGenerator
 {
@@ -48,10 +48,8 @@ public:
 		vector<string> insert_order, string return_type);
 
 private:
-	string getCommentHeader();
 
 	string f_Name;
-	string f_CommentHeader;
 
 	ofstream cfg_file;
 

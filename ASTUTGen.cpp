@@ -6,14 +6,6 @@ void ASTUTGen::run(const MatchFinder::MatchResult &Result)
 	apply_MD1(Result);
 }
 
-string deleteAllBeforeChar(string sToReplace, char cToFind)
-{
-	if ( sToReplace.find(cToFind) != string::npos )
-		sToReplace = sToReplace.substr(sToReplace.find_last_of(cToFind) + 1, sToReplace.size());
-
-	return sToReplace;
-}
-
 //General method for testing functions
 void ASTUTGen::generateFunctionTest(string source_file, string function_name, ArrayRef<ParmVarDecl *> parameters, string return_type, BoostGenerator bGen)
 {
@@ -23,22 +15,13 @@ void ASTUTGen::generateFunctionTest(string source_file, string function_name, Ar
 	map<string, string> param_type;
 	vector<string> insert_order;
 
+	string rtn_type = cleanUnnecesaryChars(return_type);
 	string tmp_type;
-	string rtn_type = deleteAllBeforeChar(return_type, ':');
 
 	for(auto i : parameters)
     {
     	tmp_type = i->getOriginalType().getAsString();
-
-	    //==========================================================
-		// We are formating types:
-		//	All pointers will be treated as normal types
-		// 	All spaces will be replaced with _
-		//==========================================================
-    	boost::replace_all(tmp_type, " &", "");
-    	boost::replace_all(tmp_type, " ", "_");
-
-    	tmp_type = deleteAllBeforeChar(tmp_type, ':');
+    	tmp_type = cleanUnnecesaryChars(tmp_type);
 
     	param_type.insert(pair<string, string>(i->getQualifiedNameAsString(), tmp_type));
     	insert_order.push_back(i->getQualifiedNameAsString());

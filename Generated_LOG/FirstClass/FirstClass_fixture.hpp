@@ -6,12 +6,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 //File generated automatically by AST-UT                                  
 //Template originally created for LATEGEN
-//File to test: /home/kevus/git-fixed/matcher/astutmatcher/Examples/ASTUTCave.cpp
+//File to test: /home/kevus/git-fixed/astutmatcher/Examples/ASTUTCave.cpp
 //DESCRIPTION: This file sets tests cases for FirstClass.
-//DATE: 26-11-2018 12:30:02
+//DATE: 27-11-2018 11:59:57
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "/home/kevus/git-fixed/matcher/astutmatcher/Examples/ASTUTCave.cpp"
+#include "/home/kevus/git-fixed/astutmatcher/Examples/ASTUTCave.cpp"
 #define BOOST_TEST_MODULE FirstClass_TEST
 #include <boost/test/included/unit_test.hpp>
 
@@ -245,38 +245,16 @@ struct Fixture {
 	}
 
 	//==========================================================
-	// EQUIVALENT TYPES:
-	// int *
-	// signed *
-	// signed int *
-	//==========================================================
-	int* Read_int_*(string objectKey)
-	{
-		int* result = new int(boost::lexical_cast<int>(readObject(objectKey)));
-		return result;
-	}
-
-	signed* Read_signed_*(string objectKey)
-	{
-		return Read_int_*(readObject(objectKey));
-	}
-
-	signed int* Read_signed_int_*(string objectKey)
-	{
-		return Read_int_*(readObject(objectKey));
-	}
-
-	//==========================================================
 	// EQUIVALENT TYPES
 	// unsigned
 	// unsigned int
 	//==========================================================
-	unsigned int Read_unsigned_int(string objectKey)
+	unsigned Read_unsigned_int(string objectKey)
 	{
 		return boost::lexical_cast<unsigned int>(readObject(objectKey));
 	}
 
-	unsigned Read_unsigned(string objectKey)
+	unsigned int Read_unsigned(string objectKey)
 	{
 		return Read_unsigned_int(readObject(objectKey));
 	}
@@ -381,22 +359,6 @@ struct Fixture {
 	}
 
 	//==========================================================
-	// EQUIVALENT TYPES:
-	// double*
-	// long double*
-	//==========================================================
-	double* Read_double_*(string objectKey)
-	{
-		double* result = new double(boost::lexical_cast<double>(readObject(objectKey)));
-		return result;
-	}
-
-	long double* Read_long_double_*(string objectKey)
-	{
-		return Read_double_*(readObject(objectKey));
-	}
-
-	//==========================================================
 	// MIXED TYPES
 	//==========================================================
 	float Read_float(string objectKey)
@@ -404,29 +366,15 @@ struct Fixture {
 		return boost::lexical_cast<float>(readObject(objectKey));
 	}
 
-	float* Read_float_*(string objectKey)
-	{
-		float* result = new float(boost::lexical_cast<float>(readObject(objectKey)));
-		return result;
-	}
-
 	bool Read_bool(string objectKey)
 	{
 		return (readObject(objectKey) == "true");
 	}
 
-	bool* Read_bool_*(string objectKey)
-	{
-		bool* result = new bool(readObject(objectKey) == "true");
-		return result;
-	}
-
 	string Read_string(string objectKey)
 	{
 		return readObject(objectKey);
-	} 	
-
-
+	}
 
 	//Date
 	void Date(string value)

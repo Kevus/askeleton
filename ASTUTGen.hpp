@@ -19,6 +19,8 @@
 
 #include "Generator/ConfigGenerator.hpp"
 
+#include "auxiliary_functions.hpp"
+
 #include <stdio.h>
 #include <string>
 #include <map>
@@ -32,7 +34,7 @@ using namespace clang::ast_matchers;
 
 using namespace std;
 
-string deleteAllBeforeChar(string sToReplace, char cToFind);
+
 
 class ASTUTGen : public MatchFinder::MatchCallback
 {
