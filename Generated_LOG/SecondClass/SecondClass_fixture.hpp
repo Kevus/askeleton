@@ -8,7 +8,7 @@
 //Template originally created for LATEGEN
 //File to test: /home/kevus/git-fixed/astutmatcher/Examples/ASTUTCave.cpp
 //DESCRIPTION: This file sets tests cases for SecondClass.
-//DATE: 27-11-2018 11:59:57
+//DATE: 04-12-2018 12:30:36
 ////////////////////////////////////////////////////////////////////////////////
 
 #include "/home/kevus/git-fixed/astutmatcher/Examples/ASTUTCave.cpp"

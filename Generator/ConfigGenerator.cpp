@@ -110,10 +110,11 @@ void ConfigGenerator::generateTestCase(string funct_name, map<string, string> pa
 
 		for(auto i : insert_order)
 		{
-			cfg_file << "\t" << i << "=" << defaultValues.find(param_type[i])->second << ";#" << param_type[i] << "\n";
+			//cfg_file << "\t" << i << "=" << defaultValues.find(param_type[i])->second << ";#" << param_type[i] << "\n";
+			cfg_file << "\t" << i << "=" << rvg.getRandomValue(param_type[i]) << ";#" << param_type[i] << "\n";
 		}//for
 
-		cfg_file << "\treturn_" << return_type << "=" << defaultValues.find(return_type)->second << ";#" << return_type << "\n};\n\n";
+		cfg_file << "\treturn_" << return_type << "=" << rvg.getRandomValue(return_type) << ";#" << return_type << "\n};\n\n";
 	}//if
 }
 

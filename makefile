@@ -15,7 +15,9 @@ DIRC = Containers/
 DIRGEN = Generator/
 
 SOURCES =	\
-	auxiliary_functions.cpp ASTUTGen.cpp ASTUTMatchers.cpp Generator/ConfigGenerator.cpp astut.cpp
+	auxiliary_functions.cpp ASTUTGen.cpp ASTUTMatchers.cpp \
+	Generator/RandomValuesGenerator.cpp Generator/CustomGenerator.cpp \
+	Generator/ConfigGenerator.cpp astut.cpp
 
 OBJECTS = $(SOURCES:.cpp=.o)
 EXES = $(OBJECTS:.o=)
@@ -38,11 +40,13 @@ CLANGLIBS = \
 
 
 astut:	\
-	auxiliary_functions.o ASTUTGen.o ASTUTMatchers.o Generator/ConfigGenerator.o astut.o 
+	auxiliary_functions.o ASTUTGen.o ASTUTMatchers.o \
+	Generator/RandomValuesGenerator.o Generator/CustomGenerator.o \
+	Generator/ConfigGenerator.o astut.o 
 	$(CXX) -o $@ $^ $(CLANGLIBS) $(LLVMLDFLAGS)
 
-astut.o: auxiliary_functions.hpp ASTUTGen.hpp ASTUTMatchers.hpp Generator/ConfigGenerator.hpp	\
-	auxiliary_functions.o ASTUTGen.o ASTUTMatchers.o Generator/ConfigGenerator.o
+astut.o: auxiliary_functions.hpp ASTUTGen.hpp ASTUTMatchers.hpp Generator/RandomValuesGenerator.hpp Generator/CustomGenerator.hpp Generator/ConfigGenerator.hpp	\
+	auxiliary_functions.o ASTUTGen.o ASTUTMatchers.o Generator/RandomValuesGenerator.o Generator/CustomGenerator.o Generator/ConfigGenerator.o
 
 clean:
 	rm -f *.o Generator/*.o astut

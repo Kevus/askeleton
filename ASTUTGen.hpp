@@ -18,6 +18,7 @@
 #include "clang/Lex/Lexer.h"
 
 #include "Generator/ConfigGenerator.hpp"
+#include "Generator/CustomGenerator.hpp"
 
 #include "auxiliary_functions.hpp"
 
@@ -48,6 +49,7 @@ private:
 
 	void apply_FD1(const MatchFinder::MatchResult &Result);
 	void apply_MD1(const MatchFinder::MatchResult &Result);
+	void apply_CT1(const MatchFinder::MatchResult &Result);
 };
 
 #endif

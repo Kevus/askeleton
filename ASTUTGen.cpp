@@ -4,6 +4,7 @@ void ASTUTGen::run(const MatchFinder::MatchResult &Result)
 {
 	apply_FD1(Result);
 	apply_MD1(Result);
+	apply_CT1(Result);
 }
 
 //General method for testing functions
@@ -23,9 +24,14 @@ void ASTUTGen::generateFunctionTest(string source_file, string function_name, Ar
     	tmp_type = i->getOriginalType().getAsString();
     	tmp_type = cleanUnnecesaryChars(tmp_type);
 
+
     	param_type.insert(pair<string, string>(i->getQualifiedNameAsString(), tmp_type));
     	insert_order.push_back(i->getQualifiedNameAsString());
     }
+
+    CustomGenerator cgen(source_file);
+    cgen.generateTypesFile(function_name, param_type, insert_order, rtn_type);
+    cgen.generateTestCasesFile(function_name, param_type, insert_order, rtn_type);
 
     cfg_gen.generateTestCase(function_name, param_type, insert_order, rtn_type);
     bGen.generateBoostAssert(source_file, function_name, param_type, insert_order, rtn_type);
@@ -111,6 +117,33 @@ void ASTUTGen::apply_MD1(const MatchFinder::MatchResult &Result)
 
 
 			}
+		}
+	}
+}
+
+void ASTUTGen::apply_CT1(const MatchFinder::MatchResult &Result)
+{
+	ASTContext *Context = Result.Context;
+
+	if (const CXXRecordDecl *UT = Result.Nodes.getNodeAs<clang::CXXRecordDecl>("CT1")){
+		
+		FullSourceLoc FullLocation;
+			
+		FullLocation = Context->getFullLoc(UT->getLocStart());
+
+		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){	
+
+
+				//Print auxiliary ======================================================================
+	           	llvm::outs() << "Found CxxRecordDecl at "
+	                         << FullLocation.getSpellingLineNumber() << ":"
+	                         << FullLocation.getSpellingColumnNumber() << " - ";
+
+	           // llvm::outs() <<  UT->getName().getAsString() << " from class " << parentname << "\n";
+	            //Print auxiliary ======================================================================
+
+
+			
 		}
 	}
 }

@@ -8,6 +8,12 @@ enum DaysOfTheWeek
 	Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday
 };
 
+struct customType
+{
+  int number;
+  string name;
+};
+
 class FirstClass
 {
 public:
@@ -30,7 +36,7 @@ public:
     return 'i';
   }
 
-    char iObtainAString(string s_param)
+    char iObtainAString(std::string s_param)
   {
     return 'i';
   }
@@ -38,7 +44,7 @@ public:
 int public_param;
 
 private:
-  double privateMethod(string s_param2)
+  double privateMethod(std::string s_param2)
   {
     return 3.0;
   }

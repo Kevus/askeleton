@@ -11,6 +11,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <map>
+
 //Boost libraries
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/replace.hpp>
