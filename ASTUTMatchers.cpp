@@ -6,18 +6,20 @@
 
 DeclarationMatcher FD1 =
 	functionDecl(
+		unless(isImplicit()),
 		unless(returns(voidType()))
 	).bind("FD1");
 
 DeclarationMatcher MD1 =
 	cxxMethodDecl(
+		unless(isImplicit()),
 		isPublic(),
-		unless(hasName("")),
 		unless(returns(voidType()))
 	).bind("MD1");
 
 DeclarationMatcher CT1 =
 	cxxRecordDecl(
+		unless(isImplicit()),
 		isStruct()
 		).bind("CT1");
 

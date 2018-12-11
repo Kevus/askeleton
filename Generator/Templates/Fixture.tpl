@@ -23,6 +23,8 @@
 #include <ctime>
 
 #include <map>
+#include <vector>
+#include <list>
 
 #include <experimental/filesystem>
 
@@ -375,6 +377,56 @@ struct Fixture {
 	{
 		return readObject(objectKey);
 	}
+
+	//==========================================================
+	// SPECIAL TYPES
+	//==========================================================
+	/*template <typename T>
+	list<T> Read_list(string objectKey)
+	{
+		list<T> result_list;
+
+		string unparsed_list = readObject(objectKey);
+		//{1, 2, 3, 4}
+		boost::replace_all(unparsed_list, "{", "");
+		boost::replace_all(unparsed_list, "}", "");
+		boost::replace_all(unparsed_list, ";", "");
+
+		auto delimiter = unparsed_list.find(",");
+		
+		while(delimiter != string::npos)
+		{
+			auto key = unparsed_list.substr(0, delimiter);
+			auto value = unparsed_list.substr(delimiter + 1);
+
+			T insert_value = boost::lexical_cast<T>(key);
+			result_list.push_back(insert_value);
+
+			delimiter = value.find(",");
+
+			if(delimiter == string::npos)
+			{
+				insert_value = boost::lexical_cast<T>(value);
+				result_list.push_back(insert_value);
+			}
+		}
+
+		return result_list;
+
+	}
+
+	template <typename T>
+	vector<T> Read_vector(string objectKey)
+	{
+		list<T> aux_list = Read_list(objectKey);
+
+		vector<T> result_vector{ 
+								 make_move_iterator(begin(aux_list)),
+								 make_move_iterator(end(aux_list))
+							   };
+
+		return result_vector;
+	}*/
 
 	//Date
 	void Date(string value)

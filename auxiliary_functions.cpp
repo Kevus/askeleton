@@ -63,10 +63,12 @@ string cleanUnnecesaryChars(string sToReplace)
 	//==========================================================
 	// We are formating types:
 	//	std:: flag
+	//  __cxx11:: flag
 	//	All pointers will be treated as normal types
 	// 	All spaces will be replaced with _
 	//==========================================================
 	boost::replace_all(sToReplace, "std::", "");
+	boost::replace_all(sToReplace, "__cxx11::", "");
 	boost::replace_all(sToReplace, " &", "");
 	boost::replace_all(sToReplace, " ", "_");
 

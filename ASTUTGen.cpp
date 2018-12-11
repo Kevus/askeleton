@@ -133,14 +133,20 @@ void ASTUTGen::apply_CT1(const MatchFinder::MatchResult &Result)
 
 		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){	
 
+			//Get the file name
+			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
+			unsigned first = source_file.find_last_of('/') + 1;
+			unsigned last = source_file.find_last_of('.');
 
-				//Print auxiliary ======================================================================
-	           	llvm::outs() << "Found CxxRecordDecl at "
-	                         << FullLocation.getSpellingLineNumber() << ":"
-	                         << FullLocation.getSpellingColumnNumber() << " - ";
+			string filename = source_file.substr(first, last-first);
 
-	           // llvm::outs() <<  UT->getName().getAsString() << " from class " << parentname << "\n";
-	            //Print auxiliary ======================================================================
+			//Print auxiliary ======================================================================
+           	llvm::outs() << "Found CxxRecordDecl at "
+                         << FullLocation.getSpellingLineNumber() << ":"
+                         << FullLocation.getSpellingColumnNumber() << " - ";
+
+            llvm::outs() <<  UT->getNameAsString() << " in file " << filename << "\n";
+            //Print auxiliary ======================================================================
 
 
 			

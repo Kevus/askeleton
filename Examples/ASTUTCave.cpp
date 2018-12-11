@@ -1,6 +1,9 @@
 #include <string>
 #include <iostream>
 
+#include <vector>
+#include <list>
+
 using namespace std;
 
 enum DaysOfTheWeek
@@ -35,6 +38,11 @@ public:
   {
     return 'i';
   }
+
+  /*list<int> allVectors(list<int> v_param)
+  {
+    return v_param;
+  }*/
 
     char iObtainAString(std::string s_param)
   {
