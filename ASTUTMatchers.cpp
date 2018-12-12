@@ -23,6 +23,9 @@ DeclarationMatcher CT1 =
 		isStruct()
 		).bind("CT1");
 
+DeclarationMatcher CC1 =
+	cxxConstructorDecl(
+		).bind("CC1");
 
 //We will reunite and insert into the match map here
 map<string, DeclarationMatcher> createMapMatchers()

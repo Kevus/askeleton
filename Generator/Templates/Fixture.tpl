@@ -381,8 +381,8 @@ struct Fixture {
 	//==========================================================
 	// SPECIAL TYPES
 	//==========================================================
-	/*template <typename T>
-	list<T> Read_list(string objectKey)
+	template <typename T>
+	list<T> Read_list(string& objectKey)
 	{
 		list<T> result_list;
 
@@ -418,7 +418,7 @@ struct Fixture {
 	template <typename T>
 	vector<T> Read_vector(string objectKey)
 	{
-		list<T> aux_list = Read_list(objectKey);
+		list<T> aux_list = Read_list<T>(objectKey);
 
 		vector<T> result_vector{ 
 								 make_move_iterator(begin(aux_list)),
@@ -426,7 +426,7 @@ struct Fixture {
 							   };
 
 		return result_vector;
-	}*/
+	}
 
 	//Date
 	void Date(string value)
