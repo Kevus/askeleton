@@ -381,8 +381,8 @@ struct Fixture {
 	//==========================================================
 	// SPECIAL TYPES
 	//==========================================================
-	template <typename T>
-	list<T> Read_list(string& objectKey)
+	/*template <typename T>
+	list<T> Read_list(string objectKey)
 	{
 		list<T> result_list;
 
@@ -427,6 +427,48 @@ struct Fixture {
 
 		return result_vector;
 	}
+
+	template <typename T, typename Y>
+	map<T,Y> Read_map(string objectKey)
+	{
+		map<T,Y> result_map;
+		T aux_key;
+		Y aux_value;
+
+		string unparsed_map = readObject(objectKey);
+
+		//{(1,2),(3,4),(5,6)};
+		boost::replace_all(unparsed_map, "{", "");
+		boost::replace_all(unparsed_map, "}", "");
+		boost::replace_all(unparsed_map, ";", "");
+		//(1,2),(3,4),(5,6)
+
+		auto general_delimiter = unparsed_map.find(")");
+		vector<string> values_pair;
+
+		while(general_delimiter != string::npos)
+		{
+			auto key = unparsed_map.substr(1, general_delimiter); //1,2
+			auto value = unparsed_map.substr(general_delimiter +1);//,(3,4),(5,6)
+
+			auto inside_delimiter = key.find(",");
+
+			if(inside_delimiter != string::npos)
+			{
+				auto inside_key = key.substr(0, inside_delimiter);
+				auto inside_value = key.substr(inside_delimiter + 1);
+
+				aux_key = boost::lexical_cast<T>(inside_key);
+				aux_value = boost::lexical_cast<Y>(inside_value);
+
+				result_map.insert(pair<T,Y>(aux_key, aux_value));
+			}
+
+			delimiter = unparsed_map.find(")");
+		}
+
+		return result_map;
+	}*/
 
 	//Date
 	void Date(string value)

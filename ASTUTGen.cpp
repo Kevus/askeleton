@@ -5,6 +5,7 @@ void ASTUTGen::run(const MatchFinder::MatchResult &Result)
 	apply_FD1(Result);
 	apply_MD1(Result);
 	apply_CT1(Result);
+	apply_CC1(Result);
 }
 
 //General method for testing functions
@@ -35,6 +36,34 @@ void ASTUTGen::generateFunctionTest(string source_file, string function_name, Ar
 
     cfg_gen.generateTestCase(function_name, param_type, insert_order, rtn_type);
     bGen.generateBoostAssert(source_file, function_name, param_type, insert_order, rtn_type);
+
+}
+
+//Method for constructing constructor test
+void ASTUTGen::generateConstructorTest(string source, string constructor_name, ArrayRef<ParmVarDecl *> parameters, BoostGenerator bGen)
+{
+	ConfigGenerator cfg_gen(source);
+
+	//Get the parameters
+	map<string, string> param_type;
+	vector<string> insert_order;
+
+	string tmp_type;
+
+	for(auto i : parameters)
+	{
+		tmp_type = i->getOriginalType().getAsString();
+    	tmp_type = cleanUnnecesaryChars(tmp_type);
+
+    	param_type.insert(pair<string, string>(i->getQualifiedNameAsString(), tmp_type));
+    	insert_order.push_back(i->getQualifiedNameAsString());
+	}
+
+	/**
+	** We will add custom generator lates
+	**/
+	cfg_gen.generateConstructorTest(constructor_name, param_type, insert_order);
+	bGen.generateBoostConstructorAssert(source, constructor_name, param_type, insert_order);
 
 }
 
@@ -146,6 +175,43 @@ void ASTUTGen::apply_CT1(const MatchFinder::MatchResult &Result)
                          << FullLocation.getSpellingColumnNumber() << " - ";
 
             llvm::outs() <<  UT->getNameAsString() << " in file " << filename << "\n";
+            //Print auxiliary ======================================================================
+
+
+			
+		}
+	}
+}
+
+void ASTUTGen::apply_CC1(const MatchFinder::MatchResult &Result)
+{
+	ASTContext *Context = Result.Context;
+
+	if (const CXXConstructorDecl *UT = Result.Nodes.getNodeAs<clang::CXXConstructorDecl>("CC1")){
+		
+		FullSourceLoc FullLocation;
+			
+		FullLocation = Context->getFullLoc(UT->getLocStart());
+
+		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){	
+
+			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
+			string parentname = UT->getParent()->getName();
+
+			BoostGenerator bGen(source_file, parentname, true);
+
+			generateConstructorTest(
+				 parentname,
+				 parentname,
+				 UT->parameters(),
+				 bGen);
+
+			//Print auxiliary ======================================================================
+           	llvm::outs() << "Found CXXConstructorDecl at "
+                         << FullLocation.getSpellingLineNumber() << ":"
+                         << FullLocation.getSpellingColumnNumber() << " - ";
+
+            llvm::outs() <<  UT->getNameInfo().getAsString() << " from class " << parentname << "\n";
             //Print auxiliary ======================================================================
 
 

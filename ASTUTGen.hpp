@@ -46,10 +46,12 @@ public:
 
 private:
 	void generateFunctionTest(string source_file, string function_name, ArrayRef<ParmVarDecl *> parameters, string return_type, BoostGenerator bGen);
+	void generateConstructorTest(string source, string constructor_name, ArrayRef<ParmVarDecl *> parameters, BoostGenerator bgen);
 
 	void apply_FD1(const MatchFinder::MatchResult &Result);
 	void apply_MD1(const MatchFinder::MatchResult &Result);
 	void apply_CT1(const MatchFinder::MatchResult &Result);
+	void apply_CC1(const MatchFinder::MatchResult &Result);
 };
 
 #endif

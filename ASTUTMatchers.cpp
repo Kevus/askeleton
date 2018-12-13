@@ -25,6 +25,7 @@ DeclarationMatcher CT1 =
 
 DeclarationMatcher CC1 =
 	cxxConstructorDecl(
+		unless(isImplicit())
 		).bind("CC1");
 
 //We will reunite and insert into the match map here
@@ -35,6 +36,7 @@ map<string, DeclarationMatcher> createMapMatchers()
 	matchs.insert(pair<string, DeclarationMatcher>("FD1", FD1));
 	matchs.insert(pair<string, DeclarationMatcher>("MD1", MD1));
 	matchs.insert(pair<string, DeclarationMatcher>("CT1", CT1));
+	matchs.insert(pair<string, DeclarationMatcher>("CC1", CC1));
 
 	return matchs;
 }

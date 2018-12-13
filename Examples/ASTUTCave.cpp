@@ -21,7 +21,7 @@ class FirstClass
 {
 public:
   FirstClass() {}
-  FirstClass(int i_param, string s_param)  {}
+  FirstClass(int i_param, string s_param)  {public_param = i_param;}
 
   void invisibleForASTUT(int p)
   {
@@ -39,7 +39,7 @@ public:
     return 'i';
   }
 
-  /*list<int> allVectors(list<int> v_param)
+ /* vector<int> allVectors(vector<int> v_param)
   {
     return v_param;
   }*/

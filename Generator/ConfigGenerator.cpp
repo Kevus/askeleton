@@ -118,6 +118,18 @@ void ConfigGenerator::generateTestCase(string funct_name, map<string, string> pa
 	}//if
 }
 
+void ConfigGenerator::generateConstructorTest(string constructor_name, map<string, string> param_type, vector<string> insert_order)
+{
+	if(cfg_file.is_open())
+	{
+		cfg_file << constructor_name << ":\n{\n";
+
+		for(auto i : insert_order)
+			cfg_file << "\t" << i << "=" << rvg.getRandomValue(param_type[i]) << ";#" << param_type[i] << "\n";
+
+		cfg_file << "};\n\n";
+	}
+}
 
 //##############################################################
 BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass) : isFromClass(isFromClass)
@@ -249,4 +261,69 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 
 	}
 
+}
+
+void BoostGenerator::generateBoostConstructorAssert(string class_test, string constructor_name, map<string, string> param_type, vector<string> insertion_order)
+{
+	string templatePath = "Generator/Templates/BoostTest.tpl";
+	string outputPath = "Generated/UT/" + class_test + "/" + class_test + "_test.cpp";
+	string fileContent;
+	string ptype;
+
+	stringstream test_case;
+
+	bool existFlag = fileExists(outputPath);
+	ifstream tplFile (templatePath);
+
+	if (tplFile.is_open())
+	{
+		//If file doesnt exist, then replace common tags
+		if(!existFlag)
+		{
+			fileContent = string( (istreambuf_iterator<char>(tplFile)),
+						 		   istreambuf_iterator<char>() );
+
+			boost::replace_all(fileContent, "{className}", class_test);
+
+			//==========================================================
+			// These tags are not used yet, so we will simply delete them
+			//==========================================================
+			boost::replace_all(fileContent, "{pointerInitToken}", "");
+			boost::replace_all(fileContent, "{pointerDestroyToken}", "");
+			//==========================================================
+			//==========================================================
+
+			//Copy makefile for compiling tests
+			system(("cp -r Generator/Templates/makefile Generated/UT/" + class_test + "/").c_str());
+
+		} else
+		{
+			ifstream tmp_output(outputPath);
+			fileContent = string( (istreambuf_iterator<char>(tmp_output)),
+						 		   istreambuf_iterator<char>() );
+		}
+
+		//Now we will create the assertion sentence
+		test_case << "\tBOOST_CHECK(new ";
+		test_case << constructor_name << "(";
+
+		for(auto i : insertion_order)
+		{
+			test_case << "Read_" << param_type[i] << "(\""
+					  << constructor_name << "." << i << "\")";
+			if (i != insertion_order.back()) test_case << ",";
+		}
+
+		test_case << "));\n//{assert}";
+		//test_case << "),Read_" << return_type << "(\"" << function_name << ".return_" << return_type << "\"));\n//{assert}";
+
+		boost::replace_all(fileContent, "//{assert}", test_case.str());
+
+		ofstream outputFile(outputPath);
+		outputFile << fileContent;
+
+		tplFile.close();
+		outputFile.close();
+
+	}
 }

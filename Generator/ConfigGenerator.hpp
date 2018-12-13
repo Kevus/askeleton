@@ -29,6 +29,9 @@ public:
 	void generateTestCase(string funct_name, map<string, string> param_type, 
 		vector<string> insert_order, string return_type);
 
+	void generateConstructorTest(string constructor_name, map<string, string> param_type,
+		vector<string> insert_order);
+
 private:
 
 	string f_Name;
@@ -50,6 +53,9 @@ public:
 
 	void generateBoostAssert(string class_test, string function_name, 
 		map<string, string> param_type, vector<string> insertion_order, string return_type);
+
+	void generateBoostConstructorAssert(string class_test, string constructor_name, 
+		map<string, string> param_type,	vector<string> insertion_order);
 
 private:
 	
