@@ -51,10 +51,10 @@ class BoostGenerator
 public:
 	BoostGenerator(string filePath, string cfgName, bool isFromClass);
 
-	void generateBoostAssert(string class_test, string function_name, 
+	void generateBoostAssert(string class_test, string function_name, string function_cfg_name,
 		map<string, string> param_type, vector<string> insertion_order, string return_type);
 
-	void generateBoostConstructorAssert(string class_test, string constructor_name, 
+	void generateBoostConstructorAssert(string class_test, string constructor_name, string constructor_cfg_name,
 		map<string, string> param_type,	vector<string> insertion_order);
 
 private:

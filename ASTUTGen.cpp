@@ -12,6 +12,17 @@ void ASTUTGen::run(const MatchFinder::MatchResult &Result)
 void ASTUTGen::generateFunctionTest(string source_file, string function_name, ArrayRef<ParmVarDecl *> parameters, string return_type, BoostGenerator bGen)
 {
 	ConfigGenerator cfg_gen(source_file);
+	string function_cfg_name = function_name;
+
+	//if( function_occurrences.find(function_name) == function_occurrences.end() )
+	//	function_occurences.insert( pair<string, int> (function_name, 1));
+	function_occurrences[function_name]++;
+
+	if (function_occurrences[function_name] > 1)
+		function_cfg_name += "_" + to_string(function_occurrences[function_name]);
+
+	
+
 
 	//Get the parameters
 	map<string, string> param_type;
@@ -34,8 +45,8 @@ void ASTUTGen::generateFunctionTest(string source_file, string function_name, Ar
     cgen.generateTypesFile(function_name, param_type, insert_order, rtn_type);
     cgen.generateTestCasesFile(function_name, param_type, insert_order, rtn_type);
 
-    cfg_gen.generateTestCase(function_name, param_type, insert_order, rtn_type);
-    bGen.generateBoostAssert(source_file, function_name, param_type, insert_order, rtn_type);
+    cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order, rtn_type);
+    bGen.generateBoostAssert(source_file, function_name, function_cfg_name, param_type, insert_order, rtn_type);
 
 }
 
@@ -43,6 +54,15 @@ void ASTUTGen::generateFunctionTest(string source_file, string function_name, Ar
 void ASTUTGen::generateConstructorTest(string source, string constructor_name, ArrayRef<ParmVarDecl *> parameters, BoostGenerator bGen)
 {
 	ConfigGenerator cfg_gen(source);
+
+	string constructor_cfg_name = constructor_name;
+
+	//if( function_occurrences.find(function_name) == function_occurrences.end() )
+	//	function_occurences.insert( pair<string, int> (function_name, 1));
+	function_occurrences[constructor_name]++;
+
+	if (function_occurrences[constructor_name] > 1)
+		constructor_cfg_name += "_" + to_string(function_occurrences[constructor_name]);
 
 	//Get the parameters
 	map<string, string> param_type;
@@ -62,8 +82,8 @@ void ASTUTGen::generateConstructorTest(string source, string constructor_name, A
 	/**
 	** We will add custom generator lates
 	**/
-	cfg_gen.generateConstructorTest(constructor_name, param_type, insert_order);
-	bGen.generateBoostConstructorAssert(source, constructor_name, param_type, insert_order);
+	cfg_gen.generateConstructorTest(constructor_cfg_name, param_type, insert_order);
+	bGen.generateBoostConstructorAssert(source, constructor_name, constructor_cfg_name, param_type, insert_order);
 
 }
 

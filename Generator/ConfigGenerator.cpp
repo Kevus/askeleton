@@ -196,7 +196,7 @@ void BoostGenerator::generateFixture(string outputPath)
 	}//if fileExist
 }
 
-void BoostGenerator::generateBoostAssert(string class_test, string function_name, map<string, string> param_type, vector<string> insertion_order, string return_type)
+void BoostGenerator::generateBoostAssert(string class_test, string function_name, string function_cfg_name, map<string, string> param_type, vector<string> insertion_order, string return_type)
 {
 	string templatePath = "Generator/Templates/BoostTest.tpl";
 	string outputPath = "Generated/UT/" + class_test + "/" + class_test + "_test.cpp";
@@ -244,7 +244,7 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 		for(auto i : insertion_order)
 		{
 			test_case << "Read_" << param_type[i] << "(\""
-					  << function_name << "." << i << "\")";
+					  << function_cfg_name << "." << i << "\")";
 			if (i != insertion_order.back()) test_case << ",";
 		}
 
@@ -263,7 +263,7 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 
 }
 
-void BoostGenerator::generateBoostConstructorAssert(string class_test, string constructor_name, map<string, string> param_type, vector<string> insertion_order)
+void BoostGenerator::generateBoostConstructorAssert(string class_test, string constructor_name, string constructor_cfg_name, map<string, string> param_type, vector<string> insertion_order)
 {
 	string templatePath = "Generator/Templates/BoostTest.tpl";
 	string outputPath = "Generated/UT/" + class_test + "/" + class_test + "_test.cpp";
@@ -310,7 +310,7 @@ void BoostGenerator::generateBoostConstructorAssert(string class_test, string co
 		for(auto i : insertion_order)
 		{
 			test_case << "Read_" << param_type[i] << "(\""
-					  << constructor_name << "." << i << "\")";
+					  << constructor_cfg_name << "." << i << "\")";
 			if (i != insertion_order.back()) test_case << ",";
 		}
 
