@@ -236,9 +236,20 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 						 		   istreambuf_iterator<char>() );
 		}
 
+		//List, vector and map will have a different test case
+		bool return_container = (return_type.find("list") != string::npos ||
+							     return_type.find("vector") != string::npos ||
+							     return_type.find("map") != string::npos);
+
 		//Now we will create the assertion sentence
-		test_case << "\tBOOST_CHECK_EQUAL(";
-		if (isFromClass) test_case << class_test << "_test.";
+		if(!return_container)
+			test_case << "\tBOOST_CHECK_EQUAL(";
+		else
+			test_case << "\tBOOST_CHECK((";
+
+		if (isFromClass) 
+			test_case << class_test << "_test.";
+		
 		test_case << function_name << "(";
 
 		for(auto i : insertion_order)
@@ -249,7 +260,19 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 		}
 
 		//test_case << "));\n{assert}";
-		test_case << "),Read_" << return_type << "(\"" << function_name << ".return_" << return_type << "\"));\n//{assert}";
+		if(!return_container)
+			test_case << "),";
+		else
+			test_case << ") == ";
+
+		test_case << "Read_" << return_type << "(\"" << function_name << ".return_" << return_type << "\"))";
+
+		if(!return_container)
+			test_case << ";";
+		else 
+			test_case << ");";
+
+		test_case << "\n//{assert}";
 
 		boost::replace_all(fileContent, "//{assert}", test_case.str());
 

@@ -1,0 +1,34 @@
+Regla 1: Condicionales con valores
+
+function(a):
+	if (a == 1)
+	if (a != 1)
+	if (a > 1)
+	if (a < 1)
+	if (a >= 1)
+	if (a <= 1)
+====================================
+Por cada operador, asignar tres posibles valores
+a = segundo_operador
+a = segundo_operador + 1
+a = segundo_operador - 1
+
+----------------------------------------------------------
+Regla 2: Asignaciones con valores
+function(a):
+	a = 1;
+	a = 2 + 2;
+====================================
+Por cada operador, asignar dos posibles valores:
+a = 0;
+a = a + 1;
+
+----------------------------------------------------------
+Regla 3: Switch case
+function(a):
+	switch(a){
+		case 1:{}
+		case 2:{}
+		case 3:{}
+	}
+Asignar cada case + un valor extra que sea el último más uno

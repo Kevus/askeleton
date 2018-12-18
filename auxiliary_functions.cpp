@@ -70,7 +70,9 @@ string cleanUnnecesaryChars(string sToReplace)
 	boost::replace_all(sToReplace, "std::", "");
 	boost::replace_all(sToReplace, "__cxx11::", "");
 	boost::replace_all(sToReplace, " &", "");
-	boost::replace_all(sToReplace, " ", "_");
+
+	if(sToReplace.find("<") == string::npos)
+		boost::replace_all(sToReplace, " ", "_");
 
 	return sToReplace;
 }

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <list>
+#include <map>
 
 using namespace std;
 
@@ -39,10 +40,20 @@ public:
     return 'i';
   }
 
- /* vector<int> allVectors(vector<int> v_param)
+  list<int> allLists(list<int> l_param)
+  {
+    return l_param;
+  }
+
+  vector<int> allVector(vector<int> v_param)
   {
     return v_param;
-  }*/
+  }
+
+  map<int,int> allMap(map<int,int> m_param)
+  {
+    return m_param;
+  }
 
     char iObtainAString(std::string s_param)
   {

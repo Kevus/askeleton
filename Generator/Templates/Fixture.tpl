@@ -381,7 +381,7 @@ struct Fixture {
 	//==========================================================
 	// SPECIAL TYPES
 	//==========================================================
-	/*template <typename T>
+	template <typename T>
 	list<T> Read_list(string objectKey)
 	{
 		list<T> result_list;
@@ -397,18 +397,19 @@ struct Fixture {
 		while(delimiter != string::npos)
 		{
 			auto key = unparsed_list.substr(0, delimiter);
-			auto value = unparsed_list.substr(delimiter + 1);
+			unparsed_list = unparsed_list.substr(delimiter + 1);
 
 			T insert_value = boost::lexical_cast<T>(key);
 			result_list.push_back(insert_value);
 
-			delimiter = value.find(",");
+			delimiter = unparsed_list.find(",");
 
 			if(delimiter == string::npos)
 			{
-				insert_value = boost::lexical_cast<T>(value);
+				insert_value = boost::lexical_cast<T>(unparsed_list);
 				result_list.push_back(insert_value);
 			}
+
 		}
 
 		return result_list;
@@ -420,10 +421,10 @@ struct Fixture {
 	{
 		list<T> aux_list = Read_list<T>(objectKey);
 
-		vector<T> result_vector{ 
-								 make_move_iterator(begin(aux_list)),
-								 make_move_iterator(end(aux_list))
-							   };
+		vector<T> result_vector( 
+								 aux_list.begin(),
+								 aux_list.end()
+							   );
 
 		return result_vector;
 	}
@@ -464,11 +465,11 @@ struct Fixture {
 				result_map.insert(pair<T,Y>(aux_key, aux_value));
 			}
 
-			delimiter = unparsed_map.find(")");
+			general_delimiter = unparsed_map.find(")");
 		}
 
 		return result_map;
-	}*/
+	}
 
 	//Date
 	void Date(string value)
