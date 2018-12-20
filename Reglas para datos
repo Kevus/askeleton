@@ -1,3 +1,31 @@
+===============================================
+Matcher de tipo complejo
+struct CustomType {
+	int var1;
+	string var2;
+	double var3:
+};
+
+Método para el CFG:
+(revisar como lo hace lategen)
+var={#custom
+	var1=1;#int
+	var2=random#string
+	var3=1.0#double
+};#custom
+
+Método para el fixture:
+CustomType read_CustomType(string objectKey)
+{
+	lectura linea por linea
+	llamada a valor aleatorio por cada parametro
+}
+
+El CPP se leerá igual
+-----------------------------------------------
+
+
+
 Regla 1: Condicionales con valores
 
 function(a):
