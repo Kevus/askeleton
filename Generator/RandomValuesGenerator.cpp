@@ -124,6 +124,27 @@ string RandomValuesGenerator::getRandomValue(string type)
 			break;
 		}
 
+		case Invalid_Type: {
+			if(type.find("list") != string::npos)
+			{
+				//Do something
+				return "{0,1,2}";
+			} else if (type.find("vector") != string::npos)
+			{
+				//Do something
+				return "{0,1,2}";
+			} else if (type.find("map") != string::npos)
+			{
+				//Do something
+				return "{(0,1),(2,3),(4,5)}";
+			} else
+			{
+				return "0";
+			}
+
+			break;
+		}
+
 		default: {
 			return "0";
 			break;

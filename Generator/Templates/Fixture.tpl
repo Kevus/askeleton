@@ -68,7 +68,7 @@ struct Fixture {
 			while(getline(configFile, line))
 			{
 				//All spaces will be removed from the line
-				line.erase(remove_if(line.begin(), line.end(), ::isspace), line.end());
+				//line.erase(remove_if(line.begin(), line.end(), ::isspace), line.end());
 
 				//If it is a comment, it will be ignored
 				if (line[0] == '#' || line == "{" || line.empty())
@@ -445,12 +445,14 @@ struct Fixture {
 		//(1,2),(3,4),(5,6)
 
 		auto general_delimiter = unparsed_map.find(")");
-		vector<string> values_pair;
 
 		while(general_delimiter != string::npos)
 		{
 			auto key = unparsed_map.substr(1, general_delimiter); //1,2
-			auto value = unparsed_map.substr(general_delimiter +1);//,(3,4),(5,6)
+			boost::replace_all(key, "(", "");
+			boost::replace_all(key, ")", "");
+
+			unparsed_map = unparsed_map.substr(general_delimiter + 1);//,(3,4),(5,6)
 
 			auto inside_delimiter = key.find(",");
 
@@ -459,6 +461,8 @@ struct Fixture {
 				auto inside_key = key.substr(0, inside_delimiter);
 				auto inside_value = key.substr(inside_delimiter + 1);
 
+				cout << inside_key << " --- " << inside_value << "\n";
+
 				aux_key = boost::lexical_cast<T>(inside_key);
 				aux_value = boost::lexical_cast<Y>(inside_value);
 
@@ -466,6 +470,7 @@ struct Fixture {
 			}
 
 			general_delimiter = unparsed_map.find(")");
+
 		}
 
 		return result_map;

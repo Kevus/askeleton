@@ -38,6 +38,9 @@ private:
 
 	static const map<string, Options> optionString;
 
+	string getRandomList(string inner_type);
+	string getRandomMap(string key_type, string value_type);
+
 	string getRandomChar();
 	string getRandomShort();
 	string getRandomUnsignedShort();
