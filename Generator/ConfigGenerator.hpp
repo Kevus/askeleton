@@ -57,11 +57,16 @@ public:
 	void generateBoostConstructorAssert(string class_test, string constructor_name, string constructor_cfg_name,
 		map<string, string> param_type,	vector<string> insertion_order);
 
+	//--
+	void addReadTypeToFixture(string type_name, map<string, string> param_type, vector<string> insertion_order);
+
 private:
 	
 	void generateFixture(string outputPath);
 	map<string, string> valuesToChange;
 	bool isFromClass;
+
+	string fixture_path;
 };
 
 #endif

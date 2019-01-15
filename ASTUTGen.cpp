@@ -56,9 +56,6 @@ void ASTUTGen::generateConstructorTest(string source, string constructor_name, A
 	ConfigGenerator cfg_gen(source);
 
 	string constructor_cfg_name = constructor_name;
-
-	//if( function_occurrences.find(function_name) == function_occurrences.end() )
-	//	function_occurences.insert( pair<string, int> (function_name, 1));
 	function_occurrences[constructor_name]++;
 
 	if (function_occurrences[constructor_name] > 1)
@@ -86,6 +83,29 @@ void ASTUTGen::generateConstructorTest(string source, string constructor_name, A
 	bGen.generateBoostConstructorAssert(source, constructor_name, constructor_cfg_name, param_type, insert_order);
 
 }
+
+void ASTUTGen::generateCustomTypeFixture(string source, string type_name, vector<FieldDecl *> parameters, BoostGenerator bGen)
+{
+	ConfigGenerator cfg_gen(source);
+
+	//Get the parameters
+	map<string, string> param_type;
+	vector<string> insert_order;
+
+	string tmp_type;
+
+	for(auto i : parameters)
+	{
+		tmp_type = i->getType().getAsString();
+    	tmp_type = cleanUnnecesaryChars(tmp_type);
+
+    	param_type.insert(pair<string, string>(i->getNameAsString(), tmp_type));
+    	insert_order.push_back(i->getNameAsString());
+	}
+
+	bGen.addReadTypeToFixture(type_name, param_type, insert_order);
+}
+
 
 void ASTUTGen::apply_FD1(const MatchFinder::MatchResult &Result)
 {
@@ -182,6 +202,13 @@ void ASTUTGen::apply_CT1(const MatchFinder::MatchResult &Result)
 
 		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){	
 
+			/*
+			CXXRecordDecl* cl = ...;
+			for (const auto& field : cl->fields) {
+			    const auto& name = field->getName();
+			    const auto field_cl = field->getType()->getAsCXXRecordDecl(); 
+			}*/
+
 			//Get the file name
 			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
 			unsigned first = source_file.find_last_of('/') + 1;
@@ -189,8 +216,26 @@ void ASTUTGen::apply_CT1(const MatchFinder::MatchResult &Result)
 
 			string filename = source_file.substr(first, last-first);
 
+			BoostGenerator bGen(source_file, filename, false);
+
+			//We'll read the fields here
+			vector<FieldDecl *> field_decl;
+
+			for(auto i : UT->fields())
+			{
+				field_decl.push_back(i);
+			}
+
+			generateCustomTypeFixture(filename,
+					UT->getNameAsString(),
+					field_decl,
+					bGen
+				);
+
+			//addReadTypeToFixture(string type_name, map<string, string> param_type, vector<string> insertion_order)
+
 			//Print auxiliary ======================================================================
-           	llvm::outs() << "Found CxxRecordDecl at "
+           	llvm::outs() << "Found CXXRecordDecl (struct-customtype) at "
                          << FullLocation.getSpellingLineNumber() << ":"
                          << FullLocation.getSpellingColumnNumber() << " - ";
 

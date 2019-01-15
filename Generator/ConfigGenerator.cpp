@@ -151,7 +151,7 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass
 	//==========================================================
 	valuesToChange.insert(pair<string,string>("{includes}", ""));
 	valuesToChange.insert(pair<string,string>("{namespaces}", ""));
-	valuesToChange.insert(pair<string,string>("{readObject}", ""));
+	//valuesToChange.insert(pair<string,string>("{readObject}", ""));
 	valuesToChange.insert(pair<string,string>("{newMethods}", ""));
 	//==========================================================
 	//==========================================================
@@ -165,8 +165,9 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass
 		valuesToChange.insert(pair<string,string>("{className}", ""));
 		valuesToChange.insert(pair<string,string>("{classNameTest}", ""));
 	}
+	fixture_path = "Generated/UT/" + cfgName + "/" + cfgName + "_fixture.hpp";
 
-	generateFixture("Generated/UT/" + cfgName + "/" + cfgName + "_fixture.hpp");
+	generateFixture(fixture_path);
 }
 
 void BoostGenerator::generateFixture(string outputPath)
@@ -349,4 +350,95 @@ void BoostGenerator::generateBoostConstructorAssert(string class_test, string co
 		outputFile.close();
 
 	}
+}
+
+void BoostGenerator::addReadTypeToFixture(string type_name, map<string, string> param_type, vector<string> insertion_order)
+{
+	bool existFlag = fileExists(fixture_path);
+
+	if(!existFlag)
+		generateFixture(fixture_path);
+
+	ifstream fixture_file(fixture_path);
+	string fileContent = string( (istreambuf_iterator<char>(fixture_file)),
+						 		   istreambuf_iterator<char>() );
+	
+
+	/**
+	** EXAMPLE
+	**
+	** customType Read_struct_customType(string objectKey)
+	{
+		string object = readObject(objectKey);
+		vector<string> values;
+
+		//1,2,3,4
+		auto delimiter = object.find(",");
+		while(delimiter != string::npos)
+		{
+			auto key = object.substr(0, delimiter);
+			object = object.substr(delimiter + 1);
+
+			values.push_back(key);
+
+			delimiter = object.find(",");
+		}
+
+		int number = boost::lexical_cast<int>(values[0]);
+		string name = boost::lexical_cast<string>(values[1]);
+
+		customType result;
+		result.number = number;
+		result.name = name;
+
+		return result;
+	}
+	**
+	**/
+
+	stringstream read_method;
+	read_method << type_name << " Read_"
+				<< "struct_" << type_name << "(string objectKey)\n\t{\n"
+				<< "\t\tstring object = readObject(objectKey);\n"
+				<< "\t\tboost::replace_all(object, \";\", \"\");\n"
+				<< "\t\tvector<string> values;\n\n"
+				<< "\t\tauto delimiter = object.find(\",\");\n"
+				<< "\t\twhile( delimiter != string::npos )\n\t\t{\n"
+				<< "\t\t\tauto key = object.substr(0, delimiter);\n"
+				<< "\t\t\tobject = object.substr(delimiter + 1);\n\n"
+				<< "\t\t\tvalues.push_back(key);\n\n"
+				<< "\t\t\tdelimiter = object.find(\",\");\n\t\t}\n\n";
+
+	//----
+	read_method << "\t\t" << type_name << " result;\n";
+	//----
+	int pos = 0;
+	for(auto i : insertion_order)
+	{
+		//read_method << "\t\t" << param_type[i] << " " << i << " = ";
+		read_method << "\t\tresult." << i << " = ";
+
+		if(param_type[i] != "string")
+		{
+			read_method	<< "boost::lexical_cast<" << param_type[i] << ">(values["
+						<< pos << "]);\n";
+		} else
+		{
+			read_method << "values[" << pos << "];\n";
+		}
+
+		
+		pos++;
+	}
+
+	read_method << "\n\t\treturn result;\n\t}\n\t//{readObject}";
+
+	boost::replace_all(fileContent, "//{readObject}", read_method.str());
+	ofstream outputFile(fixture_path);
+	outputFile << fileContent;
+
+	fixture_file.close();
+	outputFile.close();
+
+
 }

@@ -21,12 +21,33 @@ DeclarationMatcher CT1 =
 	cxxRecordDecl(
 		unless(isImplicit()),
 		isStruct()
-		).bind("CT1");
+	).bind("CT1");
 
 DeclarationMatcher CC1 =
 	cxxConstructorDecl(
 		unless(isImplicit())
-		).bind("CC1");
+	).bind("CC1");
+
+/***************************************************
+ ** MATCHERS FOR GENERATING DATA
+ ***************************************************/
+DeclarationMatcher DG1 =
+	functionDecl(
+		forEachDescendant(
+			binaryOperator(
+				anyOf(
+					hasOperatorName("=="),
+					hasOperatorName("!="),
+					hasOperatorName(">"),
+					hasOperatorName(">="),
+					hasOperatorName("<"),
+					hasOperatorName("<=")
+				)
+			).bind("DG1")
+		),
+
+		unless(isImplicit())
+	);
 
 //We will reunite and insert into the match map here
 map<string, DeclarationMatcher> createMapMatchers()

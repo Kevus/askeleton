@@ -493,7 +493,7 @@ struct Fixture {
 		BOOST_TEST_MESSAGE(ss.str());
 	}
 
-	{readObject}
+	//{readObject}
 	{newMethods}
 
 	int argc;

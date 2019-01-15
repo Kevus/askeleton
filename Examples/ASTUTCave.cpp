@@ -12,11 +12,13 @@ enum DaysOfTheWeek
 	Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday
 };
 
-struct customType
+/*struct customType
 {
   int number;
   string name;
-};
+};*/
+
+
 
 class FirstClass
 {
@@ -111,3 +113,11 @@ int outsideMethod() {
 int outsideMethod2() {
   return 1;
 }
+
+
+
+/*customType ctypetest() {
+  customType a;
+  return a;
+}*/
+
