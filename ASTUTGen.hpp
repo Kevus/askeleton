@@ -54,6 +54,9 @@ private:
 	void apply_CT1(const MatchFinder::MatchResult &Result);
 	void apply_CC1(const MatchFinder::MatchResult &Result);
 
+	//Generaing test data
+	void apply_DG1(const MatchFinder::MatchResult &Result);
+
 	map<string, int> function_occurrences;
 };
 

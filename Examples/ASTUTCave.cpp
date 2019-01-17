@@ -12,11 +12,13 @@ enum DaysOfTheWeek
 	Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday
 };
 
-/*struct customType
+struct customType
 {
   int number;
   string name;
-};*/
+  double kevin;
+  float valle;
+};
 
 
 
@@ -106,8 +108,13 @@ public:
   }
 };
 
-int outsideMethod() {
-	return 1;
+int conditionalMethod() {
+  int a = 2;
+
+  if(a == 2)
+    a = 1;
+
+	return a;
 }
 
 int outsideMethod2() {
@@ -116,8 +123,8 @@ int outsideMethod2() {
 
 
 
-/*customType ctypetest() {
+customType ctypetest() {
   customType a;
   return a;
-}*/
+}
 

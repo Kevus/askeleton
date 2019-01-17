@@ -60,3 +60,24 @@ function(a):
 		case 3:{}
 	}
 Asignar cada case + un valor extra que sea el último más uno
+
+===================================
+Regla 4: Si tiene parámetros por defecto, comprobar la llamada
+asignando ese valor y sin asignarlo.
+
+
+===================================
+Fichero data:
+
+metodo.parametro=2,4,3,0
+metodo.parametro2=4,5,6
+
+funcion(a, b, c)
+
+map<string, map<string, string>> MÉTODO - PARÁMETRO - TIPO
+
+Si metodo en map
+	Si parametro en mapmap
+		Usa valor de parametro
+si no
+	usa aleatorio

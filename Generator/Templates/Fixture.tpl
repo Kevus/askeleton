@@ -504,3 +504,5 @@ struct Fixture {
 	map<string, map<string, string> > configContent;
 
 };
+
+//{overloadOperator}

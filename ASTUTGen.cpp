@@ -6,6 +6,8 @@ void ASTUTGen::run(const MatchFinder::MatchResult &Result)
 	apply_MD1(Result);
 	apply_CT1(Result);
 	apply_CC1(Result);
+
+	apply_DG1(Result);
 }
 
 //General method for testing functions
@@ -20,9 +22,6 @@ void ASTUTGen::generateFunctionTest(string source_file, string function_name, Ar
 
 	if (function_occurrences[function_name] > 1)
 		function_cfg_name += "_" + to_string(function_occurrences[function_name]);
-
-	
-
 
 	//Get the parameters
 	map<string, string> param_type;
@@ -103,7 +102,7 @@ void ASTUTGen::generateCustomTypeFixture(string source, string type_name, vector
     	insert_order.push_back(i->getNameAsString());
 	}
 
-	bGen.addReadTypeToFixture(type_name, param_type, insert_order);
+	bGen.addReadTypeToFixture(type_name, param_type, insert_order, false, false);
 }
 
 
@@ -277,6 +276,43 @@ void ASTUTGen::apply_CC1(const MatchFinder::MatchResult &Result)
                          << FullLocation.getSpellingColumnNumber() << " - ";
 
             llvm::outs() <<  UT->getNameInfo().getAsString() << " from class " << parentname << "\n";
+            //Print auxiliary ======================================================================
+
+
+			
+		}
+	}
+}
+
+void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
+{
+	ASTContext *Context = Result.Context;
+
+	if (const BinaryOperator *UT = Result.Nodes.getNodeAs<clang::BinaryOperator>("DG1")){
+		
+		FullSourceLoc FullLocation;
+			
+		FullLocation = Context->getFullLoc(UT->getLocStart());
+
+		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){	
+
+			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
+			/*string parentname = UT->getParent()->getName();
+
+			BoostGenerator bGen(source_file, parentname, true);
+
+			generateConstructorTest(
+				 parentname,
+				 parentname,
+				 UT->parameters(),
+				 bGen);*/
+
+			//Print auxiliary ======================================================================
+           	llvm::outs() << "Found BinaryOperator at "
+                         << FullLocation.getSpellingLineNumber() << ":"
+                         << FullLocation.getSpellingColumnNumber() << " - \n";
+
+            //llvm::outs() <<  UT->getNameInfo().getAsString() << " from class " << parentname << "\n";
             //Print auxiliary ======================================================================
 
 

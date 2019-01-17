@@ -352,7 +352,7 @@ void BoostGenerator::generateBoostConstructorAssert(string class_test, string co
 	}
 }
 
-void BoostGenerator::addReadTypeToFixture(string type_name, map<string, string> param_type, vector<string> insertion_order)
+void BoostGenerator::addReadTypeToFixture(string type_name, map<string, string> param_type, vector<string> insertion_order, bool overloaded_eq, bool overloaded_flux)
 {
 	bool existFlag = fileExists(fixture_path);
 
@@ -396,7 +396,9 @@ void BoostGenerator::addReadTypeToFixture(string type_name, map<string, string> 
 	**
 	**/
 
+	stringstream overloaded_operators;
 	stringstream read_method;
+
 	read_method << type_name << " Read_"
 				<< "struct_" << type_name << "(string objectKey)\n\t{\n"
 				<< "\t\tstring object = readObject(objectKey);\n"
@@ -434,6 +436,65 @@ void BoostGenerator::addReadTypeToFixture(string type_name, map<string, string> 
 	read_method << "\n\t\treturn result;\n\t}\n\t//{readObject}";
 
 	boost::replace_all(fileContent, "//{readObject}", read_method.str());
+
+	//Now ovearload operators if needed
+	if(!overloaded_eq)
+	{
+		overloaded_operators << "bool operator==(const "
+							 << type_name << "& a, const "
+							 << type_name << "& b)\n{\n"
+							 << "\tbool result = true;\n";
+
+		int size = insertion_order.size();
+		if(size > 0)
+		{
+			overloaded_operators << "\tresult = (";
+			pos = 1;
+			for(auto i : insertion_order)
+			{
+				overloaded_operators << "a." << i << " == b." << i;
+
+				if(pos != size)
+				{
+					overloaded_operators << ") && \n\t\t(";
+				} else 
+				{
+					overloaded_operators << ");";
+				}
+
+				pos++;
+			}
+		}
+
+		overloaded_operators << "\n\treturn result;\n}\n\n";
+
+		if(overloaded_flux)
+		{
+			overloaded_operators << "//{overloadOperator}";
+			boost::replace_all(fileContent, "//{overloadOperator}", overloaded_operators.str());
+		}
+		
+	}
+
+	if(!overloaded_flux)
+	{
+		overloaded_operators << "ostream& operator<<(ostream& stream, "
+							 << type_name << "& a)\n{\n";
+
+		int size = insertion_order.size();
+		if(size > 0)
+		{
+			for(auto i : insertion_order)
+			{
+				overloaded_operators << "\tstream << a." << i << " << endl;\n";
+			}
+		}
+
+		overloaded_operators << "\n\treturn stream;\n}\n\n//{overloadOperator}";
+
+		boost::replace_all(fileContent, "//{overloadOperator}", overloaded_operators.str());
+	}
+
 	ofstream outputFile(fixture_path);
 	outputFile << fileContent;
 
