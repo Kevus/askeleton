@@ -385,10 +385,11 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 			unsigned last = source_file.find_last_of('.');
 			string filename = source_file.substr(first, last-first);
 
-			if(!isNumeric(LHS_string) && isNumeric(RHS_string))
+
+			if(!isNumeric(LHS_string) && isNumeric(RHS_string) && isInParameters(LHS_string, FD->parameters()))
 			{
 				generateTestData(filename, FD->getName(), LHS_string, RHS_string);
-			} else if (isNumeric(LHS_string) && !isNumeric(RHS_string))
+			} else if (isNumeric(LHS_string) && !isNumeric(RHS_string) && isInParameters(RHS_string, FD->parameters()))
 			{
 				generateTestData(filename, FD->getName(), RHS_string, LHS_string);
 			} else
@@ -449,3 +450,13 @@ std::string ASTUTGen::convertExpressionToString(Expr *E, SourceManager &SM) {
   return std::string(SM.getCharacterData(startLoc), SM.getCharacterData(endLoc) - SM.getCharacterData(startLoc));
 }
 
+bool ASTUTGen::isInParameters(string name, ArrayRef<ParmVarDecl *> params)
+{
+	for(auto it : params)
+	{
+		if(it->getName() == name)
+			return true;
+	}
+
+	return false;
+}

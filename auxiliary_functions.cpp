@@ -87,3 +87,4 @@ bool isNumeric(string query)
 		return false;
 	}
 }
+

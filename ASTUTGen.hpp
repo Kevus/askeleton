@@ -62,7 +62,8 @@ private:
 	map<string, int> function_occurrences;
 
 	std::string convertExpressionToString(Expr *E, SourceManager &SM);
-	
+	bool isInParameters(string name, ArrayRef<ParmVarDecl *> params);
+
 };
 
 #endif

@@ -108,9 +108,7 @@ public:
   }
 };
 
-int conditionalMethod() {
-  int a = 2;
-
+int conditionalMethod(int a, float b) {
   if(a == 2)
     a = 1;
 
@@ -121,9 +119,8 @@ int conditionalMethod() {
 	return a;
 }
 
-int outsideMethod2() {
-  int a, b;
-
+int outsideMethod2(int b) {
+  int a;
   if(3 == b){}
   if(b != 8){}
   if(a == b){}
