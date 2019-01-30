@@ -80,7 +80,7 @@ string cleanUnnecesaryChars(string sToReplace)
 bool isNumeric(string query)
 {
 	try{
-		long number = boost::lexical_cast<long>(query);
+		boost::lexical_cast<long>(query);
 		return true;
 	} catch(boost::bad_lexical_cast &)
 	{

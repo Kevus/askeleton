@@ -116,14 +116,14 @@ void ASTUTGen::generateTestData(string source, string function_name, string para
 	//First, we check the file
 	bool file_exists = fileExists(outputPath);
 
-	if(!file_exists)
+	/*if(!file_exists)
 	{
 		fileContent = function_name + "." + param + ":" + value + "\n";
 		ofstream outputFile(outputPath);
 
 		outputFile << fileContent;
 	} else
-	{
+	{*/
 		ifstream tmp_output(outputPath);
 		for(string line; getline(tmp_output, line); )
 		{
@@ -180,7 +180,7 @@ void ASTUTGen::generateTestData(string source, string function_name, string para
 		ofstream outputFile(outputPath);
 		outputFile << ss.str();
 
-	}
+	//}
 
 }
 
