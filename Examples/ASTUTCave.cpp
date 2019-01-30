@@ -114,10 +114,19 @@ int conditionalMethod() {
   if(a == 2)
     a = 1;
 
+  if(a < 5)
+    if(a != 8)
+    {}
+
 	return a;
 }
 
 int outsideMethod2() {
+  int a, b;
+
+  if(3 == b){}
+  if(b != 8){}
+  if(a == b){}
   return 1;
 }
 

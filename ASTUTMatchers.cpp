@@ -46,7 +46,7 @@ DeclarationMatcher DG1 =
 			).bind("DG1")
 		),
 		unless(isImplicit())
-	);
+	).bind("DG1b");
 
 //We will reunite and insert into the match map here
 map<string, DeclarationMatcher> createMapMatchers()

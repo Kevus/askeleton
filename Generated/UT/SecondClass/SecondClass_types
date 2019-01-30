@@ -1,0 +1,14 @@
+#///////////////////////////////////////////////////////
+#////                                               ////
+#//// AST-UT PROTOTYPE                              ////
+#//// UNIVERSIDAD DE CADIZ - NAVANTIA SISTEMAS      ////
+#////                                               ////
+#///////////////////////////////////////////////////////
+#File generated automatically by AST-UT.
+#File Generated/UT/SecondClass/SecondClass_types
+#Date 30-01-2019 11:52:58
+#///////////////////////////////////////////////////////
+
+testPointer1:int_*,return_int_*
+testPointer2:int_*,return_int_*
+testPointer3:int_*,return_int_*

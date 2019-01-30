@@ -503,3 +503,4 @@ void BoostGenerator::addReadTypeToFixture(string type_name, map<string, string> 
 
 
 }
+

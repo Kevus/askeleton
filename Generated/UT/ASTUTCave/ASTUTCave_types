@@ -1,0 +1,14 @@
+#///////////////////////////////////////////////////////
+#////                                               ////
+#//// AST-UT PROTOTYPE                              ////
+#//// UNIVERSIDAD DE CADIZ - NAVANTIA SISTEMAS      ////
+#////                                               ////
+#///////////////////////////////////////////////////////
+#File generated automatically by AST-UT.
+#File Generated/UT/ASTUTCave/ASTUTCave_types
+#Date 30-01-2019 11:52:58
+#///////////////////////////////////////////////////////
+
+conditionalMethod:return_int
+outsideMethod2:return_int
+ctypetest:return_struct_customType

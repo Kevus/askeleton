@@ -1,0 +1,17 @@
+#///////////////////////////////////////////////////////
+#////                                               ////
+#//// AST-UT PROTOTYPE                              ////
+#//// UNIVERSIDAD DE CADIZ - NAVANTIA SISTEMAS      ////
+#////                                               ////
+#///////////////////////////////////////////////////////
+#File generated automatically by AST-UT.
+#File Generated/UT/FirstClass/FirstClass_types
+#Date 30-01-2019 11:52:57
+#///////////////////////////////////////////////////////
+
+rareMethod:unsigned_int,float,double,return_int
+whoReturnsAChar:return_char
+allLists:list<int>,return_list<int>
+allVector:vector<int>,return_vector<int>
+allMap:map<int, int>,return_map<int, int>
+iObtainAString:string,return_char

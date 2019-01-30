@@ -125,18 +125,63 @@ string RandomValuesGenerator::getRandomValue(string type)
 		}
 
 		case Invalid_Type: {
-			if(type.find("list") != string::npos)
+			if(type.find("list") != string::npos || type.find("vector") != string::npos)
 			{
-				//Do something
-				return "{0,1,2}";
-			} else if (type.find("vector") != string::npos)
-			{
-				//Do something
-				return "{0,1,2}";
+				unsigned first = type.find("<")+1;
+				unsigned last = type.find_last_of(">");
+
+				string newType = type.substr(first, last - first);
+				//newType = newType.substr(first + 1);
+
+				boost::replace_all(newType, " ", "_");
+
+				stringstream ss;
+				ss << "{";
+
+				int for_iterator = 5;
+				for(int i = 0; i < for_iterator; i++)
+				{
+					ss << getRandomValue(newType);
+					if(i < for_iterator - 1)
+						ss << ",";
+				}
+
+				ss << "}";
+
+				return ss.str();
 			} else if (type.find("map") != string::npos)
 			{
+				unsigned first = type.find("<")+1;
+				unsigned last = type.find_last_of(">");
+
+				string newType = type.substr(first, last - first);
+				boost::replace_all(newType, ", ", ",");
+				boost::replace_all(newType, " ", "_");
+
+
+				unsigned splitter = newType.find(",");
+				string firstType = newType.substr(0, splitter);
+				string secondType = newType.substr(splitter+1, last - splitter);
+
+				//cout << "first: " << firstType << "\nsecond: " << secondType << "\n";
+				stringstream ss;
+				ss << "{";
+
+				int for_iterator = 5;
+				for(int i = 0; i < for_iterator; i++)
+				{
+					ss << "(" << getRandomValue(firstType)
+					   << "," << getRandomValue(secondType)
+					   << ")";
+
+					if(i < for_iterator - 1)
+						ss << ",";
+				}
+
+				ss << "}";
+
 				//Do something
-				return "{(0,1),(2,3),(4,5)}";
+				return ss.str();
 			} else
 			{
 				return "0";

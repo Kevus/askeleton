@@ -76,3 +76,14 @@ string cleanUnnecesaryChars(string sToReplace)
 
 	return sToReplace;
 }
+
+bool isNumeric(string query)
+{
+	try{
+		long number = boost::lexical_cast<long>(query);
+		return true;
+	} catch(boost::bad_lexical_cast &)
+	{
+		return false;
+	}
+}
