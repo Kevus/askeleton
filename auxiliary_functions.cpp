@@ -80,11 +80,15 @@ string cleanUnnecesaryChars(string sToReplace)
 bool isNumeric(string query)
 {
 	try{
-		boost::lexical_cast<long>(query);
+		boost::lexical_cast<double>(query);
 		return true;
 	} catch(boost::bad_lexical_cast &)
 	{
-		return false;
+		return (
+			query.find('\'') != string::npos ||
+			query.find('\"') != string::npos ||
+			query == "true" || query == "false"
+		);
 	}
 }
 

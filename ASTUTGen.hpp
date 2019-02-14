@@ -49,12 +49,16 @@ private:
 	void generateConstructorTest(string source, string constructor_name, ArrayRef<ParmVarDecl *> parameters, BoostGenerator bgen);
 	void generateCustomTypeFixture(string source, string type_name, vector<FieldDecl *> parameters, BoostGenerator bGen);
 
-	void generateTestData(string source, string function_name, string param, string value);
+	void generateTestData(string source, string function_name, string param, string type, string value);
+	vector<string> obtainTestData(string type, string value);
 
 	void apply_FD1(const MatchFinder::MatchResult &Result);
 	void apply_MD1(const MatchFinder::MatchResult &Result);
 	void apply_CT1(const MatchFinder::MatchResult &Result);
 	void apply_CC1(const MatchFinder::MatchResult &Result);
+
+	//experimental
+	void apply_PD1(const MatchFinder::MatchResult &Result);
 
 	//Generaing test data
 	void apply_DG1(const MatchFinder::MatchResult &Result);
@@ -62,7 +66,7 @@ private:
 	map<string, int> function_occurrences;
 
 	std::string convertExpressionToString(Expr *E, SourceManager &SM);
-	bool isInParameters(string name, ArrayRef<ParmVarDecl *> params);
+	bool isInParameters(string name, ArrayRef<ParmVarDecl *> params, string& type);
 
 };
 

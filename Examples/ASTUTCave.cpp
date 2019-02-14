@@ -15,9 +15,8 @@ enum DaysOfTheWeek
 struct customType
 {
   int number;
-  string name;
-  double kevin;
-  float valle;
+  std::string name;
+  double other_num;
 };
 
 
@@ -108,13 +107,19 @@ public:
   }
 };
 
-int conditionalMethod(int a, float b) {
+int conditionalMethod(int a, float f, bool c, char x) {
   if(a == 2)
     a = 1;
 
   if(a < 5)
     if(a != 8)
     {}
+
+  if(c == true){}
+  if(x == 'd'){}
+  if(f > 8.5){}
+
+
 
 	return a;
 }

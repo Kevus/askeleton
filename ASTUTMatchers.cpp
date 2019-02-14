@@ -29,6 +29,19 @@ DeclarationMatcher CC1 =
 	).bind("CC1");
 
 /***************************************************
+ ** EXPERIMENTAL
+ ***************************************************/
+/*DeclarationMatcher PD1 =
+	callExpr(
+		isExpansionInMainFile(),
+		callee(expr()),
+		hasAncestor(
+			recordDecl().bind("caller")
+		)
+	).bind("callee");*/
+
+
+/***************************************************
  ** MATCHERS FOR GENERATING DATA
  ***************************************************/
 DeclarationMatcher DG1 =
@@ -57,6 +70,9 @@ map<string, DeclarationMatcher> createMapMatchers()
 	matchs.insert(pair<string, DeclarationMatcher>("MD1", MD1));
 	matchs.insert(pair<string, DeclarationMatcher>("CT1", CT1));
 	matchs.insert(pair<string, DeclarationMatcher>("CC1", CC1));
+
+	//matchs.insert(pair<string, DeclarationMatcher>("PD1", PD1));
+
 	matchs.insert(pair<string, DeclarationMatcher>("DG1", DG1));
 
 	return matchs;

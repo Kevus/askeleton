@@ -479,7 +479,7 @@ void BoostGenerator::addReadTypeToFixture(string type_name, map<string, string> 
 	if(!overloaded_flux)
 	{
 		overloaded_operators << "ostream& operator<<(ostream& stream, "
-							 << type_name << "& a)\n{\n";
+							 << "const " << type_name << "& a)\n{\n";
 
 		int size = insertion_order.size();
 		if(size > 0)

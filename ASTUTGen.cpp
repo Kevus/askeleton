@@ -40,9 +40,9 @@ void ASTUTGen::generateFunctionTest(string source_file, string function_name, Ar
     	insert_order.push_back(i->getQualifiedNameAsString());
     }
 
-    CustomGenerator cgen(source_file);
+    /*CustomGenerator cgen(source_file);
     cgen.generateTypesFile(function_name, param_type, insert_order, rtn_type);
-    cgen.generateTestCasesFile(function_name, param_type, insert_order, rtn_type);
+    cgen.generateTestCasesFile(function_name, param_type, insert_order, rtn_type);*/
 
     cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order, rtn_type);
     bGen.generateBoostAssert(source_file, function_name, function_cfg_name, param_type, insert_order, rtn_type);
@@ -105,7 +105,7 @@ void ASTUTGen::generateCustomTypeFixture(string source, string type_name, vector
 	bGen.addReadTypeToFixture(type_name, param_type, insert_order, false, false);
 }
 
-void ASTUTGen::generateTestData(string source, string function_name, string param, string value)
+void ASTUTGen::generateTestData(string source, string function_name, string param, string type, string value)
 {
 	//function.value=a,b,c,d,e
 	map<string, vector<string>> function_values;
@@ -114,7 +114,7 @@ void ASTUTGen::generateTestData(string source, string function_name, string para
 	string fileContent;
 
 	//First, we check the file
-	bool file_exists = fileExists(outputPath);
+	//bool file_exists = fileExists(outputPath);
 
 	/*if(!file_exists)
 	{
@@ -124,64 +124,110 @@ void ASTUTGen::generateTestData(string source, string function_name, string para
 		outputFile << fileContent;
 	} else
 	{*/
-		ifstream tmp_output(outputPath);
-		for(string line; getline(tmp_output, line); )
-		{
-			//for each line...
-			auto delimiter = line.find(":");
+	ifstream tmp_output(outputPath);
+	for(string line; getline(tmp_output, line); )
+	{
+		//for each line...
+		auto delimiter = line.find(":");
 
-			string fvalue = line.substr(0, delimiter);
+		string fvalue = line.substr(0, delimiter);
+		line = line.substr(delimiter + 1);
+
+		delimiter = line.find(",");
+		while(delimiter != string::npos)
+		{
+			auto key = line.substr(0, delimiter);
 			line = line.substr(delimiter + 1);
 
+			values.push_back(key);
+
 			delimiter = line.find(",");
-			while(delimiter != string::npos)
-			{
-				auto key = line.substr(0, delimiter);
-				line = line.substr(delimiter + 1);
-
-				values.push_back(key);
-
-				delimiter = line.find(",");
-			}
-
-			values.push_back(line);
-			function_values.insert(std::pair<string, vector<string>>(fvalue, values));
-			values.clear();
 		}
 
-		if(function_values.find(function_name + "." + param) != function_values.end()){
-			values = function_values.at(function_name + "." + param);
-		}
+		values.push_back(line);
+		function_values.insert(std::pair<string, vector<string>>(fvalue, values));
+		values.clear();
+	}
 
-		int realv = boost::lexical_cast<int>(value);
-		vector<int> realvalues{realv - 1, realv, realv + 1};
-		for(auto it : realvalues)
-			values.push_back(to_string(it));
+	if(function_values.find(function_name + "." + param) != function_values.end()){
+		values = function_values.at(function_name + "." + param);
+	}
 
-		function_values[(function_name + "." + param)] = values;
-		//function_values.insert(std::pair<string, vector<string>>((function_name + "." + param), values));
+	//If the value is integer
+	//Idea: Crear metodo que devuelva vector<string> con los valores
+	/*int realv = boost::lexical_cast<int>(value);
+	vector<int> realvalues{realv - 1, realv, realv + 1};
+	for(auto it : realvalues)
+		values.push_back(to_string(it));*/
 
-		stringstream ss;
+	vector<string> realvalues = obtainTestData(type, value);
+	for(auto it : realvalues)
+		values.push_back(it);
 
-		for (auto it : function_values)
+	function_values[(function_name + "." + param)] = values;
+	//function_values.insert(std::pair<string, vector<string>>((function_name + "." + param), values));
+
+	stringstream ss;
+
+	for (auto it : function_values)
+	{
+		ss << it.first << ":";
+
+		for (unsigned long i = 0; i < it.second.size(); i++)
 		{
-			ss << it.first << ":";
-
-			for (int i = 0; i < it.second.size(); i++)
-			{
-				ss << it.second[i];
-				if (i < it.second.size() - 1)
-					ss << ",";
-			}
-
-			ss << "\n";
+			ss << it.second[i];
+			if (i < it.second.size() - 1)
+				ss << ",";
 		}
 
-		ofstream outputFile(outputPath);
-		outputFile << ss.str();
+		ss << "\n";
+	}
+
+	ofstream outputFile(outputPath);
+	outputFile << ss.str();
 
 	//}
 
+}
+
+vector<string> ASTUTGen::obtainTestData(string type, string value)
+{
+	vector<string> result;
+	boost::replace_all(value, "\'", "");
+	boost::replace_all(value, "\"", "");
+	result.push_back(value);
+
+	if(type == "bool" || type == "_Bool")
+	{
+		result.push_back(
+			(value == "true") ? "false" : "true"
+		);
+	} else if(type == "string")
+	{
+		result.push_back(value + "_another");
+	} else if(type == "char")
+	{
+		char res = boost::lexical_cast<char>(value);
+		result.push_back(boost::lexical_cast<string>(res+1));
+		result.push_back(boost::lexical_cast<string>(res-1));
+	} else if(type == "int")
+	{
+		int res = boost::lexical_cast<int>(value);
+		result.push_back(boost::lexical_cast<string>(res+1));
+		result.push_back(boost::lexical_cast<string>(res-1));
+	} else if(type == "double")
+	{
+		double res = boost::lexical_cast<double>(value);
+		result.push_back(boost::lexical_cast<string>(res+1));
+		result.push_back(boost::lexical_cast<string>(res-1));
+	} else if(type == "float")
+	{
+		float res = boost::lexical_cast<float>(value);
+		result.push_back(boost::lexical_cast<string>(res+1));
+		result.push_back(boost::lexical_cast<string>(res-1));
+	}
+
+	return result;
 }
 
 
@@ -363,6 +409,11 @@ void ASTUTGen::apply_CC1(const MatchFinder::MatchResult &Result)
 	}
 }
 
+void ASTUTGen::apply_PD1(const MatchFinder::MatchResult &Result)
+{
+	ASTContext *Context = Result.Context;
+}
+
 void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 {
 	ASTContext *Context = Result.Context;
@@ -378,20 +429,23 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 			
 			string LHS_string = convertExpressionToString(UT->getLHS(), Context->getSourceManager());
 			string RHS_string = convertExpressionToString(UT->getRHS(), Context->getSourceManager());
-			//llvm::outs() << "LHS: " << LHS_string << " - RHS: " << RHS_string << "\n";
+			string LHS_type = UT->getLHS()->getType().getAsString();
+			string RHS_type = UT->getRHS()->getType().getAsString();
+
+			llvm::outs() << "LHS: " << LHS_string << " " << LHS_type << " - RHS: " << RHS_string << " " << RHS_type << "\n";
 
 			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
 			unsigned first = source_file.find_last_of('/') + 1;
 			unsigned last = source_file.find_last_of('.');
 			string filename = source_file.substr(first, last-first);
 
-
-			if(!isNumeric(LHS_string) && isNumeric(RHS_string) && isInParameters(LHS_string, FD->parameters()))
+			string type;
+			if(!isNumeric(LHS_string) && isNumeric(RHS_string) && isInParameters(LHS_string, FD->parameters(), type))
 			{
-				generateTestData(filename, FD->getName(), LHS_string, RHS_string);
-			} else if (isNumeric(LHS_string) && !isNumeric(RHS_string) && isInParameters(RHS_string, FD->parameters()))
+				generateTestData(filename, FD->getName(), LHS_string, type, RHS_string);
+			} else if (isNumeric(LHS_string) && !isNumeric(RHS_string) && isInParameters(RHS_string, FD->parameters(), type))
 			{
-				generateTestData(filename, FD->getName(), RHS_string, LHS_string);
+				generateTestData(filename, FD->getName(), RHS_string, type, LHS_string);
 			} else
 			{
 				llvm::outs() << "non-numeric condition\n";
@@ -450,12 +504,16 @@ std::string ASTUTGen::convertExpressionToString(Expr *E, SourceManager &SM) {
   return std::string(SM.getCharacterData(startLoc), SM.getCharacterData(endLoc) - SM.getCharacterData(startLoc));
 }
 
-bool ASTUTGen::isInParameters(string name, ArrayRef<ParmVarDecl *> params)
+bool ASTUTGen::isInParameters(string name, ArrayRef<ParmVarDecl *> params, string& type)
 {
 	for(auto it : params)
 	{
 		if(it->getName() == name)
+		{
+			type = it->getOriginalType().getAsString();
+			llvm::outs() << "TYPE --- " << type << "\n";
 			return true;
+		}
 	}
 
 	return false;
