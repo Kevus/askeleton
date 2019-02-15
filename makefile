@@ -49,4 +49,4 @@ astut.o: auxiliary_functions.hpp ASTUTGen.hpp ASTUTMatchers.hpp Generator/Random
 	auxiliary_functions.o ASTUTGen.o ASTUTMatchers.o Generator/RandomValuesGenerator.o Generator/CustomGenerator.o Generator/ConfigGenerator.o
 
 clean:
-	rm -f *.o Generator/*.o astut
+	rm -f -r *.o Generator/*.o Generated/UT/* Generated_LOG/* astut

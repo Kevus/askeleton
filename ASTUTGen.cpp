@@ -432,7 +432,7 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 			string LHS_type = UT->getLHS()->getType().getAsString();
 			string RHS_type = UT->getRHS()->getType().getAsString();
 
-			llvm::outs() << "LHS: " << LHS_string << " " << LHS_type << " - RHS: " << RHS_string << " " << RHS_type << "\n";
+			//llvm::outs() << "LHS: " << LHS_string << " " << LHS_type << " - RHS: " << RHS_string << " " << RHS_type << "\n";
 
 			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
 			unsigned first = source_file.find_last_of('/') + 1;
@@ -511,7 +511,6 @@ bool ASTUTGen::isInParameters(string name, ArrayRef<ParmVarDecl *> params, strin
 		if(it->getName() == name)
 		{
 			type = it->getOriginalType().getAsString();
-			llvm::outs() << "TYPE --- " << type << "\n";
 			return true;
 		}
 	}

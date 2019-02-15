@@ -409,7 +409,8 @@ void BoostGenerator::addReadTypeToFixture(string type_name, map<string, string> 
 				<< "\t\t\tauto key = object.substr(0, delimiter);\n"
 				<< "\t\t\tobject = object.substr(delimiter + 1);\n\n"
 				<< "\t\t\tvalues.push_back(key);\n\n"
-				<< "\t\t\tdelimiter = object.find(\",\");\n\t\t}\n\n";
+				<< "\t\t\tdelimiter = object.find(\",\");\n\t\t}\n"
+				<< "\t\tvalues.push_back(object);\n\n";
 
 	//----
 	read_method << "\t\t" << type_name << " result;\n";

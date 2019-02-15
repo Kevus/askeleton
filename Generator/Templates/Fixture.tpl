@@ -105,6 +105,7 @@ struct Fixture {
 				auto delimiter = line.find("=");
 				auto key = line.substr(0, delimiter);
 				auto value = line.substr(delimiter + 1);
+				boost::replace_all(key, "\t", "");
 
 				//Value will have the form [ value;#type ]
 				paramValues.insert( pair<string,string>(key, value) );
@@ -371,6 +372,11 @@ struct Fixture {
 	bool Read_bool(string objectKey)
 	{
 		return (readObject(objectKey) == "true");
+	}
+
+	bool Read__Bool(string objectKey)
+	{
+		return Read_bool(objectKey);
 	}
 
 	string Read_string(string objectKey)
