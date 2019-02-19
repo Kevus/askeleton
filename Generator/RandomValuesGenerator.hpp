@@ -30,7 +30,7 @@ class RandomValuesGenerator
 public:
 	RandomValuesGenerator(){}
 
-	string getRandomValue(string type);
+	string getRandomValue(string type, int nparams = 5);
 private:
 	random_device rd;
 

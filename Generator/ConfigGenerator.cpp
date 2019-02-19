@@ -242,6 +242,30 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 							     return_type.find("vector") != string::npos ||
 							     return_type.find("map") != string::npos);
 
+		//Lets check pointers...
+		for(auto i : insertion_order)
+		{
+			if(param_type[i].find("_&") != string::npos)
+			{
+				ptype = param_type[i];
+				boost::replace_all(ptype, "_&", "");
+
+				test_case << "\n\t" << ptype << " " 
+						  << function_cfg_name << "_" << i << " = Read_" << ptype
+						  << "(\"" << function_cfg_name << "." << i << "\");\n"; 
+
+			}
+		}
+
+		if(return_type.find("_&") != string::npos)
+		{
+			ptype = return_type;
+			boost::replace_all(ptype, "_&", "");
+
+			test_case << "\t" << ptype << " return_" << function_cfg_name
+					  << " = Read_" << ptype << "(\"" << function_cfg_name << ".return_" << return_type << "\");\n";
+		}
+
 		//Now we will create the assertion sentence
 		if(!return_container)
 			test_case << "\tBOOST_CHECK_EQUAL(";
@@ -253,10 +277,18 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 		
 		test_case << function_name << "(";
 
+
 		for(auto i : insertion_order)
 		{
-			test_case << "Read_" << param_type[i] << "(\""
-					  << function_cfg_name << "." << i << "\")";
+			if(param_type[i].find("_&") == string::npos)
+			{
+				test_case << "Read_" << param_type[i] << "(\""
+						  << function_cfg_name << "." << i << "\")";
+			} else
+			{
+				test_case << function_cfg_name << "_" << i;
+			}
+
 			if (i != insertion_order.back()) test_case << ",";
 		}
 
@@ -266,7 +298,10 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 		else
 			test_case << ") == ";
 
-		test_case << "Read_" << return_type << "(\"" << function_name << ".return_" << return_type << "\"))";
+		if(return_type.find("_&") == string::npos)
+			test_case << "Read_" << return_type << "(\"" << function_name << ".return_" << return_type << "\"))";
+		else
+			test_case << "return_" << function_cfg_name << ")";
 
 		if(!return_container)
 			test_case << ";";

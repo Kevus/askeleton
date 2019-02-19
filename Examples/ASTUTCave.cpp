@@ -136,6 +136,14 @@ int outsideMethod2(int b) {
 
 customType ctypetest() {
   customType a;
+  a.number = 1;
+  a.name = "kevin";
+  a.other_num = 2.0;
+  return a;
+}
+
+int& ihavepointers(int& a)
+{
   return a;
 }
 

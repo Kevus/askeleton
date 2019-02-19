@@ -55,7 +55,7 @@ Options RandomValuesGenerator::resolveOption(string type)
 		return Invalid_Type;
 }
 
-string RandomValuesGenerator::getRandomValue(string type)
+string RandomValuesGenerator::getRandomValue(string type, int nparams)
 {
 	switch (resolveOption(type))
 	{
@@ -138,11 +138,11 @@ string RandomValuesGenerator::getRandomValue(string type)
 				stringstream ss;
 				ss << "{";
 
-				int for_iterator = 5;
-				for(int i = 0; i < for_iterator; i++)
+				//int for_iterator = 5;
+				for(int i = 0; i < nparams; i++)
 				{
 					ss << getRandomValue(newType);
-					if(i < for_iterator - 1)
+					if(i < nparams - 1)
 						ss << ",";
 				}
 
@@ -167,20 +167,32 @@ string RandomValuesGenerator::getRandomValue(string type)
 				stringstream ss;
 				ss << "{";
 
-				int for_iterator = 5;
-				for(int i = 0; i < for_iterator; i++)
+				//int for_iterator = 5;
+				for(int i = 0; i < nparams; i++)
 				{
 					ss << "(" << getRandomValue(firstType)
 					   << "," << getRandomValue(secondType)
 					   << ")";
 
-					if(i < for_iterator - 1)
+					if(i < nparams - 1)
 						ss << ",";
 				}
 
 				ss << "}";
 
 				//Do something
+				return ss.str();
+			} else if(type.find("struct") != string::npos)
+			{
+				stringstream ss;
+				for(int i = 0; i < nparams; i++)
+				{
+					ss << getRandomValue("int");
+
+					if(i < nparams - 1)
+						ss << ",";
+				}
+
 				return ss.str();
 			} else
 			{

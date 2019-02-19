@@ -411,7 +411,7 @@ void ASTUTGen::apply_CC1(const MatchFinder::MatchResult &Result)
 
 void ASTUTGen::apply_PD1(const MatchFinder::MatchResult &Result)
 {
-	ASTContext *Context = Result.Context;
+	//ASTContext *Context = Result.Context;
 }
 
 void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
@@ -450,35 +450,6 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 			{
 				llvm::outs() << "non-numeric condition\n";
 			}
-
-
-
-			//generateTestData(filename, FD->getName(), LHS_string, RHS_string);
-			/*if (DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(UT->getLHS()))
-			{
-				if (VarDecl *VD = dyn_cast<VarDecl>(DRE->getDecl()))
-				{
-					llvm::outs() << "LHS is " << VD->getQualifiedNameAsString() << "\n";
-				}
-			}
-
-			if (DeclRefExpr *DRE = dyn_cast<DeclRefExpr>(UT->getRHS()))
-			{
-				if (VarDecl *VD = dyn_cast<VarDecl>(DRE->getDecl()))
-				{
-					llvm::outs() << "RHS is " << VD->getQualifiedNameAsString() << "\n";
-				}
-			}*/
-
-			/*string parentname = UT->getParent()->getName();
-
-			BoostGenerator bGen(source_file, parentname, true);
-
-			generateConstructorTest(
-				 parentname,
-				 parentname,
-				 UT->parameters(),
-				 bGen);*/
 
 			//Print auxiliary ======================================================================
            	llvm::outs() << "Found BinaryOperator at "
