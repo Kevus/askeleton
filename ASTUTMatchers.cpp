@@ -61,6 +61,14 @@ DeclarationMatcher DG1 =
 		unless(isImplicit())
 	).bind("DG1b");
 
+DeclarationMatcher DG2 =
+	functionDecl(
+		forEachDescendant(
+			switchStmt().bind("DG2")
+		),
+		unless(isImplicit())
+	).bind("DG2b");
+
 //We will reunite and insert into the match map here
 map<string, DeclarationMatcher> createMapMatchers()
 {
@@ -74,6 +82,7 @@ map<string, DeclarationMatcher> createMapMatchers()
 	//matchs.insert(pair<string, DeclarationMatcher>("PD1", PD1));
 
 	matchs.insert(pair<string, DeclarationMatcher>("DG1", DG1));
+	matchs.insert(pair<string, DeclarationMatcher>("DG2", DG2));
 
 	return matchs;
 }

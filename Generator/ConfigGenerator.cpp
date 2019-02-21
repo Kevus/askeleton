@@ -245,25 +245,38 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 		//Lets check pointers...
 		for(auto i : insertion_order)
 		{
-			if(param_type[i].find("_&") != string::npos)
+			if(param_type[i].find("_&") != string::npos ||
+			   param_type[i].find("const_") != string::npos)
 			{
 				ptype = param_type[i];
-				boost::replace_all(ptype, "_&", "");
 
-				test_case << "\n\t" << ptype << " " 
-						  << function_cfg_name << "_" << i << " = Read_" << ptype
+				boost::replace_all(ptype, "_", " "); //First delete '_' for using it as a type
+				boost::replace_all(ptype, " &", ""); //Then delete const and/or '&'
+
+				test_case << "\n\t" << ptype << " ";
+
+				boost::replace_all(ptype, " ", "_");
+				boost::replace_all(ptype, "const_", "");
+
+				test_case << function_cfg_name << "_" << i << " = Read_" << ptype
 						  << "(\"" << function_cfg_name << "." << i << "\");\n"; 
 
 			}
 		}
 
-		if(return_type.find("_&") != string::npos)
+		if(return_type.find("_&") != string::npos ||
+			return_type.find("const_") != string::npos)
 		{
 			ptype = return_type;
-			boost::replace_all(ptype, "_&", "");
+			boost::replace_all(ptype, "_", " "); 
+			boost::replace_all(ptype, " &", "");
 
-			test_case << "\t" << ptype << " return_" << function_cfg_name
-					  << " = Read_" << ptype << "(\"" << function_cfg_name << ".return_" << return_type << "\");\n";
+			test_case << "\t" << ptype << " return_" << function_cfg_name;
+
+			boost::replace_all(ptype, " ", "_");
+			boost::replace_all(ptype, "const_", "");
+
+			test_case << " = Read_" << ptype << "(\"" << function_cfg_name << ".return_" << return_type << "\");\n";
 		}
 
 		//Now we will create the assertion sentence
@@ -280,7 +293,7 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 
 		for(auto i : insertion_order)
 		{
-			if(param_type[i].find("_&") == string::npos)
+			if(param_type[i].find("_&") == string::npos && param_type[i].find("const_") == string::npos)
 			{
 				test_case << "Read_" << param_type[i] << "(\""
 						  << function_cfg_name << "." << i << "\")";
@@ -298,7 +311,7 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 		else
 			test_case << ") == ";
 
-		if(return_type.find("_&") == string::npos)
+		if(return_type.find("_&") == string::npos && return_type.find("const_") == string::npos)
 			test_case << "Read_" << return_type << "(\"" << function_name << ".return_" << return_type << "\"))";
 		else
 			test_case << "return_" << function_cfg_name << ")";
@@ -366,10 +379,24 @@ void BoostGenerator::generateBoostConstructorAssert(string class_test, string co
 		test_case << "\tBOOST_CHECK(new ";
 		test_case << constructor_name << "(";
 
-		for(auto i : insertion_order)
+		/*for(auto i : insertion_order)
 		{
 			test_case << "Read_" << param_type[i] << "(\""
 					  << constructor_cfg_name << "." << i << "\")";
+			if (i != insertion_order.back()) test_case << ",";
+		}*/
+
+		for(auto i : insertion_order)
+		{
+			if(param_type[i].find("_&") == string::npos && param_type[i].find("const_") == string::npos)
+			{
+				test_case << "Read_" << param_type[i] << "(\""
+						  << constructor_cfg_name << "." << i << "\")";
+			} else
+			{
+				test_case << constructor_cfg_name << "_" << i;
+			}
+
 			if (i != insertion_order.back()) test_case << ",";
 		}
 
@@ -451,10 +478,13 @@ void BoostGenerator::addReadTypeToFixture(string type_name, map<string, string> 
 	read_method << "\t\t" << type_name << " result;\n";
 	//----
 	int pos = 0;
+	int size = insertion_order.size();
+
+	read_method << "\t\tif( values.size() >= " << size << ")\n\t\t{\n";
 	for(auto i : insertion_order)
 	{
 		//read_method << "\t\t" << param_type[i] << " " << i << " = ";
-		read_method << "\t\tresult." << i << " = ";
+		read_method << "\t\t\tresult." << i << " = ";
 
 		if(param_type[i] != "string")
 		{
@@ -468,6 +498,7 @@ void BoostGenerator::addReadTypeToFixture(string type_name, map<string, string> 
 		
 		pos++;
 	}
+	read_method << "\t\t}\n";
 
 	read_method << "\n\t\treturn result;\n\t}\n\t//{readObject}";
 

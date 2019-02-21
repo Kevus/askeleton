@@ -8,6 +8,7 @@ void ASTUTGen::run(const MatchFinder::MatchResult &Result)
 	apply_CC1(Result);
 
 	apply_DG1(Result);
+	apply_DG2(Result);
 }
 
 //General method for testing functions
@@ -465,6 +466,70 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 	}
 }
 
+void ASTUTGen::apply_DG2(const MatchFinder::MatchResult &Result)
+{
+	ASTContext *Context = Result.Context;
+
+	if (const SwitchStmt *UT = Result.Nodes.getNodeAs<clang::SwitchStmt>("DG2")){
+
+		const FunctionDecl *FD = Result.Nodes.getNodeAs<clang::FunctionDecl>("DG2b");
+		FullSourceLoc FullLocation;
+			
+		FullLocation = Context->getFullLoc(UT->getLocStart());
+
+		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){	
+			
+			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
+			unsigned first = source_file.find_last_of('/') + 1;
+			unsigned last = source_file.find_last_of('.');
+			string filename = source_file.substr(first, last-first);
+
+
+			//string test = UT->getCond()->getAsString();
+			//llvm::outs() << "test: " << test << "\n";
+			//string cname = UT->getCond()->getName();
+			//string ctype = UT->getCond()->getType().getAsString();
+			
+			//llvm::outs() << /*"Cname: " << cname << */" Ctype: " << ctype << "\n";		
+
+
+			/*string LHS_string = convertExpressionToString(UT->getLHS(), Context->getSourceManager());
+			string RHS_string = convertExpressionToString(UT->getRHS(), Context->getSourceManager());
+			string LHS_type = UT->getLHS()->getType().getAsString();
+			string RHS_type = UT->getRHS()->getType().getAsString();
+
+			//llvm::outs() << "LHS: " << LHS_string << " " << LHS_type << " - RHS: " << RHS_string << " " << RHS_type << "\n";
+
+			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
+			unsigned first = source_file.find_last_of('/') + 1;
+			unsigned last = source_file.find_last_of('.');
+			string filename = source_file.substr(first, last-first);
+
+			string type;
+			if(!isNumeric(LHS_string) && isNumeric(RHS_string) && isInParameters(LHS_string, FD->parameters(), type))
+			{
+				generateTestData(filename, FD->getName(), LHS_string, type, RHS_string);
+			} else if (isNumeric(LHS_string) && !isNumeric(RHS_string) && isInParameters(RHS_string, FD->parameters(), type))
+			{
+				generateTestData(filename, FD->getName(), RHS_string, type, LHS_string);
+			} else
+			{
+				llvm::outs() << "non-numeric condition\n";
+			}*/
+
+			//Print auxiliary ======================================================================
+           	llvm::outs() << "Found SwitchStmt at "
+                         << FullLocation.getSpellingLineNumber() << ":"
+                         << FullLocation.getSpellingColumnNumber() << " - ";
+
+            llvm::outs() << " from function " << FD->getName() <<  "\n";
+            //Print auxiliary ======================================================================
+
+
+			
+		}
+	}
+}
 std::string ASTUTGen::convertExpressionToString(Expr *E, SourceManager &SM) {
   clang::LangOptions lopt;
 

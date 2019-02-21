@@ -62,6 +62,7 @@ private:
 
 	//Generaing test data
 	void apply_DG1(const MatchFinder::MatchResult &Result);
+	void apply_DG2(const MatchFinder::MatchResult &Result);
 
 	map<string, int> function_occurrences;
 

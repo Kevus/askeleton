@@ -147,3 +147,36 @@ int& ihavepointers(int& a)
   return a;
 }
 
+string methodwithswitch(int a)
+{
+  switch(a) {
+    case 1: return "hola";
+    case 2: return "adios";
+    default: return "kevin";
+  }
+}
+
+/*const char* TestConstChar(const char* c)
+{
+  return c;
+}*/
+
+const int a(const int b)
+{
+  return b;
+}
+
+/*int functionwithconstchar(const char* c)
+{
+  return 0;
+}
+
+int* KevinValle(int* a)
+{
+  return a;
+}
+
+int Gomez(const int* a)
+{
+  return 0;
+}*/
