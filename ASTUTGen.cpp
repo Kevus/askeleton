@@ -103,7 +103,7 @@ void ASTUTGen::generateCustomTypeFixture(string source, string type_name, vector
     	insert_order.push_back(i->getNameAsString());
 	}
 
-	bGen.addReadTypeToFixture(type_name, param_type, insert_order, false, false);
+	bGen.addStructReadToFixture(type_name, param_type, insert_order, false, false);
 }
 
 void ASTUTGen::generateTestData(string source, string function_name, string param, string type, string value)

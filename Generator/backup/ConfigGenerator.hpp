@@ -58,7 +58,7 @@ public:
 		map<string, string> param_type,	vector<string> insertion_order);
 
 	//--
-	void addStructReadToFixture(string type_name, map<string, string> param_type, vector<string> insertion_order, bool overloaded_eq, bool overloaded_flux);
+	void addReadTypeToFixture(string type_name, map<string, string> param_type, vector<string> insertion_order, bool overloaded_eq, bool overloaded_flux);
 	void addNewTypeToFixture(string type_name, string fixture_path);
 
 private:
@@ -69,22 +69,10 @@ private:
 
 	map<string, string> valuesToChange;
 	vector<string> defaultTypes;
+
 	bool isFromClass;
 
 	string fixture_path;
 };
-
-/*class TestDataGenerator
-{
-public:
-	TestDataGenerator(string outputPath);
-
-
-
-private:
-	void createFile(string outputPath);
-
-	map<string, string> method_value; //map<"method.param.type", "value">
-};*/
 
 #endif

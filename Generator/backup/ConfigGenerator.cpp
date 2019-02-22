@@ -46,8 +46,39 @@ map<string, string> ConfigGenerator::defaultValues =
 	{"std::string", "dflt"},
 	{"std::__cxx11::string", "dflt"},
 	{"bool", "false"},
+	{"char_*", "a"},
+	{"signed_char_*", "a"},
+	{"unsigned_char_*", "a"},
+	{"short_*", "0"},
+	{"short_int_*", "0"},
+	{"signed_short_*", "0"},
+	{"signed_short_int_*", "0"},
+	{"unsigned_short_*", "0"},
+	{"unsigned_short_int_*", "0"},
+	{"int_*", "0"},
+	{"signed_int_*", "0"},
+	{"unsigned_*", "0"},
+	{"unsigned_int_*", "0"},
+	{"long_*", "0"},
+	{"long_int_*", "0"},
+	{"signed_long_*", "0"},
+	{"signed_long_int_*", "0"},
+	{"unsigned_long_*", "0"},
+	{"unsigned_long_int_*", "0"},
+	{"long_long_*", "0"},
+	{"long_long_int_*", "0"},
+	{"signed_long_long_*", "0"},
+	{"signed_long_long_int_*", "0"},
+	{"unsigned_long_long_*", "0"},
+	{"unsigned_long_long_int_*", "0"},
+	{"float_*", "0.0"},
+	{"double_*", "0.0"},
+	{"long_double_*", "0.0"},
+	{"string_*", "dflt"},
+	{"std::string_*", "dflt"},
+	{"std::__cxx11::string_*", "dflt"},
+	{"bool_*", "false"}
 };
-
 
 ConfigGenerator::ConfigGenerator(string f_Name) :
 	f_Name(f_Name)
@@ -138,6 +169,7 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass
 
 	generateFixture(fixture_path);
 	defaultTypes = fillDefaultTypes("Config/DefaultTypes");
+
 }
 
 void BoostGenerator::generateFixture(string outputPath)
@@ -215,8 +247,6 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 		//Lets check pointers...
 		for(auto i : insertion_order)
 		{
-			checkTypes(param_type[i]);
-
 			if(param_type[i].find("_&") != string::npos ||
 			   param_type[i].find("const_") != string::npos)
 			{
@@ -236,7 +266,6 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 			}
 		}
 
-		checkTypes(return_type);
 		if(return_type.find("_&") != string::npos ||
 			return_type.find("const_") != string::npos)
 		{
@@ -352,10 +381,15 @@ void BoostGenerator::generateBoostConstructorAssert(string class_test, string co
 		test_case << "\tBOOST_CHECK(new ";
 		test_case << constructor_name << "(";
 
+		/*for(auto i : insertion_order)
+		{
+			test_case << "Read_" << param_type[i] << "(\""
+					  << constructor_cfg_name << "." << i << "\")";
+			if (i != insertion_order.back()) test_case << ",";
+		}*/
+
 		for(auto i : insertion_order)
 		{
-			checkTypes(param_type[i]);
-
 			if(param_type[i].find("_&") == string::npos && param_type[i].find("const_") == string::npos)
 			{
 				test_case << "Read_" << param_type[i] << "(\""
@@ -382,7 +416,7 @@ void BoostGenerator::generateBoostConstructorAssert(string class_test, string co
 	}
 }
 
-void BoostGenerator::addStructReadToFixture(string type_name, map<string, string> param_type, vector<string> insertion_order, bool overloaded_eq, bool overloaded_flux)
+void BoostGenerator::addReadTypeToFixture(string type_name, map<string, string> param_type, vector<string> insertion_order, bool overloaded_eq, bool overloaded_flux)
 {
 	bool existFlag = fileExists(fixture_path);
 
@@ -452,7 +486,6 @@ void BoostGenerator::addStructReadToFixture(string type_name, map<string, string
 	for(auto i : insertion_order)
 	{
 		//read_method << "\t\t" << param_type[i] << " " << i << " = ";
-		checkTypes(param_type[i]);
 		read_method << "\t\t\tresult." << i << " = ";
 
 		if(param_type[i] != "string")
@@ -537,49 +570,7 @@ void BoostGenerator::addStructReadToFixture(string type_name, map<string, string
 	fixture_file.close();
 	outputFile.close();
 
-	defaultTypes.push_back(type_name);
-}
 
-void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
-{
-	/*** EXAMPLE ***
-	 ** <formatted_type> Read_<type_name>(string objectKey)
-	 ** {
-	 **		<formatted_type> result = boost::lexical_cast<<formatted_type>>(result);
-	 **		return result;
-	 **	}
-	 ***************/
-	bool existFlag = fileExists(fixture_path);
-
-	if(!existFlag)
-		generateFixture(fixture_path);
-
-	ifstream fixture_file(fixture_path);
-	string fileContent = string( (istreambuf_iterator<char>(fixture_file)),
-						 		   istreambuf_iterator<char>() );
-
-	string formatted_type;
-	stringstream read_method;
-
-	/*boost::replace_all(type_name, "_&", "");
-	boost::replace_all(type_name, "const_", "");*/
-
-	formatted_type = type_name;
-
-	boost::replace_all(formatted_type, "_", " ");
-
-	read_method << formatted_type << " Read_" << type_name << "(string objectKey)\n\t{\n\t\t"
-				<< formatted_type << " result = boost::lexical_cast<" << formatted_type << ">(result);\n"
-				<< "\t\treturn result;\n\t}\n"
-				<< "\t//{readObject}";
-
-	boost::replace_all(fileContent, "//{readObject}", read_method.str());
-
-	ofstream outputFile(fixture_path);
-	outputFile << fileContent;
-
-	fixture_file.close();
-	outputFile.close();
 }
 
 vector<string> BoostGenerator::fillDefaultTypes(string path)
@@ -599,19 +590,4 @@ vector<string> BoostGenerator::fillDefaultTypes(string path)
 
 	return result;
 
-}
-
-void BoostGenerator::checkTypes(string type)
-{
-	boost::replace_all(type, "_&", "");
-	boost::replace_all(type, "const_", "");
-
-	if(find(defaultTypes.begin(), defaultTypes.end(), type) == defaultTypes.end())
-	{
-		if(type.find("struct_") == string::npos)
-		{
-			addNewTypeToFixture(type, fixture_path);
-			defaultTypes.push_back(type);
-		}
-	}
 }
