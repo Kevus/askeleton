@@ -47,7 +47,7 @@ public:
 private:
 	void generateFunctionTest(string source_file, string function_name, ArrayRef<ParmVarDecl *> parameters, string return_type, BoostGenerator bGen);
 	void generateConstructorTest(string source, string constructor_name, ArrayRef<ParmVarDecl *> parameters, BoostGenerator bgen);
-	void generateCustomTypeFixture(string source, string type_name, vector<FieldDecl *> parameters, BoostGenerator bGen);
+	void generateCustomTypeFixture(string source, string type_name, vector<FieldDecl *> parameters, bool overloadedEq, bool overloadedFlux, BoostGenerator bGen);
 
 	void generateTestData(string source, string function_name, string param, string type, string value);
 	vector<string> obtainTestData(string type, string value);

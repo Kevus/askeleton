@@ -19,8 +19,6 @@ struct customType
   double other_num;
 };
 
-
-
 class FirstClass
 {
 public:

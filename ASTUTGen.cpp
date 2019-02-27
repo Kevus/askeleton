@@ -84,7 +84,7 @@ void ASTUTGen::generateConstructorTest(string source, string constructor_name, A
 
 }
 
-void ASTUTGen::generateCustomTypeFixture(string source, string type_name, vector<FieldDecl *> parameters, BoostGenerator bGen)
+void ASTUTGen::generateCustomTypeFixture(string source, string type_name, vector<FieldDecl *> parameters, bool overloadedEq, bool overloadedFlux, BoostGenerator bGen)
 {
 	ConfigGenerator cfg_gen(source);
 
@@ -103,7 +103,7 @@ void ASTUTGen::generateCustomTypeFixture(string source, string type_name, vector
     	insert_order.push_back(i->getNameAsString());
 	}
 
-	bGen.addStructReadToFixture(type_name, param_type, insert_order, false, false);
+	bGen.addStructReadToFixture(type_name, param_type, insert_order, overloadedEq, overloadedFlux);
 }
 
 void ASTUTGen::generateTestData(string source, string function_name, string param, string type, string value)
@@ -114,17 +114,6 @@ void ASTUTGen::generateTestData(string source, string function_name, string para
 	vector<string> values;
 	string fileContent;
 
-	//First, we check the file
-	//bool file_exists = fileExists(outputPath);
-
-	/*if(!file_exists)
-	{
-		fileContent = function_name + "." + param + ":" + value + "\n";
-		ofstream outputFile(outputPath);
-
-		outputFile << fileContent;
-	} else
-	{*/
 	ifstream tmp_output(outputPath);
 	for(string line; getline(tmp_output, line); )
 	{
@@ -154,19 +143,11 @@ void ASTUTGen::generateTestData(string source, string function_name, string para
 		values = function_values.at(function_name + "." + param);
 	}
 
-	//If the value is integer
-	//Idea: Crear metodo que devuelva vector<string> con los valores
-	/*int realv = boost::lexical_cast<int>(value);
-	vector<int> realvalues{realv - 1, realv, realv + 1};
-	for(auto it : realvalues)
-		values.push_back(to_string(it));*/
-
 	vector<string> realvalues = obtainTestData(type, value);
 	for(auto it : realvalues)
 		values.push_back(it);
 
 	function_values[(function_name + "." + param)] = values;
-	//function_values.insert(std::pair<string, vector<string>>((function_name + "." + param), values));
 
 	stringstream ss;
 
@@ -187,8 +168,6 @@ void ASTUTGen::generateTestData(string source, string function_name, string para
 	ofstream outputFile(outputPath);
 	outputFile << ss.str();
 
-	//}
-
 }
 
 vector<string> ASTUTGen::obtainTestData(string type, string value)
@@ -198,30 +177,32 @@ vector<string> ASTUTGen::obtainTestData(string type, string value)
 	boost::replace_all(value, "\"", "");
 	result.push_back(value);
 
-	if(type == "bool" || type == "_Bool")
+	//Although this looks repetitive, the lexical_cast<string> is necessary like this
+	//because res is a different type depending on the conditional
+	if(type.find("bool") != string::npos || type.find("_Bool") != string::npos)
 	{
 		result.push_back(
 			(value == "true") ? "false" : "true"
 		);
-	} else if(type == "string")
+	} else if(type.find("string") != string::npos)
 	{
 		result.push_back(value + "_another");
-	} else if(type == "char")
+	} else if(type.find("char") != string::npos)
 	{
 		char res = boost::lexical_cast<char>(value);
 		result.push_back(boost::lexical_cast<string>(res+1));
 		result.push_back(boost::lexical_cast<string>(res-1));
-	} else if(type == "int")
+	} else if(type.find("int") != string::npos)
 	{
 		int res = boost::lexical_cast<int>(value);
 		result.push_back(boost::lexical_cast<string>(res+1));
 		result.push_back(boost::lexical_cast<string>(res-1));
-	} else if(type == "double")
+	} else if(type.find("double") != string::npos)
 	{
 		double res = boost::lexical_cast<double>(value);
 		result.push_back(boost::lexical_cast<string>(res+1));
 		result.push_back(boost::lexical_cast<string>(res-1));
-	} else if(type == "float")
+	} else if(type.find("float") != string::npos)
 	{
 		float res = boost::lexical_cast<float>(value);
 		result.push_back(boost::lexical_cast<string>(res+1));
@@ -327,13 +308,6 @@ void ASTUTGen::apply_CT1(const MatchFinder::MatchResult &Result)
 
 		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){	
 
-			/*
-			CXXRecordDecl* cl = ...;
-			for (const auto& field : cl->fields) {
-			    const auto& name = field->getName();
-			    const auto field_cl = field->getType()->getAsCXXRecordDecl(); 
-			}*/
-
 			//Get the file name
 			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
 			unsigned first = source_file.find_last_of('/') + 1;
@@ -347,13 +321,25 @@ void ASTUTGen::apply_CT1(const MatchFinder::MatchResult &Result)
 			vector<FieldDecl *> field_decl;
 
 			for(auto i : UT->fields())
-			{
 				field_decl.push_back(i);
+
+
+			bool overloadedEq = false;
+			bool overloadedFlux = false;
+			for(auto i : UT->methods())
+			{
+				//llvm::outs() << i->getNameAsString() << "\n";
+				if(i->getNameAsString().find("operator==") != string::npos)
+					overloadedEq = true;
+				else if(i->getNameAsString().find("operator<<") != string::npos)
+					overloadedFlux = true;
 			}
 
 			generateCustomTypeFixture(filename,
 					UT->getNameAsString(),
 					field_decl,
+					overloadedEq,
+					overloadedFlux,
 					bGen
 				);
 
@@ -366,8 +352,6 @@ void ASTUTGen::apply_CT1(const MatchFinder::MatchResult &Result)
 
             llvm::outs() <<  UT->getNameAsString() << " in file " << filename << "\n";
             //Print auxiliary ======================================================================
-
-
 			
 		}
 	}
@@ -412,7 +396,7 @@ void ASTUTGen::apply_CC1(const MatchFinder::MatchResult &Result)
 
 void ASTUTGen::apply_PD1(const MatchFinder::MatchResult &Result)
 {
-	//ASTContext *Context = Result.Context;
+	//TO-DO: make this SHOW when a private member is called
 }
 
 void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
@@ -432,8 +416,6 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 			string RHS_string = convertExpressionToString(UT->getRHS(), Context->getSourceManager());
 			string LHS_type = UT->getLHS()->getType().getAsString();
 			string RHS_type = UT->getRHS()->getType().getAsString();
-
-			//llvm::outs() << "LHS: " << LHS_string << " " << LHS_type << " - RHS: " << RHS_string << " " << RHS_type << "\n";
 
 			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
 			unsigned first = source_file.find_last_of('/') + 1;
@@ -530,14 +512,17 @@ void ASTUTGen::apply_DG2(const MatchFinder::MatchResult &Result)
 		}
 	}
 }
-std::string ASTUTGen::convertExpressionToString(Expr *E, SourceManager &SM) {
-  clang::LangOptions lopt;
 
-  SourceLocation startLoc = E->getLocStart();
-  SourceLocation _endLoc = E->getLocEnd();
-  SourceLocation endLoc = clang::Lexer::getLocForEndOfToken(_endLoc, 0, SM, lopt);
+string ASTUTGen::convertExpressionToString(Expr *E, SourceManager &SM) {
+	LangOptions langOpts;
 
-  return std::string(SM.getCharacterData(startLoc), SM.getCharacterData(endLoc) - SM.getCharacterData(startLoc));
+	SourceLocation startLoc = E->getLocStart();
+	SourceLocation _endLoc = E->getLocEnd();
+	SourceLocation endLoc = Lexer::getLocForEndOfToken(_endLoc, 0, SM, langOpts);
+
+	string result = string(SM.getCharacterData(startLoc), SM.getCharacterData(endLoc) - SM.getCharacterData(startLoc));
+
+	return result;
 }
 
 bool ASTUTGen::isInParameters(string name, ArrayRef<ParmVarDecl *> params, string& type)
