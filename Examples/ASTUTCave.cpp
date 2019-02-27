@@ -164,6 +164,11 @@ const int a(const int b)
   return b;
 }
 
+int b(char* c)
+{
+  return 0;
+}
+
 /*int functionwithconstchar(const char* c)
 {
   return 0;

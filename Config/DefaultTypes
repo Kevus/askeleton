@@ -1,4 +1,5 @@
 char
+char_*
 signed_char
 unsigned_char
 short

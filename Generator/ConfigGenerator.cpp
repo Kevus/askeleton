@@ -222,13 +222,14 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 			{
 				ptype = param_type[i];
 
-				boost::replace_all(ptype, "_", " "); //First delete '_' for using it as a type
+				boost::replace_all(ptype, "_", " "); //delete '_' for using it as a type
 				boost::replace_all(ptype, " &", ""); //Then delete const and/or '&'
 
 				test_case << "\n\t" << ptype << " ";
 
 				boost::replace_all(ptype, " ", "_");
 				boost::replace_all(ptype, "const_", "");
+				boost::replace_all(ptype, "*", "s");
 
 				test_case << function_cfg_name << "_" << i << " = Read_" << ptype
 						  << "(\"" << function_cfg_name << "." << i << "\");\n"; 
@@ -248,6 +249,7 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 
 			boost::replace_all(ptype, " ", "_");
 			boost::replace_all(ptype, "const_", "");
+			boost::replace_all(ptype, "*", "s");
 
 			test_case << " = Read_" << ptype << "(\"" << function_cfg_name << ".return_" << return_type << "\");\n";
 		}
@@ -268,6 +270,7 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 		{
 			if(param_type[i].find("_&") == string::npos && param_type[i].find("const_") == string::npos)
 			{
+				boost::replace_all(param_type[i], "*", "s");
 				test_case << "Read_" << param_type[i] << "(\""
 						  << function_cfg_name << "." << i << "\")";
 			} else
@@ -285,9 +288,14 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 			test_case << ") == ";
 
 		if(return_type.find("_&") == string::npos && return_type.find("const_") == string::npos)
-			test_case << "Read_" << return_type << "(\"" << function_name << ".return_" << return_type << "\"))";
-		else
+		{
+			string read = "Read_" + return_type;
+			boost::replace_all(read, "*", "s");
+			test_case << read << "(\"" << function_name << ".return_" << return_type << "\"))";
+		}
+		else {
 			test_case << "return_" << function_cfg_name << ")";
+		}
 
 		if(!return_container)
 			test_case << ";";
