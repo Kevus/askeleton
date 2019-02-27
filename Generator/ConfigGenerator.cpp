@@ -137,7 +137,9 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass
 	fixture_path = "Generated/UT/" + cfgName + "/" + cfgName + "_fixture.hpp";
 
 	generateFixture(fixture_path);
-	defaultTypes = fillDefaultTypes("Config/DefaultTypes");
+
+	if(defaultTypes.size() == 0)
+		defaultTypes = fillDefaultTypes("Config/DefaultTypes");
 }
 
 void BoostGenerator::generateFixture(string outputPath)
@@ -574,12 +576,29 @@ void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
 
 	formatted_type = type_name;
 
+	//boost::replace_all(formatted_type, "_*", "");
 	boost::replace_all(formatted_type, "_", " ");
 
-	read_method << formatted_type << " Read_" << type_name << "(string objectKey)\n\t{\n\t\t"
-				<< formatted_type << " result = boost::lexical_cast<" << formatted_type << ">(result);\n"
-				<< "\t\treturn result;\n\t}\n"
-				<< "\t//{readObject}";
+	if(type_name.find("*") == string::npos)
+	{
+		read_method << formatted_type << " Read_" << type_name << "(string objectKey)\n\t{\n\t\t"
+					<< formatted_type << " result = boost::lexical_cast<" << formatted_type << ">(result);\n"
+					<< "\t\treturn result;\n\t}\n"
+					<< "\t//{readObject}";
+	}else {
+		boost::replace_all(type_name, "*", "s");
+
+		read_method << formatted_type << " Read_" << type_name << "(string objectKey)\n\t{\n\t\t"
+					<< formatted_type << " result = Read_";
+
+		boost::replace_all(formatted_type, "*", "s");
+		boost::replace_all(formatted_type, " ", "_");
+
+		read_method << formatted_type << "(objectKey);\n"
+		            << "\t\treturn result;\n\t}\n"
+					<< "\t//{readObject}";
+	}
+		
 
 	boost::replace_all(fileContent, "//{readObject}", read_method.str());
 
@@ -588,6 +607,7 @@ void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
 
 	fixture_file.close();
 	outputFile.close();
+	
 }
 
 vector<string> BoostGenerator::fillDefaultTypes(string path)
@@ -614,9 +634,11 @@ void BoostGenerator::checkTypes(string type)
 	boost::replace_all(type, "_&", "");
 	boost::replace_all(type, "const_", "");
 
+	cout << defaultTypes.size() << endl;
+
 	if(find(defaultTypes.begin(), defaultTypes.end(), type) == defaultTypes.end())
 	{
-		if(type.find("struct_") == string::npos)
+		if(type.find("struct_") == string::npos && type.find("char") == string::npos)
 		{
 			addNewTypeToFixture(type, fixture_path);
 			defaultTypes.push_back(type);

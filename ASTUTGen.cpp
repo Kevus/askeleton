@@ -14,6 +14,7 @@ void ASTUTGen::run(const MatchFinder::MatchResult &Result)
 //General method for testing functions
 void ASTUTGen::generateFunctionTest(string source_file, string function_name, ArrayRef<ParmVarDecl *> parameters, string return_type, BoostGenerator bGen)
 {
+	bool abort_test = false;
 	ConfigGenerator cfg_gen(source_file);
 	string function_cfg_name = function_name;
 
@@ -30,12 +31,18 @@ void ASTUTGen::generateFunctionTest(string source_file, string function_name, Ar
 
 	string rtn_type = cleanUnnecesaryChars(return_type);
 	string tmp_type;
+	string tmp_name;
 
 	for(auto i : parameters)
     {
     	tmp_type = i->getOriginalType().getAsString();
-    	tmp_type = cleanUnnecesaryChars(tmp_type);
+    	tmp_name = i->getQualifiedNameAsString();
+    	
+    	//TEST: check if this solves anything
+    	if(tmp_name == "")
+    		abort_test = true;
 
+    	tmp_type = cleanUnnecesaryChars(tmp_type);
 
     	param_type.insert(pair<string, string>(i->getQualifiedNameAsString(), tmp_type));
     	insert_order.push_back(i->getQualifiedNameAsString());
@@ -45,9 +52,12 @@ void ASTUTGen::generateFunctionTest(string source_file, string function_name, Ar
     cgen.generateTypesFile(function_name, param_type, insert_order, rtn_type);
     cgen.generateTestCasesFile(function_name, param_type, insert_order, rtn_type);*/
 
-    cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order, rtn_type);
-    bGen.generateBoostAssert(source_file, function_name, function_cfg_name, param_type, insert_order, rtn_type);
-
+    if(!abort_test)
+    {
+    	cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order, rtn_type);
+    	bGen.generateBoostAssert(source_file, function_name, function_cfg_name, param_type, insert_order, rtn_type);
+    }
+   
 }
 
 //Method for constructing constructor test
