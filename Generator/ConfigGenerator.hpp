@@ -64,11 +64,11 @@ public:
 private:
 	
 	void generateFixture(string outputPath);
-	vector<string> fillDefaultTypes(string path);
-	void checkTypes(string type);
+	//vector<string> fillDefaultTypes(string path);
+	void checkTypes(string type, string support_path);
 
 	map<string, string> valuesToChange;
-	vector<string> defaultTypes;
+	//vector<string> defaultTypes;
 	bool isFromClass;
 
 	string fixture_path;

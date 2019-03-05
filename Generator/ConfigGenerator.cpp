@@ -137,9 +137,6 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass
 	fixture_path = "Generated/UT/" + cfgName + "/" + cfgName + "_fixture.hpp";
 
 	generateFixture(fixture_path);
-
-	if(defaultTypes.size() == 0)
-		defaultTypes = fillDefaultTypes("Config/DefaultTypes");
 }
 
 void BoostGenerator::generateFixture(string outputPath)
@@ -199,8 +196,9 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 			//==========================================================
 			//==========================================================
 
-			//Copy makefile for compiling tests
+			//Copy makefile and supported types for compiling tests
 			system(("cp -r Generator/Templates/makefile Generated/UT/" + class_test + "/").c_str());
+			system(("cp -r Generator/Templates/SupportedTypes.txt Generated/UT/" + class_test + "/").c_str());
 
 		} else
 		{
@@ -217,7 +215,7 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 		//Lets check pointers...
 		for(auto i : insertion_order)
 		{
-			checkTypes(param_type[i]);
+			checkTypes(param_type[i], "Generated/UT/" + class_test + "/SupportedTypes.txt");
 
 			if(param_type[i].find("_&") != string::npos ||
 			   param_type[i].find("const_") != string::npos)
@@ -239,7 +237,7 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 			}
 		}
 
-		checkTypes(return_type);
+		checkTypes(return_type, "Generated/UT/" + class_test + "/SupportedTypes.txt");
 		if(return_type.find("_&") != string::npos ||
 			return_type.find("const_") != string::npos)
 		{
@@ -350,6 +348,7 @@ void BoostGenerator::generateBoostConstructorAssert(string class_test, string co
 
 			//Copy makefile for compiling tests
 			system(("cp -r Generator/Templates/makefile Generated/UT/" + class_test + "/").c_str());
+			system(("cp -r Generator/Templates/SupportedTypes.txt Generated/UT/" + class_test + "/").c_str());
 
 		} else
 		{
@@ -364,7 +363,7 @@ void BoostGenerator::generateBoostConstructorAssert(string class_test, string co
 
 		for(auto i : insertion_order)
 		{
-			checkTypes(param_type[i]);
+			checkTypes(param_type[i], "Generated/UT/" + class_test + "/SupportedTypes.txt");
 
 			if(param_type[i].find("_&") == string::npos && param_type[i].find("const_") == string::npos)
 			{
@@ -462,7 +461,9 @@ void BoostGenerator::addStructReadToFixture(string type_name, map<string, string
 	for(auto i : insertion_order)
 	{
 		//read_method << "\t\t" << param_type[i] << " " << i << " = ";
-		checkTypes(param_type[i]);
+		string support_path = fixture_path.substr(0, fixture_path.find_last_of("/")) + "/SupportedTypes.txt";
+		checkTypes(param_type[i], support_path);
+
 		read_method << "\t\t\tresult." << i << " = ";
 
 		if(param_type[i] != "string")
@@ -546,8 +547,6 @@ void BoostGenerator::addStructReadToFixture(string type_name, map<string, string
 
 	fixture_file.close();
 	outputFile.close();
-
-	defaultTypes.push_back(type_name);
 }
 
 void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
@@ -586,15 +585,15 @@ void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
 					<< "\t\treturn result;\n\t}\n"
 					<< "\t//{readObject}";
 	}else {
+		string tmp_type = formatted_type;
+
 		boost::replace_all(type_name, "*", "s");
+		boost::replace_all(tmp_type, " *", "");
+		boost::replace_all(tmp_type, " ", "_");
 
 		read_method << formatted_type << " Read_" << type_name << "(string objectKey)\n\t{\n\t\t"
-					<< formatted_type << " result = Read_";
-
-		boost::replace_all(formatted_type, "*", "s");
-		boost::replace_all(formatted_type, " ", "_");
-
-		read_method << formatted_type << "(objectKey);\n"
+					<< tmp_type << " tmp = Read_" << tmp_type << "(objectKey);\n"
+					<< "\t\t" << formatted_type << "result = &tmp;\n"
 		            << "\t\treturn result;\n\t}\n"
 					<< "\t//{readObject}";
 	}
@@ -610,7 +609,7 @@ void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
 	
 }
 
-vector<string> BoostGenerator::fillDefaultTypes(string path)
+/*vector<string> BoostGenerator::fillDefaultTypes(string path)
 {
 	ifstream types_file(path);
 	vector<string> result;
@@ -627,14 +626,12 @@ vector<string> BoostGenerator::fillDefaultTypes(string path)
 
 	return result;
 
-}
+}*/
 
-void BoostGenerator::checkTypes(string type)
+/*void BoostGenerator::checkTypes(string type)
 {
 	boost::replace_all(type, "_&", "");
 	boost::replace_all(type, "const_", "");
-
-	cout << defaultTypes.size() << endl;
 
 	if(find(defaultTypes.begin(), defaultTypes.end(), type) == defaultTypes.end())
 	{
@@ -644,4 +641,38 @@ void BoostGenerator::checkTypes(string type)
 			defaultTypes.push_back(type);
 		}
 	}
+}*/
+
+void BoostGenerator::checkTypes(string type, string support_path)
+{
+	boost::replace_all(type, "_&", "");
+	boost::replace_all(type, "const_", "");
+
+	ifstream support_file(support_path);
+
+	string line;
+	bool found = false;
+	
+	if(type.find("struct_") == string::npos && type.find("char_*") == string::npos &&
+		type.find("list") == string::npos && type.find("vector") == string::npos &&
+		type.find("map") == string::npos)
+	{
+		while(std::getline(support_file, line))
+		{
+			if(line.find(type) != string::npos)
+			{
+				//cout << "line:" << line << " - type:" << type << endl;
+				found = true;
+			}
+		}
+
+		if(!found)
+		{
+			ofstream output(support_path, ios_base::app);
+			output << type << endl;
+
+			addNewTypeToFixture(type, fixture_path);
+		}
+	}
+	
 }
