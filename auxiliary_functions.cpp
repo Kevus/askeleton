@@ -93,15 +93,22 @@ bool isNumeric(string query)
 }
 
 string convertExpressionToString(Expr *E, SourceManager &SM) {
+
 	LangOptions langOpts;
 
 	SourceLocation startLoc = E->getLocStart();
 	SourceLocation _endLoc = E->getLocEnd();
 	SourceLocation endLoc = Lexer::getLocForEndOfToken(_endLoc, 0, SM, langOpts);
 
-	string result = string(SM.getCharacterData(startLoc), SM.getCharacterData(endLoc) - SM.getCharacterData(startLoc));
+	try{
+		string result = string(SM.getCharacterData(startLoc), SM.getCharacterData(endLoc) - SM.getCharacterData(startLoc));
 
-	return result;
+		return result;
+	}catch(std::bad_alloc &ba)
+	{
+		return "";
+	}
+
 }
 
 bool isInParameters(string name, ArrayRef<ParmVarDecl *> params, string& type)

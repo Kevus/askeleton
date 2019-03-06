@@ -9,6 +9,7 @@ void ASTUTGen::run(const MatchFinder::MatchResult &Result)
 
 	apply_DG1(Result);
 	apply_DG2(Result);
+
 }
 
 void ASTUTGen::apply_FD1(const MatchFinder::MatchResult &Result)
@@ -203,17 +204,20 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 
 	if (const BinaryOperator *UT = Result.Nodes.getNodeAs<clang::BinaryOperator>("DG1")){
 
+
 		const FunctionDecl *FD = Result.Nodes.getNodeAs<clang::FunctionDecl>("DG1b");
 		FullSourceLoc FullLocation;
 			
 		FullLocation = Context->getFullLoc(UT->getLocStart());
 
+
 		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){	
-			
+//try{
 			string LHS_string = convertExpressionToString(UT->getLHS(), Context->getSourceManager());
 			string RHS_string = convertExpressionToString(UT->getRHS(), Context->getSourceManager());
 			string LHS_type = UT->getLHS()->getType().getAsString();
 			string RHS_type = UT->getRHS()->getType().getAsString();
+
 
 			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
 			unsigned first = source_file.find_last_of('/') + 1;
@@ -221,6 +225,7 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 			string filename = source_file.substr(first, last-first);
 
 			string type;
+
 			if(!isNumeric(LHS_string) && isNumeric(RHS_string) && isInParameters(LHS_string, FD->parameters(), type))
 			{
 				generateTestData(filename, FD->getName(), LHS_string, type, RHS_string);
@@ -231,6 +236,7 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 			{
 				llvm::outs() << "non-numeric condition\n";
 			}
+			
 
 			//Print auxiliary ======================================================================
            	llvm::outs() << "Found BinaryOperator at "
@@ -240,9 +246,14 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
             llvm::outs() << " from function " << FD->getName() <<  "\n";
             //Print auxiliary ======================================================================
 
-
+/*}catch(std::bad_alloc &ba)
+		{
+			std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+		}*/
 			
 		}
+		
+		
 	}
 }
 
@@ -314,7 +325,7 @@ void ASTUTGen::apply_DG2(const MatchFinder::MatchResult &Result)
 //General method for testing functions
 void ASTUTGen::generateFunctionTest(string source_file, string function_name, ArrayRef<ParmVarDecl *> parameters, string return_type, BoostGenerator bGen)
 {
-	bool abort_test = false;
+
 	ConfigGenerator cfg_gen(source_file);
 	string function_cfg_name = function_name;
 
