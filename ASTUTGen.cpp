@@ -212,7 +212,7 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 
 
 		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){	
-//try{
+
 			string LHS_string = convertExpressionToString(UT->getLHS(), Context->getSourceManager());
 			string RHS_string = convertExpressionToString(UT->getRHS(), Context->getSourceManager());
 			string LHS_type = UT->getLHS()->getType().getAsString();
@@ -245,15 +245,8 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 
             llvm::outs() << " from function " << FD->getName() <<  "\n";
             //Print auxiliary ======================================================================
-
-/*}catch(std::bad_alloc &ba)
-		{
-			std::cerr << "bad_alloc caught: " << ba.what() << '\n';
-		}*/
 			
 		}
-		
-		
 	}
 }
 
