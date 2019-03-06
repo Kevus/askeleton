@@ -1,0 +1,4 @@
+- Cuando se analiza un .cpp que tiene definidas las cabeceras en .h o .hpp, el análisis se realiza por duplicado
+- Cuando se define la cabecera con parámetros sin nombre no se genera la prueba
+- A veces aparece un core generado que no se de donde viene
+- Cuando se analiza un .h en vez de un .hpp, Clang lo lee como C y no como C++, lo que provoca errores.

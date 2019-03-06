@@ -1,22 +1,6 @@
 #ifndef ASTUTGEN_HPP
 #define ASTUTGEN_HPP
 
-#include "clang/Frontend/FrontendActions.h"
-#include "clang/Tooling/CommonOptionsParser.h"
-#include "clang/Tooling/Tooling.h"
-#include "clang/ASTMatchers/ASTMatchers.h"
-#include "clang/ASTMatchers/ASTMatchersInternal.h"
-#include "clang/ASTMatchers/ASTMatchersMacros.h"
-#include "clang/ASTMatchers/ASTMatchFinder.h"
-#include "clang/AST/ASTContext.h"
-#include "clang/Basic/SourceManager.h"
-
-#include "llvm/Support/CommandLine.h"
-#include "clang/Rewrite/Frontend/Rewriters.h"
-#include "clang/Rewrite/Core/Rewriter.h"
-
-#include "clang/Lex/Lexer.h"
-
 #include "Generator/ConfigGenerator.hpp"
 #include "Generator/CustomGenerator.hpp"
 
@@ -45,13 +29,6 @@ public:
 	virtual void run(const MatchFinder::MatchResult &Result);
 
 private:
-	void generateFunctionTest(string source_file, string function_name, ArrayRef<ParmVarDecl *> parameters, string return_type, BoostGenerator bGen);
-	void generateConstructorTest(string source, string constructor_name, ArrayRef<ParmVarDecl *> parameters, BoostGenerator bgen);
-	void generateCustomTypeFixture(string source, string type_name, vector<FieldDecl *> parameters, bool overloadedEq, bool overloadedFlux, BoostGenerator bGen);
-
-	void generateTestData(string source, string function_name, string param, string type, string value);
-	vector<string> obtainTestData(string type, string value);
-
 	void apply_FD1(const MatchFinder::MatchResult &Result);
 	void apply_MD1(const MatchFinder::MatchResult &Result);
 	void apply_CT1(const MatchFinder::MatchResult &Result);
@@ -64,10 +41,17 @@ private:
 	void apply_DG1(const MatchFinder::MatchResult &Result);
 	void apply_DG2(const MatchFinder::MatchResult &Result);
 
+	void generateFunctionTest(string source_file, string function_name, ArrayRef<ParmVarDecl *> parameters, string return_type, BoostGenerator bGen);
+	void generateConstructorTest(string source, string constructor_name, ArrayRef<ParmVarDecl *> parameters, BoostGenerator bgen);
+	void generateCustomTypeFixture(string source, string type_name, vector<FieldDecl *> parameters, bool overloadedEq, bool overloadedFlux, BoostGenerator bGen);
+
+	void generateTestData(string source, string function_name, string param, string type, string value);
+	vector<string> obtainTestData(string type, string value);
+
 	map<string, int> function_occurrences;
 
-	std::string convertExpressionToString(Expr *E, SourceManager &SM);
-	bool isInParameters(string name, ArrayRef<ParmVarDecl *> params, string& type);
+	//string convertExpressionToString(Expr *E, SourceManager &SM);
+	//bool isInParameters(string name, ArrayRef<ParmVarDecl *> params, string& type);
 
 };
 

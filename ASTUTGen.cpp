@@ -11,218 +11,6 @@ void ASTUTGen::run(const MatchFinder::MatchResult &Result)
 	apply_DG2(Result);
 }
 
-//General method for testing functions
-void ASTUTGen::generateFunctionTest(string source_file, string function_name, ArrayRef<ParmVarDecl *> parameters, string return_type, BoostGenerator bGen)
-{
-	bool abort_test = false;
-	ConfigGenerator cfg_gen(source_file);
-	string function_cfg_name = function_name;
-
-	//if( function_occurrences.find(function_name) == function_occurrences.end() )
-	//	function_occurences.insert( pair<string, int> (function_name, 1));
-	function_occurrences[function_name]++;
-
-	if (function_occurrences[function_name] > 1)
-		function_cfg_name += "_" + to_string(function_occurrences[function_name]);
-
-	//Get the parameters
-	map<string, string> param_type;
-	vector<string> insert_order;
-
-	string rtn_type = cleanUnnecesaryChars(return_type);
-	string tmp_type;
-	string tmp_name;
-
-	for(auto i : parameters)
-    {
-    	tmp_type = i->getOriginalType().getAsString();
-    	tmp_name = i->getQualifiedNameAsString();
-    	
-    	//TEST: check if this solves anything
-    	if(tmp_name == "")
-    		abort_test = true;
-
-    	tmp_type = cleanUnnecesaryChars(tmp_type);
-
-    	param_type.insert(pair<string, string>(i->getQualifiedNameAsString(), tmp_type));
-    	insert_order.push_back(i->getQualifiedNameAsString());
-    }
-
-    /*CustomGenerator cgen(source_file);
-    cgen.generateTypesFile(function_name, param_type, insert_order, rtn_type);
-    cgen.generateTestCasesFile(function_name, param_type, insert_order, rtn_type);*/
-
-    if(!abort_test)
-    {
-    	cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order, rtn_type);
-    	bGen.generateBoostAssert(source_file, function_name, function_cfg_name, param_type, insert_order, rtn_type);
-    }
-   
-}
-
-//Method for constructing constructor test
-void ASTUTGen::generateConstructorTest(string source, string constructor_name, ArrayRef<ParmVarDecl *> parameters, BoostGenerator bGen)
-{
-	ConfigGenerator cfg_gen(source);
-
-	string constructor_cfg_name = constructor_name;
-	function_occurrences[constructor_name]++;
-
-	if (function_occurrences[constructor_name] > 1)
-		constructor_cfg_name += "_" + to_string(function_occurrences[constructor_name]);
-
-	//Get the parameters
-	map<string, string> param_type;
-	vector<string> insert_order;
-
-	string tmp_type;
-
-	for(auto i : parameters)
-	{
-		tmp_type = i->getOriginalType().getAsString();
-    	tmp_type = cleanUnnecesaryChars(tmp_type);
-
-    	param_type.insert(pair<string, string>(i->getQualifiedNameAsString(), tmp_type));
-    	insert_order.push_back(i->getQualifiedNameAsString());
-	}
-
-	/**
-	** We will add custom generator lates
-	**/
-	cfg_gen.generateConstructorTest(constructor_cfg_name, param_type, insert_order);
-	bGen.generateBoostConstructorAssert(source, constructor_name, constructor_cfg_name, param_type, insert_order);
-
-}
-
-void ASTUTGen::generateCustomTypeFixture(string source, string type_name, vector<FieldDecl *> parameters, bool overloadedEq, bool overloadedFlux, BoostGenerator bGen)
-{
-	ConfigGenerator cfg_gen(source);
-
-	//Get the parameters
-	map<string, string> param_type;
-	vector<string> insert_order;
-
-	string tmp_type;
-
-	for(auto i : parameters)
-	{
-		tmp_type = i->getType().getAsString();
-    	tmp_type = cleanUnnecesaryChars(tmp_type);
-
-    	param_type.insert(pair<string, string>(i->getNameAsString(), tmp_type));
-    	insert_order.push_back(i->getNameAsString());
-	}
-
-	bGen.addStructReadToFixture(type_name, param_type, insert_order, overloadedEq, overloadedFlux);
-}
-
-void ASTUTGen::generateTestData(string source, string function_name, string param, string type, string value)
-{
-	//function.value=a,b,c,d,e
-	map<string, vector<string>> function_values;
-	string outputPath = "Generated/UT/" + source + "/" + source + "_data.txt";
-	vector<string> values;
-	string fileContent;
-
-	ifstream tmp_output(outputPath);
-	for(string line; getline(tmp_output, line); )
-	{
-		//for each line...
-		auto delimiter = line.find(":");
-
-		string fvalue = line.substr(0, delimiter);
-		line = line.substr(delimiter + 1);
-
-		delimiter = line.find(",");
-		while(delimiter != string::npos)
-		{
-			auto key = line.substr(0, delimiter);
-			line = line.substr(delimiter + 1);
-
-			values.push_back(key);
-
-			delimiter = line.find(",");
-		}
-
-		values.push_back(line);
-		function_values.insert(std::pair<string, vector<string>>(fvalue, values));
-		values.clear();
-	}
-
-	if(function_values.find(function_name + "." + param) != function_values.end()){
-		values = function_values.at(function_name + "." + param);
-	}
-
-	vector<string> realvalues = obtainTestData(type, value);
-	for(auto it : realvalues)
-		values.push_back(it);
-
-	function_values[(function_name + "." + param)] = values;
-
-	stringstream ss;
-
-	for (auto it : function_values)
-	{
-		ss << it.first << ":";
-
-		for (unsigned long i = 0; i < it.second.size(); i++)
-		{
-			ss << it.second[i];
-			if (i < it.second.size() - 1)
-				ss << ",";
-		}
-
-		ss << "\n";
-	}
-
-	ofstream outputFile(outputPath);
-	outputFile << ss.str();
-
-}
-
-vector<string> ASTUTGen::obtainTestData(string type, string value)
-{
-	vector<string> result;
-	boost::replace_all(value, "\'", "");
-	boost::replace_all(value, "\"", "");
-	result.push_back(value);
-
-	//Although this looks repetitive, the lexical_cast<string> is necessary like this
-	//because res is a different type depending on the conditional
-	if(type.find("bool") != string::npos || type.find("_Bool") != string::npos)
-	{
-		result.push_back(
-			(value == "true") ? "false" : "true"
-		);
-	} else if(type.find("string") != string::npos)
-	{
-		result.push_back(value + "_another");
-	} else if(type.find("char") != string::npos)
-	{
-		char res = boost::lexical_cast<char>(value);
-		result.push_back(boost::lexical_cast<string>(res+1));
-		result.push_back(boost::lexical_cast<string>(res-1));
-	} else if(type.find("int") != string::npos)
-	{
-		int res = boost::lexical_cast<int>(value);
-		result.push_back(boost::lexical_cast<string>(res+1));
-		result.push_back(boost::lexical_cast<string>(res-1));
-	} else if(type.find("double") != string::npos)
-	{
-		double res = boost::lexical_cast<double>(value);
-		result.push_back(boost::lexical_cast<string>(res+1));
-		result.push_back(boost::lexical_cast<string>(res-1));
-	} else if(type.find("float") != string::npos)
-	{
-		float res = boost::lexical_cast<float>(value);
-		result.push_back(boost::lexical_cast<string>(res+1));
-		result.push_back(boost::lexical_cast<string>(res-1));
-	}
-
-	return result;
-}
-
-
 void ASTUTGen::apply_FD1(const MatchFinder::MatchResult &Result)
 {
 	ASTContext *Context = Result.Context;
@@ -523,28 +311,242 @@ void ASTUTGen::apply_DG2(const MatchFinder::MatchResult &Result)
 	}
 }
 
-string ASTUTGen::convertExpressionToString(Expr *E, SourceManager &SM) {
-	LangOptions langOpts;
+//General method for testing functions
+void ASTUTGen::generateFunctionTest(string source_file, string function_name, ArrayRef<ParmVarDecl *> parameters, string return_type, BoostGenerator bGen)
+{
+	bool abort_test = false;
+	ConfigGenerator cfg_gen(source_file);
+	string function_cfg_name = function_name;
 
-	SourceLocation startLoc = E->getLocStart();
-	SourceLocation _endLoc = E->getLocEnd();
-	SourceLocation endLoc = Lexer::getLocForEndOfToken(_endLoc, 0, SM, langOpts);
+	//if( function_occurrences.find(function_name) == function_occurrences.end() )
+	//	function_occurences.insert( pair<string, int> (function_name, 1));
+	function_occurrences[function_name]++;
 
-	string result = string(SM.getCharacterData(startLoc), SM.getCharacterData(endLoc) - SM.getCharacterData(startLoc));
+	if (function_occurrences[function_name] > 1)
+		function_cfg_name += "_" + to_string(function_occurrences[function_name]);
 
-	return result;
+	//Get the parameters
+	map<string, string> param_type;
+	vector<string> insert_order;
+
+	string rtn_type = cleanUnnecesaryChars(return_type);
+	string tmp_type;
+	string tmp_name;
+
+	int noname_count = 0;
+
+	for(auto i : parameters)
+    {
+    	tmp_type = i->getOriginalType().getAsString();
+    	tmp_name = i->getQualifiedNameAsString();
+    	
+    	//TEST: check if this solves anything
+    	/*if(tmp_name == "")
+    		abort_test = true;*/
+    	if(tmp_name == "")
+    	{
+    		tmp_name = tmp_type + "_" + to_string(noname_count);
+    		noname_count++;
+    	}
+
+    	tmp_type = cleanUnnecesaryChars(tmp_type);
+
+    	param_type.insert(pair<string, string>(tmp_name, tmp_type));
+    	insert_order.push_back(tmp_name);
+    }
+
+    /*CustomGenerator cgen(source_file);
+    cgen.generateTypesFile(function_name, param_type, insert_order, rtn_type);
+    cgen.generateTestCasesFile(function_name, param_type, insert_order, rtn_type);*/
+
+    //if(!abort_test)
+    //{
+	cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order, rtn_type);
+	bGen.generateBoostAssert(source_file, function_name, function_cfg_name, param_type, insert_order, rtn_type);
+    //}
+   
 }
 
-bool ASTUTGen::isInParameters(string name, ArrayRef<ParmVarDecl *> params, string& type)
+//Method for constructing constructor test
+void ASTUTGen::generateConstructorTest(string source, string constructor_name, ArrayRef<ParmVarDecl *> parameters, BoostGenerator bGen)
 {
-	for(auto it : params)
+	ConfigGenerator cfg_gen(source);
+
+	string constructor_cfg_name = constructor_name;
+	function_occurrences[constructor_name]++;
+
+	if (function_occurrences[constructor_name] > 1)
+		constructor_cfg_name += "_" + to_string(function_occurrences[constructor_name]);
+
+	//Get the parameters
+	map<string, string> param_type;
+	vector<string> insert_order;
+
+	string tmp_type;
+	string tmp_name;
+
+	int noname_count = 0;
+
+	for(auto i : parameters)
 	{
-		if(it->getName() == name)
-		{
-			type = it->getOriginalType().getAsString();
-			return true;
-		}
+		tmp_type = i->getOriginalType().getAsString();
+    	tmp_type = cleanUnnecesaryChars(tmp_type);
+
+    	tmp_name = i->getQualifiedNameAsString();
+    	
+    	if(tmp_name == "")
+    	{
+    		tmp_name = tmp_type + "_" + to_string(noname_count);
+    		noname_count++;
+    	}
+
+    	param_type.insert(pair<string, string>(tmp_name, tmp_type));
+    	insert_order.push_back(tmp_name);
 	}
 
-	return false;
+	/**
+	** We will add custom generator lates
+	**/
+	cfg_gen.generateConstructorTest(constructor_cfg_name, param_type, insert_order);
+	bGen.generateBoostConstructorAssert(source, constructor_name, constructor_cfg_name, param_type, insert_order);
+
+}
+
+void ASTUTGen::generateCustomTypeFixture(string source, string type_name, vector<FieldDecl *> parameters, bool overloadedEq, bool overloadedFlux, BoostGenerator bGen)
+{
+	ConfigGenerator cfg_gen(source);
+
+	//Get the parameters
+	map<string, string> param_type;
+	vector<string> insert_order;
+
+	string tmp_type;
+	string tmp_name;
+
+	int noname_count = 0;
+
+	for(auto i : parameters)
+	{
+		tmp_type = i->getType().getAsString();
+    	tmp_type = cleanUnnecesaryChars(tmp_type);
+
+    	tmp_name = i->getNameAsString();
+
+    	if(tmp_name == "")
+    	{
+    		tmp_name = tmp_type + "_" + to_string(noname_count);
+    		noname_count++;
+    	}
+
+    	param_type.insert(pair<string, string>(i->getNameAsString(), tmp_type));
+    	insert_order.push_back(i->getNameAsString());
+	}
+
+	bGen.addStructReadToFixture(type_name, param_type, insert_order, overloadedEq, overloadedFlux);
+}
+
+void ASTUTGen::generateTestData(string source, string function_name, string param, string type, string value)
+{
+	//function.value=a,b,c,d,e
+	map<string, vector<string>> function_values;
+	string outputPath = "Generated/UT/" + source + "/" + source + "_data.txt";
+	vector<string> values;
+	string fileContent;
+
+	ifstream tmp_output(outputPath);
+	for(string line; getline(tmp_output, line); )
+	{
+		//for each line...
+		auto delimiter = line.find(":");
+
+		string fvalue = line.substr(0, delimiter);
+		line = line.substr(delimiter + 1);
+
+		delimiter = line.find(",");
+		while(delimiter != string::npos)
+		{
+			auto key = line.substr(0, delimiter);
+			line = line.substr(delimiter + 1);
+
+			values.push_back(key);
+
+			delimiter = line.find(",");
+		}
+
+		values.push_back(line);
+		function_values.insert(std::pair<string, vector<string>>(fvalue, values));
+		values.clear();
+	}
+
+	if(function_values.find(function_name + "." + param) != function_values.end()){
+		values = function_values.at(function_name + "." + param);
+	}
+
+	vector<string> realvalues = obtainTestData(type, value);
+	for(auto it : realvalues)
+		values.push_back(it);
+
+	function_values[(function_name + "." + param)] = values;
+
+	stringstream ss;
+
+	for (auto it : function_values)
+	{
+		ss << it.first << ":";
+
+		for (unsigned long i = 0; i < it.second.size(); i++)
+		{
+			ss << it.second[i];
+			if (i < it.second.size() - 1)
+				ss << ",";
+		}
+
+		ss << "\n";
+	}
+
+	ofstream outputFile(outputPath);
+	outputFile << ss.str();
+
+}
+
+vector<string> ASTUTGen::obtainTestData(string type, string value)
+{
+	vector<string> result;
+	boost::replace_all(value, "\'", "");
+	boost::replace_all(value, "\"", "");
+	result.push_back(value);
+
+	//Although this looks repetitive, the lexical_cast<string> is necessary like this
+	//because res is a different type depending on the conditional
+	if(type.find("bool") != string::npos || type.find("_Bool") != string::npos)
+	{
+		result.push_back(
+			(value == "true") ? "false" : "true"
+		);
+	} else if(type.find("string") != string::npos)
+	{
+		result.push_back(value + "_another");
+	} else if(type.find("char") != string::npos)
+	{
+		char res = boost::lexical_cast<char>(value);
+		result.push_back(boost::lexical_cast<string>(res+1));
+		result.push_back(boost::lexical_cast<string>(res-1));
+	} else if(type.find("int") != string::npos)
+	{
+		int res = boost::lexical_cast<int>(value);
+		result.push_back(boost::lexical_cast<string>(res+1));
+		result.push_back(boost::lexical_cast<string>(res-1));
+	} else if(type.find("double") != string::npos)
+	{
+		double res = boost::lexical_cast<double>(value);
+		result.push_back(boost::lexical_cast<string>(res+1));
+		result.push_back(boost::lexical_cast<string>(res-1));
+	} else if(type.find("float") != string::npos)
+	{
+		float res = boost::lexical_cast<float>(value);
+		result.push_back(boost::lexical_cast<string>(res+1));
+		result.push_back(boost::lexical_cast<string>(res-1));
+	}
+
+	return result;
 }
