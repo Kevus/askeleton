@@ -4,7 +4,7 @@
 //// UNIVERSIDAD DE CADIZ - NAVANTIA SISTEMAS                               ////
 ////                                                                        ////
 ////////////////////////////////////////////////////////////////////////////////
-//File generated automatically by AST-UT                                  
+//File generated automatically by AST-UT
 //Template originally created for LATEGEN
 //File to test: {filePath}
 //DESCRIPTION: This file sets tests cases for {cfgName}.
@@ -44,7 +44,7 @@ using namespace boost;
 struct Fixture {
 	Fixture():argc(boost::unit_test::framework::master_test_suite().argc),
 	argv(boost::unit_test::framework::master_test_suite().argv) {
-		
+
 		stringstream file;
 		file << argv[1];
 		getConfigParameters("{cfgName}.cfg");
@@ -73,7 +73,7 @@ struct Fixture {
 				//If it is a comment, it will be ignored
 				if (line[0] == '#' || line == "{" || line.empty())
 				{
-					continue;	
+					continue;
 				}
 
 				//If it has two points at the end of the line, it means that we have a key
@@ -97,7 +97,7 @@ struct Fixture {
 					continue;
 				}
 
-				
+
 				/**
 				** If we reach this point, then we can store the values
 				** in the intermediate state
@@ -387,10 +387,10 @@ struct Fixture {
 	char* Read_char_s(string objectKey)
 	{
 		string s_value = readObject(objectKey);
-		char* result;	
-		
+		char* result;
+
 		strcpy(result, s_value.c_str());
-		
+
 		return result;
 	}
 
@@ -409,7 +409,7 @@ struct Fixture {
 		boost::replace_all(unparsed_list, ";", "");
 
 		auto delimiter = unparsed_list.find(",");
-		
+
 		while(delimiter != string::npos)
 		{
 			auto key = unparsed_list.substr(0, delimiter);
@@ -437,7 +437,7 @@ struct Fixture {
 	{
 		list<T> aux_list = Read_list<T>(objectKey);
 
-		vector<T> result_vector( 
+		vector<T> result_vector(
 								 aux_list.begin(),
 								 aux_list.end()
 							   );
@@ -477,7 +477,7 @@ struct Fixture {
 				auto inside_key = key.substr(0, inside_delimiter);
 				auto inside_value = key.substr(inside_delimiter + 1);
 
-				cout << inside_key << " --- " << inside_value << "\n";
+				//cout << inside_key << " --- " << inside_value << "\n";
 
 				aux_key = boost::lexical_cast<T>(inside_key);
 				aux_value = boost::lexical_cast<Y>(inside_value);
