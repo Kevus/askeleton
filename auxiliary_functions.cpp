@@ -2,10 +2,21 @@
 
 bool fileExists(const string& filename)
 {
-  struct stat buffer;   
-  return (stat (filename.c_str(), &buffer) == 0); 
+  struct stat buffer;
+  return (stat (filename.c_str(), &buffer) == 0);
 }
 
+bool folderExists(const string& folder)
+{
+  struct stat info;
+
+  if( stat( folder.c_str(), &info ) != 0 )
+      return false;
+  else return ( info.st_mode & S_IFDIR );  // S_ISDIR() doesn't exist on my windows
+/*      printf( "%s is a directory\n", pathname );
+  else
+      printf( "%s is no directory\n", pathname );*/
+}
 
 string getCommentHeader(string filename)
 {

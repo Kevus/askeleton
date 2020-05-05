@@ -17,12 +17,12 @@ void ASTUTGen::apply_FD1(const MatchFinder::MatchResult &Result)
 	ASTContext *Context = Result.Context;
 
 	if (const FunctionDecl *UT = Result.Nodes.getNodeAs<clang::FunctionDecl>("FD1")){
-		
+
 		FullSourceLoc FullLocation;
-			
+
 		FullLocation = Context->getFullLoc(UT->getLocStart());
 
-		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){	
+		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){
 
 			//In this case, we do not want class functions
 			if(!isa<CXXMethodDecl>(UT))
@@ -42,7 +42,7 @@ void ASTUTGen::apply_FD1(const MatchFinder::MatchResult &Result)
 									 UT->parameters(),
 									 UT->getReturnType().getAsString(),
 									 bGen);
-				//Print auxiliary ======================================================================
+						  //Print auxiliary ======================================================================
 	           	llvm::outs() << "Found FunctionDecl at "
 	                         << FullLocation.getSpellingLineNumber() << ":"
 	                         << FullLocation.getSpellingColumnNumber() << " - ";
@@ -60,12 +60,12 @@ void ASTUTGen::apply_MD1(const MatchFinder::MatchResult &Result)
 	ASTContext *Context = Result.Context;
 
 	if (const CXXMethodDecl *UT = Result.Nodes.getNodeAs<clang::CXXMethodDecl>("MD1")){
-		
+
 		FullSourceLoc FullLocation;
-			
+
 		FullLocation = Context->getFullLoc(UT->getLocStart());
 
-		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){	
+		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){
 
 			//In this case, we do not want class constructors
 			if(!isa<CXXConstructorDecl>(UT))
@@ -100,12 +100,12 @@ void ASTUTGen::apply_CT1(const MatchFinder::MatchResult &Result)
 	ASTContext *Context = Result.Context;
 
 	if (const CXXRecordDecl *UT = Result.Nodes.getNodeAs<clang::CXXRecordDecl>("CT1")){
-		
+
 		FullSourceLoc FullLocation;
-			
+
 		FullLocation = Context->getFullLoc(UT->getLocStart());
 
-		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){	
+		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){
 
 			//Get the file name
 			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
@@ -151,7 +151,7 @@ void ASTUTGen::apply_CT1(const MatchFinder::MatchResult &Result)
 
             llvm::outs() <<  UT->getNameAsString() << " in file " << filename << "\n";
             //Print auxiliary ======================================================================
-			
+
 		}
 	}
 }
@@ -161,12 +161,12 @@ void ASTUTGen::apply_CC1(const MatchFinder::MatchResult &Result)
 	ASTContext *Context = Result.Context;
 
 	if (const CXXConstructorDecl *UT = Result.Nodes.getNodeAs<clang::CXXConstructorDecl>("CC1")){
-		
+
 		FullSourceLoc FullLocation;
-			
+
 		FullLocation = Context->getFullLoc(UT->getLocStart());
 
-		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){	
+		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){
 
 			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
 			string parentname = UT->getParent()->getName();
@@ -188,7 +188,7 @@ void ASTUTGen::apply_CC1(const MatchFinder::MatchResult &Result)
             //Print auxiliary ======================================================================
 
 
-			
+
 		}
 	}
 }
@@ -207,11 +207,11 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 
 		const FunctionDecl *FD = Result.Nodes.getNodeAs<clang::FunctionDecl>("DG1b");
 		FullSourceLoc FullLocation;
-			
+
 		FullLocation = Context->getFullLoc(UT->getLocStart());
 
 
-		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){	
+		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){
 
 			string LHS_string = convertExpressionToString(UT->getLHS(), Context->getSourceManager());
 			string RHS_string = convertExpressionToString(UT->getRHS(), Context->getSourceManager());
@@ -236,7 +236,7 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 			{
 				llvm::outs() << "non-numeric condition\n";
 			}
-			
+
 
 			//Print auxiliary ======================================================================
            	llvm::outs() << "Found BinaryOperator at "
@@ -245,7 +245,7 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 
             llvm::outs() << " from function " << FD->getName() <<  "\n";
             //Print auxiliary ======================================================================
-			
+
 		}
 	}
 }
@@ -258,11 +258,11 @@ void ASTUTGen::apply_DG2(const MatchFinder::MatchResult &Result)
 
 		const FunctionDecl *FD = Result.Nodes.getNodeAs<clang::FunctionDecl>("DG2b");
 		FullSourceLoc FullLocation;
-			
+
 		FullLocation = Context->getFullLoc(UT->getLocStart());
 
-		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){	
-			
+		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){
+
 			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
 			unsigned first = source_file.find_last_of('/') + 1;
 			unsigned last = source_file.find_last_of('.');
@@ -273,8 +273,8 @@ void ASTUTGen::apply_DG2(const MatchFinder::MatchResult &Result)
 			//llvm::outs() << "test: " << test << "\n";
 			//string cname = UT->getCond()->getName();
 			//string ctype = UT->getCond()->getType().getAsString();
-			
-			//llvm::outs() << /*"Cname: " << cname << */" Ctype: " << ctype << "\n";		
+
+			//llvm::outs() << /*"Cname: " << cname << */" Ctype: " << ctype << "\n";
 
 
 			/*string LHS_string = convertExpressionToString(UT->getLHS(), Context->getSourceManager());
@@ -310,7 +310,7 @@ void ASTUTGen::apply_DG2(const MatchFinder::MatchResult &Result)
             //Print auxiliary ======================================================================
 
 
-			
+
 		}
 	}
 }
@@ -343,7 +343,7 @@ void ASTUTGen::generateFunctionTest(string source_file, string function_name, Ar
     {
     	tmp_type = i->getOriginalType().getAsString();
     	tmp_name = i->getQualifiedNameAsString();
-    	
+
     	//TEST: check if this solves anything
     	/*if(tmp_name == "")
     		abort_test = true;*/
@@ -368,7 +368,7 @@ void ASTUTGen::generateFunctionTest(string source_file, string function_name, Ar
 	cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order, rtn_type);
 	bGen.generateBoostAssert(source_file, function_name, function_cfg_name, param_type, insert_order, rtn_type);
     //}
-   
+
 }
 
 //Method for constructing constructor test
@@ -397,7 +397,7 @@ void ASTUTGen::generateConstructorTest(string source, string constructor_name, A
     	tmp_type = cleanUnnecesaryChars(tmp_type);
 
     	tmp_name = i->getQualifiedNameAsString();
-    	
+
     	if(tmp_name == "")
     	{
     		tmp_name = tmp_type + "_" + to_string(noname_count);

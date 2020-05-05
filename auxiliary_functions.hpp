@@ -36,6 +36,7 @@
 #include "clang/Lex/Lexer.h"
 
 #include <sys/stat.h>
+#include <sys/types.h>
 
 using namespace clang::tooling;
 using namespace llvm;
@@ -46,6 +47,7 @@ using namespace clang::ast_matchers;
 using namespace std;
 
 bool fileExists(const string& filename);
+bool folderExists(const string& folder);
 string getCommentHeader(string filename);
 string deleteAllBeforeChar(string sToReplace, char cToFind);
 string cleanUnnecesaryChars(string sToReplace);
