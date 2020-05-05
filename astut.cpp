@@ -23,8 +23,8 @@ using namespace std;
 static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 
 // A help message for this specific tool can be added afterwards.
-static cl::extrahelp MoreHelp("\nAuthor: Kevin J. Valle-Gomez\n");
-static llvm::cl::OptionCategory OptC("example");
+static cl::extrahelp MoreHelp("\nIf you are working with C++ headers use the option -xc++ at the end.\nAuthor: Kevin J. Valle-Gomez (kevin.valle@uca.es)\n");
+static llvm::cl::OptionCategory OptC("ASTUT - Unit Test Generator for C/C++");
 
 static std::string GENERATION_FOLDER="Generated";
 
