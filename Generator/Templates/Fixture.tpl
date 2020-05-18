@@ -387,9 +387,7 @@ struct Fixture {
 	char* Read_char_s(string objectKey)
 	{
 		string s_value = readObject(objectKey);
-		char* result;
-
-		strcpy(result, s_value.c_str());
+ 		char* result = strdup(s_value.c_str());
 
 		return result;
 	}
