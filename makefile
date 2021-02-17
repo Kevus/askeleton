@@ -9,7 +9,7 @@ LLVMCXXFLAGS :=	\
 	-D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
 
 CXXFLAGS	:= $(LLVMCXXFLAGS) $(RTTIFLAG) -fexceptions
-LLVMLDFLAGS	:= $(shell llvm-config --ldflags --system-libs --libs) $(LDFLAGS)
+LLVMLDFLAGS	:= $(shell llvm-config-6.0 --ldflags --system-libs --libs) $(LDFLAGS)
 
 DIRC = Containers/
 DIRGEN = Generator/
