@@ -7,25 +7,29 @@
 DeclarationMatcher FD1 =
 	functionDecl(
 		unless(isImplicit()),
-		unless(returns(voidType()))
+		unless(returns(voidType())),
+		isExpansionInMainFile()
 	).bind("FD1");
 
 DeclarationMatcher MD1 =
 	cxxMethodDecl(
 		unless(isImplicit()),
 		isPublic(),
-		unless(returns(voidType()))
+		unless(returns(voidType())),
+		isExpansionInMainFile()
 	).bind("MD1");
 
 DeclarationMatcher CT1 =
 	cxxRecordDecl(
 		unless(isImplicit()),
-		isStruct()
+		isStruct(),
+		isExpansionInMainFile()
 	).bind("CT1");
 
 DeclarationMatcher CC1 =
 	cxxConstructorDecl(
-		unless(isImplicit())
+		unless(isImplicit()),
+		isExpansionInMainFile()
 	).bind("CC1");
 
 /***************************************************

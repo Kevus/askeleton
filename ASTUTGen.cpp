@@ -12,6 +12,7 @@ void ASTUTGen::run(const MatchFinder::MatchResult &Result)
 
 }
 
+//Method outside classes
 void ASTUTGen::apply_FD1(const MatchFinder::MatchResult &Result)
 {
 	ASTContext *Context = Result.Context;

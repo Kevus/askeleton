@@ -7,7 +7,6 @@ struct CustomType {
 };
 
 Método para el CFG:
-(revisar como lo hace lategen)
 var={#custom
 	var1=1;#int
 	var2=random#string

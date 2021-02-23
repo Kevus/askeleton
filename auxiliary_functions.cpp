@@ -1,11 +1,13 @@
 #include "auxiliary_functions.hpp"
 
+//Method to check if a file exists given a path
 bool fileExists(const string& filename)
 {
   struct stat buffer;
   return (stat (filename.c_str(), &buffer) == 0);
 }
 
+//Method to check if a file exists given a folder
 bool folderExists(const string& folder)
 {
   struct stat info;
@@ -18,6 +20,7 @@ bool folderExists(const string& folder)
       printf( "%s is no directory\n", pathname );*/
 }
 
+//Aux. method to generate the header for the files
 string getCommentHeader(string filename)
 {
 	/**
@@ -33,7 +36,7 @@ string getCommentHeader(string filename)
 	buffer << "#" << string(55, '/') << "\n"
 		   << "#////" << string(47, ' ') << "////\n"
 		   << "#//// AST-UT PROTOTYPE" << string(30, ' ') << "////\n"
-		   << "#//// UNIVERSIDAD DE CADIZ - NAVANTIA SISTEMAS      ////\n"
+		   << "#//// UNIVERSIDAD DE CADIZ - UCASE RESEARCH GROUP ////\n"
 		   << "#////" << string(47, ' ') << "////\n"
 		   << "#" << string(55, '/') << "\n"
 		   << "#File generated automatically by AST-UT.\n"
@@ -47,7 +50,7 @@ string getCommentHeader(string filename)
     ** #///////////////////////////////////////////////////////
 	** #////                                               ////
 	** #//// AST-UT PROTOTYPE                              ////
-	** #//// UNIVERSIDAD DE CADIZ - NAVANTIA SISTEMAS      ////
+	** #//// UNIVERSIDAD DE CADIZ - UCASE RESEARCH GROUP   ////
 	** #////                                               ////
 	** #///////////////////////////////////////////////////////
 	** #File generated automatically by AST-UT.
@@ -61,6 +64,8 @@ string getCommentHeader(string filename)
 	return buffer.str();
 }
 
+//Given a string and a charater, generates a new string without
+  //all the elements before the character.
 string deleteAllBeforeChar(string sToReplace, char cToFind)
 {
 	if ( sToReplace.find(cToFind) != string::npos )
@@ -69,6 +74,8 @@ string deleteAllBeforeChar(string sToReplace, char cToFind)
 	return sToReplace;
 }
 
+//This method deletes some tags in order to get the types.
+  //This was required by the company
 string cleanUnnecesaryChars(string sToReplace)
 {
 	//==========================================================
@@ -88,6 +95,7 @@ string cleanUnnecesaryChars(string sToReplace)
 	return sToReplace;
 }
 
+
 bool isNumeric(string query)
 {
 	try{
@@ -103,6 +111,7 @@ bool isNumeric(string query)
 	}
 }
 
+//Given an expression and a sourcemanager, return the expression as a string
 string convertExpressionToString(Expr *E, SourceManager &SM) {
 
 	LangOptions langOpts;
@@ -122,6 +131,7 @@ string convertExpressionToString(Expr *E, SourceManager &SM) {
 
 }
 
+//Check if a parameter is in a list of parameters. If so, saves the type in a pointer
 bool isInParameters(string name, ArrayRef<ParmVarDecl *> params, string& type)
 {
 	for(auto it : params)
