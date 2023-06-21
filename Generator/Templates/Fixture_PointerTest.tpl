@@ -1,10 +1,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////                                                                        ////
-//// AST-UT PROTOTYPE                                                       ////
+//// ASKELETON TEST GENERATOR                                                       ////
 //// UNIVERSIDAD DE CADIZ - NAVANTIA SISTEMAS                               ////
 ////                                                                        ////
 ////////////////////////////////////////////////////////////////////////////////
-//File generated automatically by AST-UT                                  
+//File generated automatically by ASKELETON                                  
 //Template originally created for LATEGEN
 //File to test: {filePath}
 //DESCRIPTION: This file sets tests cases for {cfgName}.

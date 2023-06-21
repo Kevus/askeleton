@@ -35,11 +35,11 @@ string getCommentHeader(string filename)
 	// ASTUT Banner
 	buffer << "#" << string(55, '/') << "\n"
 		   << "#////" << string(47, ' ') << "////\n"
-		   << "#//// AST-UT PROTOTYPE" << string(30, ' ') << "////\n"
+		   << "#//// ASKELETON TEST GENERATOR" << string(30, ' ') << "////\n"
 		   << "#//// UNIVERSIDAD DE CADIZ - UCASE RESEARCH GROUP ////\n"
 		   << "#////" << string(47, ' ') << "////\n"
 		   << "#" << string(55, '/') << "\n"
-		   << "#File generated automatically by AST-UT.\n"
+		   << "#File generated automatically by ASKELETON.\n"
 		   << "#File " << filename << "\n"
 		   << "#Date " << put_time(&tm, "%d-%m-%Y %H:%M:%S") << "\n"
 		   << "#" << string(55, '/') << "\n\n";
@@ -49,11 +49,11 @@ string getCommentHeader(string filename)
     /**
     ** #///////////////////////////////////////////////////////
 	** #////                                               ////
-	** #//// AST-UT PROTOTYPE                              ////
+	** #//// ASKELETON TEST GENERATOR                              ////
 	** #//// UNIVERSIDAD DE CADIZ - UCASE RESEARCH GROUP   ////
 	** #////                                               ////
 	** #///////////////////////////////////////////////////////
-	** #File generated automatically by AST-UT.
+	** #File generated automatically by ASKELETON.
 	** #File <filename>.<extension>
 	** #Date dd-mm-yyyy hh:MM:ss
 	** #///////////////////////////////////////////////////////

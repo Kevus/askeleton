@@ -1,4 +1,4 @@
-CXX		:= clang++
+CXX		:= clang++-6.0
 RTTIFLAG	:= -fno-rtti
 LLVMCXXFLAGS :=	\
 	-I/usr/lib/llvm-6.0/include -std=c++0x -fPIC -fvisibility-inlines-hidden	\

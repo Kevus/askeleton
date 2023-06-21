@@ -1,4 +1,4 @@
-CC := g++
+CC := clang++-6.0
 CFLAGS := -std=c++11
 TARGET := test
 
