@@ -1,5 +1,5 @@
-CC := clang++-6.0
-CFLAGS := -std=c++11
+CC := clang++
+CFLAGS := -std=c++14
 TARGET := test
 
 # $(wildcard *.cpp /xxx/xxx/*.cpp): get all .cpp files from the current directory and dir "/xxx/xxx/"
