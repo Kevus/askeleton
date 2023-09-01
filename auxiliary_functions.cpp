@@ -116,8 +116,8 @@ string convertExpressionToString(Expr *E, SourceManager &SM) {
 
 	LangOptions langOpts;
 
-	SourceLocation startLoc = E->getLocStart();
-	SourceLocation _endLoc = E->getLocEnd();
+	SourceLocation startLoc = E->getBeginLoc();
+	SourceLocation _endLoc = E->getEndLoc();
 	SourceLocation endLoc = Lexer::getLocForEndOfToken(_endLoc, 0, SM, langOpts);
 
 	try{
@@ -136,7 +136,7 @@ bool isInParameters(string name, ArrayRef<ParmVarDecl *> params, string& type)
 {
 	for(auto it : params)
 	{
-		if(it->getName() == name)
+		if(it->getName().str() == name)
 		{
 			type = it->getOriginalType().getAsString();
 			return true;

@@ -61,7 +61,7 @@ public :
 		
 		FullSourceLoc FullLocation;
 			
-		FullLocation = Context->getFullLoc(UT->getLocStart());
+		FullLocation = Context->getFullLoc(UT->getBeginLoc());
 
 		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){	
 			    	

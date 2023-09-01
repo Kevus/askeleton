@@ -21,7 +21,7 @@ void ASTUTGen::apply_FD1(const MatchFinder::MatchResult &Result)
 
 		FullSourceLoc FullLocation;
 
-		FullLocation = Context->getFullLoc(UT->getLocStart());
+		FullLocation = Context->getFullLoc(UT->getBeginLoc());
 
 		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){
 
@@ -30,7 +30,7 @@ void ASTUTGen::apply_FD1(const MatchFinder::MatchResult &Result)
 			{
 
 				//Get the file name
-				string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
+				string source_file = Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
 				unsigned first = source_file.find_last_of('/') + 1;
 				unsigned last = source_file.find_last_of('.');
 
@@ -39,7 +39,7 @@ void ASTUTGen::apply_FD1(const MatchFinder::MatchResult &Result)
 				BoostGenerator bGen(source_file, filename, false);
 
 				generateFunctionTest(filename,
-									 UT->getName(),
+									 UT->getName().str(),
 									 UT->parameters(),
 									 UT->getReturnType().getAsString(),
 									 bGen);
@@ -64,20 +64,20 @@ void ASTUTGen::apply_MD1(const MatchFinder::MatchResult &Result)
 
 		FullSourceLoc FullLocation;
 
-		FullLocation = Context->getFullLoc(UT->getLocStart());
+		FullLocation = Context->getFullLoc(UT->getBeginLoc());
 
 		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){
 
 			//In this case, we do not want class constructors
 			if(!isa<CXXConstructorDecl>(UT))
 			{
-				string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
-				string parentname = UT->getParent()->getName();
+				string source_file = Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
+				string parentname = UT->getParent()->getName().str();
 
 				BoostGenerator bGen(source_file, parentname, true);
 
 				generateFunctionTest(parentname,
-					 UT->getName(),
+					 UT->getName().str(),
 					 UT->parameters(),
 					 UT->getReturnType().getAsString(),
 					 bGen);
@@ -104,12 +104,12 @@ void ASTUTGen::apply_CT1(const MatchFinder::MatchResult &Result)
 
 		FullSourceLoc FullLocation;
 
-		FullLocation = Context->getFullLoc(UT->getLocStart());
+		FullLocation = Context->getFullLoc(UT->getBeginLoc());
 
 		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){
 
 			//Get the file name
-			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
+			string source_file = Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
 			unsigned first = source_file.find_last_of('/') + 1;
 			unsigned last = source_file.find_last_of('.');
 
@@ -165,12 +165,12 @@ void ASTUTGen::apply_CC1(const MatchFinder::MatchResult &Result)
 
 		FullSourceLoc FullLocation;
 
-		FullLocation = Context->getFullLoc(UT->getLocStart());
+		FullLocation = Context->getFullLoc(UT->getBeginLoc());
 
 		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){
 
-			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
-			string parentname = UT->getParent()->getName();
+			string source_file = Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
+			string parentname = UT->getParent()->getName().str();
 
 			BoostGenerator bGen(source_file, parentname, true);
 
@@ -209,7 +209,7 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 		const FunctionDecl *FD = Result.Nodes.getNodeAs<clang::FunctionDecl>("DG1b");
 		FullSourceLoc FullLocation;
 
-		FullLocation = Context->getFullLoc(UT->getLocStart());
+		FullLocation = Context->getFullLoc(UT->getBeginLoc());
 
 
 		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){
@@ -220,7 +220,7 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 			string RHS_type = UT->getRHS()->getType().getAsString();
 
 
-			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
+			string source_file = Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
 			unsigned first = source_file.find_last_of('/') + 1;
 			unsigned last = source_file.find_last_of('.');
 			string filename = source_file.substr(first, last-first);
@@ -229,10 +229,10 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 
 			if(!isNumeric(LHS_string) && isNumeric(RHS_string) && isInParameters(LHS_string, FD->parameters(), type))
 			{
-				generateTestData(filename, FD->getName(), LHS_string, type, RHS_string);
+				generateTestData(filename, FD->getName().str(), LHS_string, type, RHS_string);
 			} else if (isNumeric(LHS_string) && !isNumeric(RHS_string) && isInParameters(RHS_string, FD->parameters(), type))
 			{
-				generateTestData(filename, FD->getName(), RHS_string, type, LHS_string);
+				generateTestData(filename, FD->getName().str(), RHS_string, type, LHS_string);
 			} else
 			{
 				llvm::outs() << "non-numeric condition\n";
@@ -244,7 +244,7 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
                          << FullLocation.getSpellingLineNumber() << ":"
                          << FullLocation.getSpellingColumnNumber() << " - ";
 
-            llvm::outs() << " from function " << FD->getName() <<  "\n";
+            llvm::outs() << " from function " << FD->getName().str() <<  "\n";
             //Print auxiliary ======================================================================
 
 		}
@@ -260,11 +260,11 @@ void ASTUTGen::apply_DG2(const MatchFinder::MatchResult &Result)
 		const FunctionDecl *FD = Result.Nodes.getNodeAs<clang::FunctionDecl>("DG2b");
 		FullSourceLoc FullLocation;
 
-		FullLocation = Context->getFullLoc(UT->getLocStart());
+		FullLocation = Context->getFullLoc(UT->getBeginLoc());
 
 		if (FullLocation.isValid() && !Context->getSourceManager().isInSystemHeader(FullLocation)){
 
-			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
+			string source_file = Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
 			unsigned first = source_file.find_last_of('/') + 1;
 			unsigned last = source_file.find_last_of('.');
 			string filename = source_file.substr(first, last-first);
@@ -272,7 +272,7 @@ void ASTUTGen::apply_DG2(const MatchFinder::MatchResult &Result)
 
 			//string test = UT->getCond()->getAsString();
 			//llvm::outs() << "test: " << test << "\n";
-			//string cname = UT->getCond()->getName();
+			//string cname = UT->getCond()->getName().str();
 			//string ctype = UT->getCond()->getType().getAsString();
 
 			//llvm::outs() << /*"Cname: " << cname << */" Ctype: " << ctype << "\n";
@@ -285,7 +285,7 @@ void ASTUTGen::apply_DG2(const MatchFinder::MatchResult &Result)
 
 			//llvm::outs() << "LHS: " << LHS_string << " " << LHS_type << " - RHS: " << RHS_string << " " << RHS_type << "\n";
 
-			string source_file = Context->getSourceManager().getFilename(UT->getLocStart());
+			string source_file = Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
 			unsigned first = source_file.find_last_of('/') + 1;
 			unsigned last = source_file.find_last_of('.');
 			string filename = source_file.substr(first, last-first);
@@ -293,10 +293,10 @@ void ASTUTGen::apply_DG2(const MatchFinder::MatchResult &Result)
 			string type;
 			if(!isNumeric(LHS_string) && isNumeric(RHS_string) && isInParameters(LHS_string, FD->parameters(), type))
 			{
-				generateTestData(filename, FD->getName(), LHS_string, type, RHS_string);
+				generateTestData(filename, FD->getName().str(), LHS_string, type, RHS_string);
 			} else if (isNumeric(LHS_string) && !isNumeric(RHS_string) && isInParameters(RHS_string, FD->parameters(), type))
 			{
-				generateTestData(filename, FD->getName(), RHS_string, type, LHS_string);
+				generateTestData(filename, FD->getName().str(), RHS_string, type, LHS_string);
 			} else
 			{
 				llvm::outs() << "non-numeric condition\n";
@@ -307,7 +307,7 @@ void ASTUTGen::apply_DG2(const MatchFinder::MatchResult &Result)
                          << FullLocation.getSpellingLineNumber() << ":"
                          << FullLocation.getSpellingColumnNumber() << " - ";
 
-            llvm::outs() << " from function " << FD->getName() <<  "\n";
+            llvm::outs() << " from function " << FD->getName().str() <<  "\n";
             //Print auxiliary ======================================================================
 
 

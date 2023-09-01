@@ -29,9 +29,11 @@ static llvm::cl::OptionCategory OptC("ASTUT - Unit Test Generator for C/C++");
 static std::string GENERATION_FOLDER="Generated";
 
 int main(int argc, const char **argv) {
-  CommonOptionsParser OptionsParser(argc, argv, OptC);
-  ClangTool Tool(OptionsParser.getCompilations(),
-                 OptionsParser.getSourcePathList());
+  //CommonOptionsParser OptionsParser(argc, argv, OptC);
+  // Esto se ha quedado 'deprecated', usando esta solucion temporal
+  Expected<CommonOptionsParser> options = CommonOptionsParser::create(argc, argv, OptC);
+  ClangTool Tool(options->getCompilations(),
+                 options->getSourcePathList());
 
   MatchFinder Finder;
   ASTUTGen Functionality;
