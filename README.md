@@ -2,7 +2,7 @@ USAGE: astut [options] <source0> [... <sourceN>]
 
 OPTIONS:
 
-ASTUT - Unit Test Generator for C/C++:
+ASkeleTon - Unit Test Generator for C/C++:
 
   -extra-arg=<string>        - Additional argument to append to the compiler command line
   -extra-arg-before=<string> - Additional argument to prepend to the compiler command line

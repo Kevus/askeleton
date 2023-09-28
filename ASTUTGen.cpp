@@ -35,7 +35,8 @@ void ASTUTGen::apply_FD1(const MatchFinder::MatchResult &Result)
 				unsigned last = source_file.find_last_of('.');
 
 				string filename = source_file.substr(first, last-first);
-
+				
+				//TO-DO: MODIFICAR PARA AÑADIR MAS O MENOS FRAMEWORKS
 				BoostGenerator bGen(source_file, filename, false);
 
 				generateFunctionTest(filename,
@@ -74,6 +75,7 @@ void ASTUTGen::apply_MD1(const MatchFinder::MatchResult &Result)
 				string source_file = Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
 				string parentname = UT->getParent()->getName().str();
 
+				//TO-DO: MODIFICAR PARA AÑADIR MAS O MENOS FRAMEWORKS
 				BoostGenerator bGen(source_file, parentname, true);
 
 				generateFunctionTest(parentname,
@@ -115,6 +117,7 @@ void ASTUTGen::apply_CT1(const MatchFinder::MatchResult &Result)
 
 			string filename = source_file.substr(first, last-first);
 
+			//TO-DO: MODIFICAR PARA AÑADIR MAS O MENOS FRAMEWORKS
 			BoostGenerator bGen(source_file, filename, false);
 
 			//We'll read the fields here
@@ -172,6 +175,7 @@ void ASTUTGen::apply_CC1(const MatchFinder::MatchResult &Result)
 			string source_file = Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
 			string parentname = UT->getParent()->getName().str();
 
+			//TO-DO: MODIFICAR PARA AÑADIR MAS O MENOS FRAMEWORKS
 			BoostGenerator bGen(source_file, parentname, true);
 
 			generateConstructorTest(
