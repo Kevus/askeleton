@@ -2,6 +2,7 @@
 #define ASTUTGEN_HPP
 
 #include "Generator/ConfigGenerator.hpp"
+#include "Generator/TestFrameworks.hpp"
 #include "Generator/CustomGenerator.hpp"
 
 #include "auxiliary_functions.hpp"

@@ -17,7 +17,7 @@ DIRGEN = Generator/
 SOURCES =	\
 	auxiliary_functions.cpp ASTUTGen.cpp ASTUTMatchers.cpp \
 	Generator/RandomValuesGenerator.cpp Generator/CustomGenerator.cpp \
-	Generator/ConfigGenerator.cpp astut.cpp
+	Generator/ConfigGenerator.cpp Generator/TestFrameworks.cpp astut.cpp
 
 OBJECTS = $(SOURCES:.cpp=.o)
 EXES = $(OBJECTS:.o=)
@@ -40,14 +40,14 @@ CLANGLIBS = \
 	-lclangSupport
 
 
-astut:	\
+askeleton:	\
 	auxiliary_functions.o ASTUTGen.o ASTUTMatchers.o \
 	Generator/RandomValuesGenerator.o Generator/CustomGenerator.o \
-	Generator/ConfigGenerator.o astut.o
+	Generator/ConfigGenerator.o Generator/TestFrameworks.o astut.o
 	$(CXX) -o $@ $^ $(CLANGLIBS) $(LLVMLDFLAGS)
 
-astut.o: auxiliary_functions.hpp ASTUTGen.hpp ASTUTMatchers.hpp Generator/RandomValuesGenerator.hpp Generator/CustomGenerator.hpp Generator/ConfigGenerator.hpp	\
-	auxiliary_functions.o ASTUTGen.o ASTUTMatchers.o Generator/RandomValuesGenerator.o Generator/CustomGenerator.o Generator/ConfigGenerator.o
+askeleton.o: auxiliary_functions.hpp ASTUTGen.hpp ASTUTMatchers.hpp Generator/RandomValuesGenerator.hpp Generator/CustomGenerator.hpp Generator/ConfigGenerator.hpp Generator/TestFrameworks.hpp	\
+	auxiliary_functions.o ASTUTGen.o ASTUTMatchers.o Generator/RandomValuesGenerator.o Generator/CustomGenerator.o Generator/ConfigGenerator.o Generator/TestFrameworks.o
 
 clean:
-	rm -f -r *.o Generator/*.o Generated/UT/* Generated_LOG* astut
+	rm -f -r *.o Generator/*.o Generated/UT/* Generated_LOG* askeleton
