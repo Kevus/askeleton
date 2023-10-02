@@ -1,3 +1,3 @@
-- Cuando se analiza un .cpp que tiene definidas las cabeceras en .h o .hpp, el análisis se realiza por duplicado
 - Cuando se analiza un .h en vez de un .hpp, Clang lo lee como C y no como C++, lo que provoca errores. SOLUCIÓN: añadir bandera -xc++
 - Aunque en el main el directorio de generación es configurable, todavía no lo es en generator.
+- Tipos de datos como "int64_t" se convierten a "int64 t" y provocan errores.

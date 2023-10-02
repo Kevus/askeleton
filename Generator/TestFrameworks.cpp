@@ -460,6 +460,7 @@ void BoostGenerator::addStructReadToFixture(string type_name, map<string, string
 	}
 
 	ofstream outputFile(fixture_path);
+	fileContent = cleanClassIdentifier(fileContent);
 	outputFile << fileContent;
 
 	fixture_file.close();

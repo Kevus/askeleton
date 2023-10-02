@@ -3,9 +3,9 @@
 void ASTUTGen::run(const MatchFinder::MatchResult &Result)
 {
 	apply_FD1(Result);
-	apply_MD1(Result);
-	apply_CT1(Result);
-	apply_CC1(Result);
+	//apply_MD1(Result);
+	apply_CT1(Result); //Necessary for structs and classes
+	//apply_CC1(Result);
 
 	//Kevin: dejamos estos fuera, nos interesa ahora solo las funciones, los datos vendrán por KLEE
 	//apply_DG1(Result);
@@ -127,7 +127,6 @@ void ASTUTGen::apply_CT1(const MatchFinder::MatchResult &Result)
 			for(auto i : UT->fields())
 				field_decl.push_back(i);
 
-
 			bool overloadedEq = false;
 			bool overloadedFlux = false;
 			for(auto i : UT->methods())
@@ -140,7 +139,8 @@ void ASTUTGen::apply_CT1(const MatchFinder::MatchResult &Result)
 			}
 
 			generateCustomTypeFixture(filename,
-					UT->getNameAsString(),
+					//UT->getNameAsString(),
+					UT->getQualifiedNameAsString(),
 					field_decl,
 					overloadedEq,
 					overloadedFlux,
