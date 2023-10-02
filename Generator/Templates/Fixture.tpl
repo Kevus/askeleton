@@ -251,6 +251,7 @@ struct Fixture {
 	// EQUIVALENT TYPES
 	// unsigned
 	// unsigned int
+	// size_t
 	//==========================================================
 	unsigned Read_unsigned_int(string objectKey)
 	{
@@ -258,6 +259,11 @@ struct Fixture {
 	}
 
 	unsigned int Read_unsigned(string objectKey)
+	{
+		return Read_unsigned_int(readObject(objectKey));
+	}
+
+	size_t Read_size_t(string objectKey)
 	{
 		return Read_unsigned_int(readObject(objectKey));
 	}

@@ -1,5 +1,10 @@
 {
     "files.associations": {
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "string": "cpp",
+        "ctime": "cpp",
+        "*.tcc": "cpp",
+        "iosfwd": "cpp",
+        "iostream": "cpp"
     }
 }

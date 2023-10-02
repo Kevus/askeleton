@@ -54,6 +54,7 @@ string cleanUnnecesaryChars(string sToReplace);
 bool isNumeric(string query);
 string convertExpressionToString(Expr *E, SourceManager &SM);
 bool isInParameters(string name, ArrayRef<ParmVarDecl *> params, string& type);
-
+void initializeFrameworks(bool BoostFramework, bool CatchFramework, bool GtestFramework);
+void readFrameworks();
 
 #endif

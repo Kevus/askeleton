@@ -20,8 +20,6 @@ using namespace clang::ast_matchers;
 
 using namespace std;
 
-
-
 class ASTUTGen : public MatchFinder::MatchCallback
 {
 public:

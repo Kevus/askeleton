@@ -1,5 +1,6 @@
 #include "ASTUTGen.hpp"
 #include "ASTUTMatchers.hpp"
+#include "auxiliary_functions.hpp"
 
 #include "clang/Frontend/FrontendActions.h"
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -25,6 +26,10 @@ static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 // A help message for this specific tool can be added afterwards.
 static cl::extrahelp MoreHelp("\nIf you are working with C++ headers use the option -xc++ at the end.\nAuthor: Kevin J. Valle-Gomez (kevin.valle@uca.es)\n");
 static llvm::cl::OptionCategory OptC("ASkeleTon - Unit Test Generator for C/C++");
+
+cl::opt<bool> BoostFramework ("boost", cl::desc("Enable boost"), cl::init(true));
+cl::opt<bool> CatchFramework ("catch2", cl::desc("Enable catch"), cl::init(true));
+cl::opt<bool> GtestFramework ("gtest", cl::desc("Enable google test"), cl::init(true));
 
 static std::string GENERATION_FOLDER="Generated";
 

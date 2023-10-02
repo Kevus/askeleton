@@ -7,8 +7,9 @@ void ASTUTGen::run(const MatchFinder::MatchResult &Result)
 	apply_CT1(Result);
 	apply_CC1(Result);
 
-	apply_DG1(Result);
-	apply_DG2(Result);
+	//Kevin: dejamos estos fuera, nos interesa ahora solo las funciones, los datos vendrán por KLEE
+	//apply_DG1(Result);
+	//apply_DG2(Result);
 
 }
 
@@ -244,11 +245,11 @@ void ASTUTGen::apply_DG1(const MatchFinder::MatchResult &Result)
 
 
 			//Print auxiliary ======================================================================
-           	llvm::outs() << "Found BinaryOperator at "
+           	/*llvm::outs() << "Found BinaryOperator at "
                          << FullLocation.getSpellingLineNumber() << ":"
                          << FullLocation.getSpellingColumnNumber() << " - ";
 
-            llvm::outs() << " from function " << FD->getName().str() <<  "\n";
+            llvm::outs() << " from function " << FD->getName().str() <<  "\n";*/
             //Print auxiliary ======================================================================
 
 		}

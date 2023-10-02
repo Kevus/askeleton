@@ -1,4 +1,5 @@
 #include "ConfigGenerator.hpp"
+#include <regex>
 
 class BoostGenerator
 {

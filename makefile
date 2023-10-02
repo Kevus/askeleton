@@ -1,7 +1,7 @@
 CXX		:= clang++
 RTTIFLAG	:= -fno-rtti
 LLVMCXXFLAGS :=	\
-	-I/usr/lib/llvm-15/include -std=c++0x -fPIC -fvisibility-inlines-hidden	\
+	-g -I/usr/lib/llvm-15/include -std=c++0x -fPIC -fvisibility-inlines-hidden	\
 	-Werror=date-time -std=c++14 -Wall -W -Wno-unused-parameter -Wwrite-strings	\
 	-Wcast-qual -Wno-missing-field-initializers -pedantic -Wno-long-long	\
 	-Wno-uninitialized -Wdelete-non-virtual-dtor -Wno-comment -ffunction-sections	\

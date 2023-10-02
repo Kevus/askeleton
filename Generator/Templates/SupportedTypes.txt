@@ -12,6 +12,7 @@ int
 signed_int
 unsigned
 unsigned_int
+size_t
 long
 long_int
 signed_long
