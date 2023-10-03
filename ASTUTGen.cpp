@@ -3,9 +3,9 @@
 void ASTUTGen::run(const MatchFinder::MatchResult &Result)
 {
 	apply_FD1(Result);
-	//apply_MD1(Result);
+	apply_MD1(Result);
 	apply_CT1(Result); //Necessary for structs and classes
-	//apply_CC1(Result);
+	apply_CC1(Result);
 
 	//Kevin: dejamos estos fuera, nos interesa ahora solo las funciones, los datos vendrán por KLEE
 	//apply_DG1(Result);

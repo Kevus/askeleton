@@ -320,6 +320,7 @@ void BoostGenerator::addStructReadToFixture(string type_name, map<string, string
 						 		   istreambuf_iterator<char>() );
 	
 
+	//TO-DO: This will be a problem when using custom types...
 	/**
 	** EXAMPLE
 	**
