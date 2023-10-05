@@ -47,6 +47,12 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass
 		valuesToChange.insert(pair<string,string>("{className}", ""));
 		valuesToChange.insert(pair<string,string>("{classNameTest}", ""));
 	}
+
+	//We will create the folder if it doesn't exist
+	if(!folderExists("Generated/UT/" + cfgName)) {
+		string sys_command = "mkdir -p Generated/UT/" + cfgName;
+		system(sys_command.c_str());
+	}
 	fixture_path = "Generated/UT/" + cfgName + "/" + cfgName + "_fixture.hpp";
 
 	generateFixture(fixture_path);
@@ -60,9 +66,9 @@ void BoostGenerator::generateFixture(string outputPath)
 		string fileContent;
 
 		ifstream tplFile (templatePath);
-		ofstream outputFile (outputPath);
+		ofstream outputFile(outputPath);
 
-		if (tplFile.is_open())
+		if (tplFile.is_open() && outputFile.is_open())
 		{
 			//Read the entire template into memory
 			fileContent = string( (istreambuf_iterator<char>(tplFile)),
@@ -75,7 +81,7 @@ void BoostGenerator::generateFixture(string outputPath)
 
 			outputFile.close();
 			tplFile.close();
-		}//if tpl
+		} else cout << "ERROR: COULDN'T WRITE FIXTURE FILE. IT WILL NOT BE CREATED" << endl; //if tpl
 	}//if fileExist
 }
 
