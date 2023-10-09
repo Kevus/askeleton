@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////                                                                        ////
-//// ASKELETON TEST GENERATOR                                                       ////
-//// UNIVERSIDAD DE CADIZ - NAVANTIA SISTEMAS                               ////
+//// ASKELETON TEST GENERATOR                                               ////
+//// UNIVERSIDAD DE CADIZ                           						////
 ////                                                                        ////
 ////////////////////////////////////////////////////////////////////////////////
 //File generated automatically by ASKELETON

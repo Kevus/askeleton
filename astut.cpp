@@ -54,10 +54,12 @@ int main(int argc, const char **argv) {
     std::ostringstream oss;
     oss << std::put_time(&tm, "%d%m%Y%H%M%S");
     std::string today = oss.str();
-
-    std::string system_op = "mkdir Generated_LOG" + today + "/ && cp -r " +
-    GENERATION_FOLDER + "/UT/* Generated_LOG" + today + "/ && " +
-    "rm -R " + GENERATION_FOLDER + "/UT/*";
+  
+    //DEBUG: Generation of log folders is temporarily disabled
+    //std::string system_op = "mkdir Generated_LOG" + today + "/ && cp -r " +
+    //GENERATION_FOLDER + "/UT/* Generated_LOG" + today + "/ && " +
+    //"rm -R " + GENERATION_FOLDER + "/UT/*";
+    std::string system_op = "rm -R " + GENERATION_FOLDER + "/UT/*";
 
     //Reset the results Folder
     system(system_op.c_str());

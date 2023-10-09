@@ -4,11 +4,14 @@
  ** DECLARATION OF MATCHERS
  ***************************************************/
 
+// Make matchers avoid 'main' function
+
 DeclarationMatcher FD1 =
 	functionDecl(
 		unless(isImplicit()),
 		unless(returns(voidType())),
-		isExpansionInMainFile()
+		isExpansionInMainFile(),
+		unless(hasName("main"))
 	).bind("FD1");
 
 DeclarationMatcher MD1 =
@@ -16,7 +19,8 @@ DeclarationMatcher MD1 =
 		unless(isImplicit()),
 		isPublic(),
 		unless(returns(voidType())),
-		isExpansionInMainFile()
+		isExpansionInMainFile(),
+		unless(hasName("main"))
 	).bind("MD1");
 
 DeclarationMatcher CT1 =
