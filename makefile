@@ -49,5 +49,8 @@ askeleton:	\
 askeleton.o: auxiliary_functions.hpp ASTUTGen.hpp ASTUTMatchers.hpp Generator/RandomValuesGenerator.hpp Generator/CustomGenerator.hpp Generator/ConfigGenerator.hpp Generator/TestFrameworks.hpp	\
 	auxiliary_functions.o ASTUTGen.o ASTUTMatchers.o Generator/RandomValuesGenerator.o Generator/CustomGenerator.o Generator/ConfigGenerator.o Generator/TestFrameworks.o
 
+install: askeleton
+	cp askeleton /usr/local/bin
+
 clean:
 	rm -f -r *.o Generator/*.o Generated/UT/* Generated_LOG* askeleton
