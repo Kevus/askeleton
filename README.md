@@ -1,4 +1,6 @@
-USAGE: astut [options] <source0> [... <sourceN>]
+Please set the enviromental variable ASKELETON_HOME to the source path.
+
+USAGE: askeleton [options] <source0> [... <sourceN>]
 
 OPTIONS:
 

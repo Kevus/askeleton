@@ -11,9 +11,6 @@ LLVMCXXFLAGS :=	\
 CXXFLAGS	:= $(LLVMCXXFLAGS) $(RTTIFLAG) -fexceptions
 LLVMLDFLAGS	:= $(shell llvm-config --ldflags --system-libs --libs) $(LDFLAGS)
 
-DIRC = Containers/
-DIRGEN = Generator/
-
 SOURCES =	\
 	auxiliary_functions.cpp ASTUTGen.cpp ASTUTMatchers.cpp \
 	Generator/RandomValuesGenerator.cpp Generator/CustomGenerator.cpp \

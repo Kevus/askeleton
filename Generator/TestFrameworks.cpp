@@ -21,6 +21,11 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass
 	auto tm = *localtime(&t);
 	ostringstream dateStream;
 
+	if(getenv("ASKELETON_HOME") != NULL) {
+			ASKELETON_HOME = getenv("ASKELETON_HOME");
+	} else  ASKELETON_HOME="";
+
+
 	valuesToChange.insert(pair<string, string>("{filePath}", filePath));
 	valuesToChange.insert(pair<string, string>("{cfgName}", cfgName));
 
@@ -62,7 +67,7 @@ void BoostGenerator::generateFixture(string outputPath)
 {
 	if(!fileExists(outputPath))
 	{
-		string templatePath = "Generator/Templates/Fixture.tpl";
+		string templatePath = ASKELETON_HOME + "Generator/Templates/Fixture.tpl";
 		string fileContent;
 
 		ifstream tplFile (templatePath);
@@ -87,7 +92,7 @@ void BoostGenerator::generateFixture(string outputPath)
 
 void BoostGenerator::generateBoostAssert(string class_test, string function_name, string function_cfg_name, map<string, string> param_type, vector<string> insertion_order, string return_type)
 {
-	string templatePath = "Generator/Templates/BoostTest.tpl";
+	string templatePath = ASKELETON_HOME + "Generator/Templates/BoostTest.tpl";
 	string outputPath = "Generated/UT/" + class_test + "/" + class_test + "_test.cpp";
 	string fileContent;
 	string ptype;
@@ -116,8 +121,8 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 			//==========================================================
 
 			//Copy makefile and supported types for compiling tests
-			system(("cp -r Generator/Templates/makefile Generated/UT/" + class_test + "/").c_str());
-			system(("cp -r Generator/Templates/SupportedTypes.txt Generated/UT/" + class_test + "/").c_str());
+			system(("cp -r " + ASKELETON_HOME + "Generator/Templates/makefile Generated/UT/" + class_test + "/").c_str());
+			system(("cp -r " + ASKELETON_HOME + "Generator/Templates/SupportedTypes.txt Generated/UT/" + class_test + "/").c_str());
 
 		} else
 		{
@@ -239,7 +244,7 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 
 void BoostGenerator::generateBoostConstructorAssert(string class_test, string constructor_name, string constructor_cfg_name, map<string, string> param_type, vector<string> insertion_order)
 {
-	string templatePath = "Generator/Templates/BoostTest.tpl";
+	string templatePath = ASKELETON_HOME + "Generator/Templates/BoostTest.tpl";
 	string outputPath = "Generated/UT/" + class_test + "/" + class_test + "_test.cpp";
 	string fileContent;
 	string ptype;
@@ -268,8 +273,8 @@ void BoostGenerator::generateBoostConstructorAssert(string class_test, string co
 			//==========================================================
 
 			//Copy makefile for compiling tests
-			system(("cp -r Generator/Templates/makefile Generated/UT/" + class_test + "/").c_str());
-			system(("cp -r Generator/Templates/SupportedTypes.txt Generated/UT/" + class_test + "/").c_str());
+			system(("cp -r " + ASKELETON_HOME + "Generator/Templates/makefile Generated/UT/" + class_test + "/").c_str());
+			system(("cp -r " + ASKELETON_HOME + "Generator/Templates/SupportedTypes.txt Generated/UT/" + class_test + "/").c_str());
 
 		} else
 		{

@@ -31,9 +31,15 @@ cl::opt<bool> BoostFramework ("boost", cl::desc("Enable boost"), cl::init(true))
 cl::opt<bool> CatchFramework ("catch2", cl::desc("Enable catch"), cl::init(true));
 cl::opt<bool> GtestFramework ("gtest", cl::desc("Enable google test"), cl::init(true));
 
-static std::string GENERATION_FOLDER="Generated";
+static string GENERATION_FOLDER="Generated";
 
 int main(int argc, const char **argv) {
+  //Small comprobation to verify access to templates
+  string ASKELETON_HOME = "";
+  if(getenv("ASKELETON_HOME") != NULL) ASKELETON_HOME = getenv("ASKELETON_HOME");
+  if(ASKELETON_HOME == "") cerr << "WARNING: ASKELETON_HOME is not set. Templates will not be accesible unless runing ASKELETON in the compilation folder." << endl;
+
+
   //CommonOptionsParser OptionsParser(argc, argv, OptC);
   // Esto se ha quedado 'deprecated', usando esta solucion temporal
   Expected<CommonOptionsParser> options = CommonOptionsParser::create(argc, argv, OptC);
@@ -48,18 +54,18 @@ int main(int argc, const char **argv) {
 
   //We'll get the time for the LOG folder
   if (folderExists(GENERATION_FOLDER)) {
-    auto t = std::time(nullptr);
-    auto tm = *std::localtime(&t);
+    auto t = time(nullptr);
+    auto tm = *localtime(&t);
 
-    std::ostringstream oss;
-    oss << std::put_time(&tm, "%d%m%Y%H%M%S");
-    std::string today = oss.str();
+    ostringstream oss;
+    oss << put_time(&tm, "%d%m%Y%H%M%S");
+    string today = oss.str();
   
     //DEBUG: Generation of log folders is temporarily disabled
-    //std::string system_op = "mkdir Generated_LOG" + today + "/ && cp -r " +
+    //string system_op = "mkdir Generated_LOG" + today + "/ && cp -r " +
     //GENERATION_FOLDER + "/UT/* Generated_LOG" + today + "/ && " +
     //"rm -R " + GENERATION_FOLDER + "/UT/*";
-    std::string system_op = "rm -R " + GENERATION_FOLDER + "/UT/*";
+    string system_op = "rm -R " + GENERATION_FOLDER + "/UT/*";
 
     //Reset the results Folder
     system(system_op.c_str());
