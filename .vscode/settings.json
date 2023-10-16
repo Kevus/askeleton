@@ -6,6 +6,7 @@
         "*.tcc": "cpp",
         "iosfwd": "cpp",
         "iostream": "cpp",
-        "memory_resource": "cpp"
+        "memory_resource": "cpp",
+        "ostream": "cpp"
     }
 }

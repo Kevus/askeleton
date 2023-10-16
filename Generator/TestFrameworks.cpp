@@ -25,9 +25,25 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass
 			ASKELETON_HOME = getenv("ASKELETON_HOME");
 	} else  ASKELETON_HOME="";
 
-
 	valuesToChange.insert(pair<string, string>("{filePath}", filePath));
 	valuesToChange.insert(pair<string, string>("{cfgName}", cfgName));
+
+	// String obtained from 'filePath', containing only the name of the file without extension
+	string fileName = filePath.substr(filePath.find_last_of("/\\") + 1);
+	fileName = fileName.substr(0, fileName.find_last_of("."));
+	valuesToChange.insert(pair<string, string>("{fileName}", fileName));
+
+	// Given the filePath to the .h or .hpp, it will look for the .c or .cpp in the same directory. If it doesnt exist, it will show an error
+	string cppPath = filePath.substr(0, filePath.find_last_of("."));
+	if(fileExists(cppPath + ".cpp")) {
+		valuesToChange.insert(pair<string, string>("{cppPath}", cppPath + ".cpp"));
+	} else if(fileExists(cppPath + ".c")) {
+		valuesToChange.insert(pair<string, string>("{cppPath}", cppPath + ".c"));
+	} else {
+		cout << "ERROR: .cpp file not found. It will not be included in the makefile" << endl;
+		valuesToChange.insert(pair<string, string>("{cppPath}", filePath));
+	}
+	
 
 	dateStream << put_time(&tm, "%d-%m-%Y %H:%M:%S");
 
@@ -59,8 +75,9 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass
 		system(sys_command.c_str());
 	}
 	fixture_path = "Generated/UT/" + cfgName + "/" + cfgName + "_fixture.hpp";
+	makefile_path = "Generated/UT/" + cfgName + "/makefile";
 
-	generateFixture(fixture_path);
+	generateFixture(fixture_path); generateMakefile(makefile_path);
 }
 
 void BoostGenerator::generateFixture(string outputPath)
@@ -87,6 +104,33 @@ void BoostGenerator::generateFixture(string outputPath)
 			outputFile.close();
 			tplFile.close();
 		} else cout << "ERROR: COULDN'T WRITE FIXTURE FILE. IT WILL NOT BE CREATED" << endl; //if tpl
+	}//if fileExist
+}
+
+void BoostGenerator::generateMakefile(string outputPath)
+{
+	if(!fileExists(outputPath))
+	{
+		string templatePath = ASKELETON_HOME + "Generator/Templates/makefile.tpl";
+		string fileContent;
+
+		ifstream tplFile (templatePath);
+		ofstream outputFile(outputPath);
+
+		if (tplFile.is_open() && outputFile.is_open())
+		{
+			//Read the entire template into memory
+			fileContent = string( (istreambuf_iterator<char>(tplFile)),
+		   				  istreambuf_iterator<char>() );
+
+			for(auto i : valuesToChange)
+				boost::replace_all(fileContent, i.first, i.second);
+			
+			outputFile << fileContent;
+
+			outputFile.close();
+			tplFile.close();
+		} else cout << "ERROR: COULDN'T WRITE MAKEFILE. IT WILL NOT BE CREATED" << endl; //if tpl
 	}//if fileExist
 }
 
@@ -121,7 +165,7 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 			//==========================================================
 
 			//Copy makefile and supported types for compiling tests
-			system(("cp -r " + ASKELETON_HOME + "Generator/Templates/makefile Generated/UT/" + class_test + "/").c_str());
+			//system(("cp -r " + ASKELETON_HOME + "Generator/Templates/makefile Generated/UT/" + class_test + "/").c_str());
 			system(("cp -r " + ASKELETON_HOME + "Generator/Templates/SupportedTypes.txt Generated/UT/" + class_test + "/").c_str());
 
 		} else
@@ -273,7 +317,7 @@ void BoostGenerator::generateBoostConstructorAssert(string class_test, string co
 			//==========================================================
 
 			//Copy makefile for compiling tests
-			system(("cp -r " + ASKELETON_HOME + "Generator/Templates/makefile Generated/UT/" + class_test + "/").c_str());
+			//system(("cp -r " + ASKELETON_HOME + "Generator/Templates/makefile Generated/UT/" + class_test + "/").c_str());
 			system(("cp -r " + ASKELETON_HOME + "Generator/Templates/SupportedTypes.txt Generated/UT/" + class_test + "/").c_str());
 
 		} else

@@ -19,6 +19,7 @@ public:
 private:
 	
 	void generateFixture(string outputPath);
+	void generateMakefile(string outputPath);
 	//vector<string> fillDefaultTypes(string path);
 	void checkTypes(string type, string support_path);
 
@@ -26,6 +27,6 @@ private:
 	//vector<string> defaultTypes;
 	bool isFromClass;
 
-	string fixture_path;
+	string fixture_path, makefile_path;
 	string ASKELETON_HOME;
 };
