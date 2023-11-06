@@ -1,15 +1,16 @@
 #include "TestFrameworks.hpp"
 
-
-string cleanClassIdentifier(string sToReplace) {
+string cleanClassIdentifier(string sToReplace)
+{
 	string result = sToReplace;
-	if(result.find("class") != string::npos) {
+	if (result.find("class") != string::npos)
+	{
 		boost::replace_all(result, "class_", "");
 		boost::replace_all(result, "class ", "");
 	}
 
-	std::regex pattern("Read_(\\w+)::(\\w+)");//\\((\\w+) (\\w+)\\)");
-    std::string output = std::regex_replace(result, pattern, "Read_$1_$2");
+	std::regex pattern("Read_(\\w+)::(\\w+)"); //\\((\\w+) (\\w+)\\)");
+	std::string output = std::regex_replace(result, pattern, "Read_$1_$2");
 
 	return output;
 }
@@ -21,9 +22,16 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass
 	auto tm = *localtime(&t);
 	ostringstream dateStream;
 
-	if(getenv("ASKELETON_HOME") != NULL) {
-			ASKELETON_HOME = getenv("ASKELETON_HOME");
-	} else  ASKELETON_HOME="";
+	if (getenv("ASKELETON_HOME") != NULL)
+	{
+		ASKELETON_HOME = getenv("ASKELETON_HOME");
+		if (!boost::algorithm::ends_with(ASKELETON_HOME, "/"))
+		{
+			ASKELETON_HOME += "/";
+		}
+	}
+	else
+		ASKELETON_HOME = "";
 
 	valuesToChange.insert(pair<string, string>("{filePath}", filePath));
 	valuesToChange.insert(pair<string, string>("{cfgName}", cfgName));
@@ -35,15 +43,19 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass
 
 	// Given the filePath to the .h or .hpp, it will look for the .c or .cpp in the same directory. If it doesnt exist, it will show an error
 	string cppPath = filePath.substr(0, filePath.find_last_of("."));
-	if(fileExists(cppPath + ".cpp")) {
+	if (fileExists(cppPath + ".cpp"))
+	{
 		valuesToChange.insert(pair<string, string>("{cppPath}", cppPath + ".cpp"));
-	} else if(fileExists(cppPath + ".c")) {
+	}
+	else if (fileExists(cppPath + ".c"))
+	{
 		valuesToChange.insert(pair<string, string>("{cppPath}", cppPath + ".c"));
-	} else {
+	}
+	else
+	{
 		cout << "ERROR: .cpp file not found. It will not be included in the makefile" << endl;
 		valuesToChange.insert(pair<string, string>("{cppPath}", filePath));
 	}
-	
 
 	dateStream << put_time(&tm, "%d-%m-%Y %H:%M:%S");
 
@@ -52,86 +64,93 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass
 	//==========================================================
 	// These methods have not been implemented
 	//==========================================================
-	valuesToChange.insert(pair<string,string>("{includes}", ""));
-	valuesToChange.insert(pair<string,string>("{namespaces}", ""));
-	//valuesToChange.insert(pair<string,string>("{readObject}", ""));
-	valuesToChange.insert(pair<string,string>("{newMethods}", ""));
+	valuesToChange.insert(pair<string, string>("{includes}", ""));
+	valuesToChange.insert(pair<string, string>("{namespaces}", ""));
+	// valuesToChange.insert(pair<string,string>("{readObject}", ""));
+	valuesToChange.insert(pair<string, string>("{newMethods}", ""));
 	//==========================================================
 	//==========================================================
 
 	if (isFromClass)
 	{
-		valuesToChange.insert(pair<string,string>("{className}", cfgName));
-		valuesToChange.insert(pair<string,string>("{classNameTest}", cfgName + "_test;"));
-	} else
+		valuesToChange.insert(pair<string, string>("{className}", cfgName));
+		valuesToChange.insert(pair<string, string>("{classNameTest}", cfgName + "_test;"));
+	}
+	else
 	{
-		valuesToChange.insert(pair<string,string>("{className}", ""));
-		valuesToChange.insert(pair<string,string>("{classNameTest}", ""));
+		valuesToChange.insert(pair<string, string>("{className}", ""));
+		valuesToChange.insert(pair<string, string>("{classNameTest}", ""));
 	}
 
-	//We will create the folder if it doesn't exist
-	if(!folderExists("Generated/UT/" + cfgName)) {
+	// We will create the folder if it doesn't exist
+	if (!folderExists("Generated/UT/" + cfgName))
+	{
 		string sys_command = "mkdir -p Generated/UT/" + cfgName;
 		system(sys_command.c_str());
 	}
 	fixture_path = "Generated/UT/" + cfgName + "/" + cfgName + "_fixture.hpp";
 	makefile_path = "Generated/UT/" + cfgName + "/makefile";
 
-	generateFixture(fixture_path); generateMakefile(makefile_path);
+	generateFixture(fixture_path);
+	generateMakefile(makefile_path);
 }
 
 void BoostGenerator::generateFixture(string outputPath)
 {
-	if(!fileExists(outputPath))
+	if (!fileExists(outputPath))
 	{
 		string templatePath = ASKELETON_HOME + "Generator/Templates/Fixture.tpl";
 		string fileContent;
 
-		ifstream tplFile (templatePath);
+		ifstream tplFile(templatePath);
 		ofstream outputFile(outputPath);
 
 		if (tplFile.is_open() && outputFile.is_open())
 		{
-			//Read the entire template into memory
-			fileContent = string( (istreambuf_iterator<char>(tplFile)),
-		   				  istreambuf_iterator<char>() );
+			// Read the entire template into memory
+			fileContent = string((istreambuf_iterator<char>(tplFile)),
+								 istreambuf_iterator<char>());
 
-			for(auto i : valuesToChange)
+			for (auto i : valuesToChange)
 				boost::replace_all(fileContent, i.first, i.second);
-			
+
 			outputFile << fileContent;
 
 			outputFile.close();
 			tplFile.close();
-		} else cout << "ERROR: COULDN'T WRITE FIXTURE FILE. IT WILL NOT BE CREATED" << endl; //if tpl
-	}//if fileExist
+		}
+		else
+			cout << "ERROR: COULDN'T WRITE FIXTURE FILE. IT WILL NOT BE CREATED" << endl; // if tpl
+	}																					  // if fileExist
 }
 
 void BoostGenerator::generateMakefile(string outputPath)
 {
-	if(!fileExists(outputPath))
+	if (!fileExists(outputPath))
 	{
 		string templatePath = ASKELETON_HOME + "Generator/Templates/makefile.tpl";
 		string fileContent;
 
-		ifstream tplFile (templatePath);
+		ifstream tplFile(templatePath);
 		ofstream outputFile(outputPath);
 
 		if (tplFile.is_open() && outputFile.is_open())
 		{
-			//Read the entire template into memory
-			fileContent = string( (istreambuf_iterator<char>(tplFile)),
-		   				  istreambuf_iterator<char>() );
+			// Read the entire template into memory
+			fileContent = string((istreambuf_iterator<char>(tplFile)),
+								 istreambuf_iterator<char>());
 
-			for(auto i : valuesToChange)
+			for (auto i : valuesToChange)
 				boost::replace_all(fileContent, i.first, i.second);
-			
+
 			outputFile << fileContent;
 
 			outputFile.close();
 			tplFile.close();
-		} else cout << "ERROR: COULDN'T WRITE MAKEFILE. IT WILL NOT BE CREATED" << endl; //if tpl
-	}//if fileExist
+		}
+		else
+			cout << "ERROR: COULDN'T WRITE MAKEFILE. IT WILL NOT BE CREATED" << endl; // if tpl
+	}																				  // if fileExist
 }
 
 void BoostGenerator::generateBoostAssert(string class_test, string function_name, string function_cfg_name, map<string, string> param_type, vector<string> insertion_order, string return_type)
@@ -144,15 +163,15 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 	stringstream test_case;
 
 	bool existFlag = fileExists(outputPath);
-	ifstream tplFile (templatePath);
+	ifstream tplFile(templatePath);
 
 	if (tplFile.is_open())
 	{
-		//If file doesnt exist, then replace common tags
-		if(!existFlag)
+		// If file doesnt exist, then replace common tags
+		if (!existFlag)
 		{
-			fileContent = string( (istreambuf_iterator<char>(tplFile)),
-						 		   istreambuf_iterator<char>() );
+			fileContent = string((istreambuf_iterator<char>(tplFile)),
+								 istreambuf_iterator<char>());
 
 			boost::replace_all(fileContent, "{className}", class_test);
 
@@ -164,34 +183,34 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 			//==========================================================
 			//==========================================================
 
-			//Copy makefile and supported types for compiling tests
-			//system(("cp -r " + ASKELETON_HOME + "Generator/Templates/makefile Generated/UT/" + class_test + "/").c_str());
+			// Copy makefile and supported types for compiling tests
+			// system(("cp -r " + ASKELETON_HOME + "Generator/Templates/makefile Generated/UT/" + class_test + "/").c_str());
 			system(("cp -r " + ASKELETON_HOME + "Generator/Templates/SupportedTypes.txt Generated/UT/" + class_test + "/").c_str());
-
-		} else
+		}
+		else
 		{
 			ifstream tmp_output(outputPath);
-			fileContent = string( (istreambuf_iterator<char>(tmp_output)),
-						 		   istreambuf_iterator<char>() );
+			fileContent = string((istreambuf_iterator<char>(tmp_output)),
+								 istreambuf_iterator<char>());
 		}
 
-		//List, vector and map will have a different test case
+		// List, vector and map will have a different test case
 		bool return_container = (return_type.find("list") != string::npos ||
-							     return_type.find("vector") != string::npos ||
-							     return_type.find("map") != string::npos);
+								 return_type.find("vector") != string::npos ||
+								 return_type.find("map") != string::npos);
 
-		//Lets check pointers...
-		for(auto i : insertion_order)
+		// Lets check pointers...
+		for (auto i : insertion_order)
 		{
 			checkTypes(param_type[i], "Generated/UT/" + class_test + "/SupportedTypes.txt");
 
-			if(param_type[i].find("_&") != string::npos ||
-			   param_type[i].find("const_") != string::npos)
+			if (param_type[i].find("_&") != string::npos ||
+				param_type[i].find("const_") != string::npos)
 			{
 				ptype = param_type[i];
 
-				boost::replace_all(ptype, "_", " "); //delete '_' for using it as a type
-				boost::replace_all(ptype, " &", ""); //Then delete const and/or '&'
+				boost::replace_all(ptype, "_", " "); // delete '_' for using it as a type
+				boost::replace_all(ptype, " &", ""); // Then delete const and/or '&'
 
 				test_case << "\n\t" << ptype << " ";
 
@@ -200,17 +219,16 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 				boost::replace_all(ptype, "*", "s");
 
 				test_case << function_cfg_name << "_" << i << " = Read_" << ptype
-						  << "(\"" << function_cfg_name << "." << i << "\");\n"; 
-
+						  << "(\"" << function_cfg_name << "." << i << "\");\n";
 			}
 		}
 
 		checkTypes(return_type, "Generated/UT/" + class_test + "/SupportedTypes.txt");
-		if(return_type.find("_&") != string::npos ||
+		if (return_type.find("_&") != string::npos ||
 			return_type.find("const_") != string::npos)
 		{
 			ptype = return_type;
-			boost::replace_all(ptype, "_", " "); 
+			boost::replace_all(ptype, "_", " ");
 			boost::replace_all(ptype, " &", "");
 
 			test_case << "\t" << ptype << " return_" << function_cfg_name;
@@ -222,52 +240,54 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 			test_case << " = Read_" << ptype << "(\"" << function_cfg_name << ".return_" << return_type << "\");\n";
 		}
 
-		//Now we will create the assertion sentence
-		if(!return_container)
+		// Now we will create the assertion sentence
+		if (!return_container)
 			test_case << "\tBOOST_CHECK_EQUAL(";
 		else
 			test_case << "\tBOOST_CHECK((";
 
-		if (isFromClass) 
+		if (isFromClass)
 			test_case << class_test << "_test.";
-		
+
 		test_case << function_name << "(";
 
-
-		for(auto i : insertion_order)
+		for (auto i : insertion_order)
 		{
-			if(param_type[i].find("_&") == string::npos && param_type[i].find("const_") == string::npos)
+			if (param_type[i].find("_&") == string::npos && param_type[i].find("const_") == string::npos)
 			{
 				boost::replace_all(param_type[i], "*", "s");
 				test_case << "Read_" << param_type[i] << "(\""
 						  << function_cfg_name << "." << i << "\")";
-			} else
+			}
+			else
 			{
 				test_case << function_cfg_name << "_" << i;
 			}
 
-			if (i != insertion_order.back()) test_case << ",";
+			if (i != insertion_order.back())
+				test_case << ",";
 		}
 
-		//test_case << "));\n{assert}";
-		if(!return_container)
+		// test_case << "));\n{assert}";
+		if (!return_container)
 			test_case << "),";
 		else
 			test_case << ") == ";
 
-		if(return_type.find("_&") == string::npos && return_type.find("const_") == string::npos)
+		if (return_type.find("_&") == string::npos && return_type.find("const_") == string::npos)
 		{
 			string read = "Read_" + return_type;
 			boost::replace_all(read, "*", "s");
 			test_case << read << "(\"" << function_name << ".return_" << return_type << "\"))";
 		}
-		else {
+		else
+		{
 			test_case << "return_" << function_cfg_name << ")";
 		}
 
-		if(!return_container)
+		if (!return_container)
 			test_case << ";";
-		else 
+		else
 			test_case << ");";
 
 		test_case << "\n//{assert}";
@@ -281,9 +301,7 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 
 		tplFile.close();
 		outputFile.close();
-
 	}
-
 }
 
 void BoostGenerator::generateBoostConstructorAssert(string class_test, string constructor_name, string constructor_cfg_name, map<string, string> param_type, vector<string> insertion_order)
@@ -296,15 +314,15 @@ void BoostGenerator::generateBoostConstructorAssert(string class_test, string co
 	stringstream test_case;
 
 	bool existFlag = fileExists(outputPath);
-	ifstream tplFile (templatePath);
+	ifstream tplFile(templatePath);
 
 	if (tplFile.is_open())
 	{
-		//If file doesnt exist, then replace common tags
-		if(!existFlag)
+		// If file doesnt exist, then replace common tags
+		if (!existFlag)
 		{
-			fileContent = string( (istreambuf_iterator<char>(tplFile)),
-						 		   istreambuf_iterator<char>() );
+			fileContent = string((istreambuf_iterator<char>(tplFile)),
+								 istreambuf_iterator<char>());
 
 			boost::replace_all(fileContent, "{className}", class_test);
 
@@ -316,39 +334,41 @@ void BoostGenerator::generateBoostConstructorAssert(string class_test, string co
 			//==========================================================
 			//==========================================================
 
-			//Copy makefile for compiling tests
-			//system(("cp -r " + ASKELETON_HOME + "Generator/Templates/makefile Generated/UT/" + class_test + "/").c_str());
+			// Copy makefile for compiling tests
+			// system(("cp -r " + ASKELETON_HOME + "Generator/Templates/makefile Generated/UT/" + class_test + "/").c_str());
 			system(("cp -r " + ASKELETON_HOME + "Generator/Templates/SupportedTypes.txt Generated/UT/" + class_test + "/").c_str());
-
-		} else
+		}
+		else
 		{
 			ifstream tmp_output(outputPath);
-			fileContent = string( (istreambuf_iterator<char>(tmp_output)),
-						 		   istreambuf_iterator<char>() );
+			fileContent = string((istreambuf_iterator<char>(tmp_output)),
+								 istreambuf_iterator<char>());
 		}
 
-		//Now we will create the assertion sentence
+		// Now we will create the assertion sentence
 		test_case << "\tBOOST_CHECK(new ";
 		test_case << constructor_name << "(";
 
-		for(auto i : insertion_order)
+		for (auto i : insertion_order)
 		{
 			checkTypes(param_type[i], "Generated/UT/" + class_test + "/SupportedTypes.txt");
 
-			if(param_type[i].find("_&") == string::npos && param_type[i].find("const_") == string::npos)
+			if (param_type[i].find("_&") == string::npos && param_type[i].find("const_") == string::npos)
 			{
 				test_case << "Read_" << param_type[i] << "(\""
 						  << constructor_cfg_name << "." << i << "\")";
-			} else
+			}
+			else
 			{
 				test_case << constructor_cfg_name << "_" << i;
 			}
 
-			if (i != insertion_order.back()) test_case << ",";
+			if (i != insertion_order.back())
+				test_case << ",";
 		}
 
 		test_case << "));\n//{assert}";
-		//test_case << "),Read_" << return_type << "(\"" << function_name << ".return_" << return_type << "\"));\n//{assert}";
+		// test_case << "),Read_" << return_type << "(\"" << function_name << ".return_" << return_type << "\"));\n//{assert}";
 
 		string result_test_case = cleanClassIdentifier(test_case.str());
 		boost::replace_all(result_test_case, "::", "_");
@@ -359,7 +379,6 @@ void BoostGenerator::generateBoostConstructorAssert(string class_test, string co
 
 		tplFile.close();
 		outputFile.close();
-
 	}
 }
 
@@ -367,15 +386,14 @@ void BoostGenerator::addStructReadToFixture(string type_name, map<string, string
 {
 	bool existFlag = fileExists(fixture_path);
 
-	if(!existFlag)
+	if (!existFlag)
 		generateFixture(fixture_path);
 
 	ifstream fixture_file(fixture_path);
-	string fileContent = string( (istreambuf_iterator<char>(fixture_file)),
-						 		   istreambuf_iterator<char>() );
-	
+	string fileContent = string((istreambuf_iterator<char>(fixture_file)),
+								istreambuf_iterator<char>());
 
-	//TO-DO: This will be a problem when using custom types...
+	// TO-DO: This will be a problem when using custom types...
 	/**
 	** EXAMPLE
 	**
@@ -431,24 +449,24 @@ void BoostGenerator::addStructReadToFixture(string type_name, map<string, string
 	int size = insertion_order.size();
 
 	read_method << "\t\tif( values.size() >= " << size << ")\n\t\t{\n";
-	for(auto i : insertion_order)
+	for (auto i : insertion_order)
 	{
-		//read_method << "\t\t" << param_type[i] << " " << i << " = ";
+		// read_method << "\t\t" << param_type[i] << " " << i << " = ";
 		string support_path = fixture_path.substr(0, fixture_path.find_last_of("/")) + "/SupportedTypes.txt";
 		checkTypes(param_type[i], support_path);
 
 		read_method << "\t\t\tresult." << i << " = ";
 
-		if(param_type[i] != "string")
+		if (param_type[i] != "string")
 		{
-			read_method	<< "boost::lexical_cast<" << param_type[i] << ">(values["
+			read_method << "boost::lexical_cast<" << param_type[i] << ">(values["
 						<< pos << "]);\n";
-		} else
+		}
+		else
 		{
 			read_method << "values[" << pos << "];\n";
 		}
 
-		
 		pos++;
 	}
 	read_method << "\t\t}\n";
@@ -457,8 +475,8 @@ void BoostGenerator::addStructReadToFixture(string type_name, map<string, string
 
 	boost::replace_all(fileContent, "//{readObject}", read_method.str());
 
-	//Now ovearload operators if needed
-	if(!overloaded_eq)
+	// Now ovearload operators if needed
+	if (!overloaded_eq)
 	{
 		overloaded_operators << "bool operator==(const "
 							 << type_name << "& a, const "
@@ -466,18 +484,19 @@ void BoostGenerator::addStructReadToFixture(string type_name, map<string, string
 							 << "\tbool result = true;\n";
 
 		int size = insertion_order.size();
-		if(size > 0)
+		if (size > 0)
 		{
 			overloaded_operators << "\tresult = (";
 			pos = 1;
-			for(auto i : insertion_order)
+			for (auto i : insertion_order)
 			{
 				overloaded_operators << "a." << i << " == b." << i;
 
-				if(pos != size)
+				if (pos != size)
 				{
 					overloaded_operators << ") && \n\t\t(";
-				} else 
+				}
+				else
 				{
 					overloaded_operators << ");";
 				}
@@ -488,23 +507,22 @@ void BoostGenerator::addStructReadToFixture(string type_name, map<string, string
 
 		overloaded_operators << "\n\treturn result;\n}\n\n";
 
-		if(overloaded_flux)
+		if (overloaded_flux)
 		{
 			overloaded_operators << "//{overloadOperator}";
 			boost::replace_all(fileContent, "//{overloadOperator}", overloaded_operators.str());
 		}
-		
 	}
 
-	if(!overloaded_flux)
+	if (!overloaded_flux)
 	{
 		overloaded_operators << "ostream& operator<<(ostream& stream, "
 							 << "const " << type_name << "& a)\n{\n";
 
 		int size = insertion_order.size();
-		if(size > 0)
+		if (size > 0)
 		{
-			for(auto i : insertion_order)
+			for (auto i : insertion_order)
 			{
 				overloaded_operators << "\tstream << a." << i << " << endl;\n";
 			}
@@ -534,12 +552,12 @@ void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
 	 ***************/
 	bool existFlag = fileExists(fixture_path);
 
-	if(!existFlag)
+	if (!existFlag)
 		generateFixture(fixture_path);
 
 	ifstream fixture_file(fixture_path);
-	string fileContent = string( (istreambuf_iterator<char>(fixture_file)),
-						 		   istreambuf_iterator<char>() );
+	string fileContent = string((istreambuf_iterator<char>(fixture_file)),
+								istreambuf_iterator<char>());
 
 	string formatted_type, definitive_read_method;
 	stringstream read_method;
@@ -549,18 +567,18 @@ void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
 
 	formatted_type = type_name;
 
-	//boost::replace_all(formatted_type, "_*", "");
+	// boost::replace_all(formatted_type, "_*", "");
 	boost::replace_all(formatted_type, "_", " ");
 
-
-
-	if(type_name.find("*") == string::npos)
+	if (type_name.find("*") == string::npos)
 	{
 		read_method << formatted_type << " Read_" << type_name << "(string objectKey)\n\t{\n\t\t"
 					<< formatted_type << " result = boost::lexical_cast<" << formatted_type << ">(result);\n"
 					<< "\t\treturn result;\n\t}\n"
 					<< "\t//{readObject}";
-	}else {
+	}
+	else
+	{
 		string tmp_type = formatted_type;
 
 		boost::replace_all(type_name, "*", "s");
@@ -571,12 +589,11 @@ void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
 		read_method << formatted_type << " Read_" << type_name << "(string objectKey)\n\t{\n\t\t"
 					<< tmp_type << " tmp = Read_" << tmp_type << "(objectKey);\n"
 					<< "\t\t" << formatted_type << "result = &tmp;\n"
-		            << "\t\treturn result;\n\t}\n"
+					<< "\t\treturn result;\n\t}\n"
 					<< "\t//{readObject}";
 	}
-		
 
-	//This is necessary, as the AST info will carry the "class" identificator up to this poiunt
+	// This is necessary, as the AST info will carry the "class" identificator up to this poiunt
 	definitive_read_method = cleanClassIdentifier(read_method.str());
 
 	boost::replace_all(fileContent, "//{readObject}", definitive_read_method);
@@ -586,14 +603,13 @@ void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
 
 	fixture_file.close();
 	outputFile.close();
-	
 }
 
 /*vector<string> BoostGenerator::fillDefaultTypes(string path)
 {
 	ifstream types_file(path);
 	vector<string> result;
-	
+
 	if(types_file.is_open())
 	{
 		string line;
@@ -632,21 +648,21 @@ void BoostGenerator::checkTypes(string type, string support_path)
 
 	string line;
 	bool found = false;
-	
-	if(type.find("struct_") == string::npos && type.find("char_*") == string::npos &&
+
+	if (type.find("struct_") == string::npos && type.find("char_*") == string::npos &&
 		type.find("list") == string::npos && type.find("vector") == string::npos &&
 		type.find("map") == string::npos)
 	{
-		while(std::getline(support_file, line))
+		while (std::getline(support_file, line))
 		{
-			if(line.find(type) != string::npos)
+			if (line.find(type) != string::npos)
 			{
-				//cout << "line:" << line << " - type:" << type << endl;
+				// cout << "line:" << line << " - type:" << type << endl;
 				found = true;
 			}
 		}
 
-		if(!found)
+		if (!found)
 		{
 			ofstream output(support_path, ios_base::app);
 			output << type << endl;
@@ -654,5 +670,4 @@ void BoostGenerator::checkTypes(string type, string support_path)
 			addNewTypeToFixture(type, fixture_path);
 		}
 	}
-	
 }
