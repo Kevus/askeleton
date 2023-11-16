@@ -10,6 +10,7 @@
 #include <streambuf>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 #include <map>
 
@@ -56,5 +57,6 @@ string convertExpressionToString(Expr *E, SourceManager &SM);
 bool isInParameters(string name, ArrayRef<ParmVarDecl *> params, string& type);
 void initializeFrameworks(bool BoostFramework, bool CatchFramework, bool GtestFramework);
 void readFrameworks();
+void replaceAll(string& str, const string& from, const string& to);
 
 #endif
