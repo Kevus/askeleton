@@ -25,7 +25,7 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName, bool isFromClass
 	if (getenv("ASKELETON_HOME") != NULL)
 	{
 		ASKELETON_HOME = getenv("ASKELETON_HOME");
-		if (!boost::algorithm::ends_with(ASKELETON_HOME, "/"))
+		if (!endsWith(ASKELETON_HOME, "/"))
 		{
 			ASKELETON_HOME += "/";
 		}
@@ -535,8 +535,6 @@ void BoostGenerator::addStructReadToFixture(string type_name, map<string, string
 
 	ofstream outputFile(fixture_path);
 	fileContent = cleanClassIdentifier(fileContent);
-
-	cout << "DEBUG: " << fileContent;
 
 	outputFile << fileContent;
 
