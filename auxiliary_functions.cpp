@@ -85,12 +85,12 @@ string cleanUnnecesaryChars(string sToReplace)
 	//	All pointers will be treated as normal types
 	// 	All spaces will be replaced with _
 	//==========================================================
-	boost::replace_all(sToReplace, "std::", "");
-	boost::replace_all(sToReplace, "__cxx11::", "");
-	//boost::replace_all(sToReplace, " &", "");
+	replaceAll(sToReplace, "std::", "");
+	replaceAll(sToReplace, "__cxx11::", "");
+	//replaceAll(sToReplace, " &", "");
 
 	if(sToReplace.find("<") == string::npos)
-		boost::replace_all(sToReplace, " ", "_");
+		replaceAll(sToReplace, " ", "_");
 
 	return sToReplace;
 }
