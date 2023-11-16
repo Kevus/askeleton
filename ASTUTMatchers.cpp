@@ -26,8 +26,7 @@ DeclarationMatcher MD1 =
 DeclarationMatcher CT1 =
 	cxxRecordDecl(
 		unless(isImplicit()),
-		isStruct(),
-		isExpansionInMainFile()
+		isStruct()
 	).bind("CT1");
 
 DeclarationMatcher CC1 =

@@ -148,7 +148,7 @@ void ASTUTGen::apply_CT1(const MatchFinder::MatchResult &Result)
 									  overloadedFlux,
 									  bGen);
 
-			// addReadTypeToFixture(string type_name, map<string, string> param_type, vector<string> insertion_order)
+			//addReadTypeToFixture(type_name, pram_type, insertion_order)
 
 			// Print auxiliary ======================================================================
 			llvm::outs() << "Found CXXRecordDecl (struct-customtype) at "
@@ -515,8 +515,8 @@ void ASTUTGen::generateTestData(string source, string function_name, string para
 vector<string> ASTUTGen::obtainTestData(string type, string value)
 {
 	vector<string> result;
-	boost::replace_all(value, "\'", "");
-	boost::replace_all(value, "\"", "");
+	replaceAll(value, "\'", "");
+	replaceAll(value, "\"", "");
 	result.push_back(value);
 
 	// Although this looks repetitive, the lexical_cast<string> is necessary like this

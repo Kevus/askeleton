@@ -5,8 +5,8 @@ string cleanClassIdentifier(string sToReplace)
 	string result = sToReplace;
 	if (result.find("class") != string::npos)
 	{
-		boost::replace_all(result, "class_", "");
-		boost::replace_all(result, "class ", "");
+		replaceAll(result, "class_", "");
+		replaceAll(result, "class ", "");
 	}
 
 	std::regex pattern("Read_(\\w+)::(\\w+)"); //\\((\\w+) (\\w+)\\)");
@@ -112,7 +112,7 @@ void BoostGenerator::generateFixture(string outputPath)
 								 istreambuf_iterator<char>());
 
 			for (auto i : valuesToChange)
-				boost::replace_all(fileContent, i.first, i.second);
+				replaceAll(fileContent, i.first, i.second);
 
 			outputFile << fileContent;
 
@@ -141,7 +141,7 @@ void BoostGenerator::generateMakefile(string outputPath)
 								 istreambuf_iterator<char>());
 
 			for (auto i : valuesToChange)
-				boost::replace_all(fileContent, i.first, i.second);
+				replaceAll(fileContent, i.first, i.second);
 
 			outputFile << fileContent;
 
@@ -173,13 +173,13 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 			fileContent = string((istreambuf_iterator<char>(tplFile)),
 								 istreambuf_iterator<char>());
 
-			boost::replace_all(fileContent, "{className}", class_test);
+			replaceAll(fileContent, "{className}", class_test);
 
 			//==========================================================
 			// These tags are not used yet, so we will simply delete them
 			//==========================================================
-			boost::replace_all(fileContent, "{pointerInitToken}", "");
-			boost::replace_all(fileContent, "{pointerDestroyToken}", "");
+			replaceAll(fileContent, "{pointerInitToken}", "");
+			replaceAll(fileContent, "{pointerDestroyToken}", "");
 			//==========================================================
 			//==========================================================
 
@@ -209,14 +209,14 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 			{
 				ptype = param_type[i];
 
-				boost::replace_all(ptype, "_", " "); // delete '_' for using it as a type
-				boost::replace_all(ptype, " &", ""); // Then delete const and/or '&'
+				replaceAll(ptype, "_", " "); // delete '_' for using it as a type
+				replaceAll(ptype, " &", ""); // Then delete const and/or '&'
 
 				test_case << "\n\t" << ptype << " ";
 
-				boost::replace_all(ptype, " ", "_");
-				boost::replace_all(ptype, "const_", "");
-				boost::replace_all(ptype, "*", "s");
+				replaceAll(ptype, " ", "_");
+				replaceAll(ptype, "const_", "");
+				replaceAll(ptype, "*", "s");
 
 				test_case << function_cfg_name << "_" << i << " = Read_" << ptype
 						  << "(\"" << function_cfg_name << "." << i << "\");\n";
@@ -228,14 +228,14 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 			return_type.find("const_") != string::npos)
 		{
 			ptype = return_type;
-			boost::replace_all(ptype, "_", " ");
-			boost::replace_all(ptype, " &", "");
+			replaceAll(ptype, "_", " ");
+			replaceAll(ptype, " &", "");
 
 			test_case << "\t" << ptype << " return_" << function_cfg_name;
 
-			boost::replace_all(ptype, " ", "_");
-			boost::replace_all(ptype, "const_", "");
-			boost::replace_all(ptype, "*", "s");
+			replaceAll(ptype, " ", "_");
+			replaceAll(ptype, "const_", "");
+			replaceAll(ptype, "*", "s");
 
 			test_case << " = Read_" << ptype << "(\"" << function_cfg_name << ".return_" << return_type << "\");\n";
 		}
@@ -255,7 +255,7 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 		{
 			if (param_type[i].find("_&") == string::npos && param_type[i].find("const_") == string::npos)
 			{
-				boost::replace_all(param_type[i], "*", "s");
+				replaceAll(param_type[i], "*", "s");
 				test_case << "Read_" << param_type[i] << "(\""
 						  << function_cfg_name << "." << i << "\")";
 			}
@@ -277,7 +277,7 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 		if (return_type.find("_&") == string::npos && return_type.find("const_") == string::npos)
 		{
 			string read = "Read_" + return_type;
-			boost::replace_all(read, "*", "s");
+			replaceAll(read, "*", "s");
 			test_case << read << "(\"" << function_name << ".return_" << return_type << "\"))";
 		}
 		else
@@ -293,8 +293,8 @@ void BoostGenerator::generateBoostAssert(string class_test, string function_name
 		test_case << "\n//{assert}";
 
 		string result_test_case = cleanClassIdentifier(test_case.str());
-		boost::replace_all(result_test_case, "::", "_");
-		boost::replace_all(fileContent, "//{assert}", result_test_case);
+		replaceAll(result_test_case, "::", "_");
+		replaceAll(fileContent, "//{assert}", result_test_case);
 
 		ofstream outputFile(outputPath);
 		outputFile << fileContent;
@@ -324,13 +324,13 @@ void BoostGenerator::generateBoostConstructorAssert(string class_test, string co
 			fileContent = string((istreambuf_iterator<char>(tplFile)),
 								 istreambuf_iterator<char>());
 
-			boost::replace_all(fileContent, "{className}", class_test);
+			replaceAll(fileContent, "{className}", class_test);
 
 			//==========================================================
 			// These tags are not used yet, so we will simply delete them
 			//==========================================================
-			boost::replace_all(fileContent, "{pointerInitToken}", "");
-			boost::replace_all(fileContent, "{pointerDestroyToken}", "");
+			replaceAll(fileContent, "{pointerInitToken}", "");
+			replaceAll(fileContent, "{pointerDestroyToken}", "");
 			//==========================================================
 			//==========================================================
 
@@ -371,8 +371,8 @@ void BoostGenerator::generateBoostConstructorAssert(string class_test, string co
 		// test_case << "),Read_" << return_type << "(\"" << function_name << ".return_" << return_type << "\"));\n//{assert}";
 
 		string result_test_case = cleanClassIdentifier(test_case.str());
-		boost::replace_all(result_test_case, "::", "_");
-		boost::replace_all(fileContent, "//{assert}", result_test_case);
+		replaceAll(result_test_case, "::", "_");
+		replaceAll(fileContent, "//{assert}", result_test_case);
 
 		ofstream outputFile(outputPath);
 		outputFile << fileContent;
@@ -473,7 +473,7 @@ void BoostGenerator::addStructReadToFixture(string type_name, map<string, string
 
 	read_method << "\n\t\treturn result;\n\t}\n\t//{readObject}";
 
-	boost::replace_all(fileContent, "//{readObject}", read_method.str());
+	replaceAll(fileContent, "//{readObject}", read_method.str());
 
 	// Now ovearload operators if needed
 	if (!overloaded_eq)
@@ -510,7 +510,7 @@ void BoostGenerator::addStructReadToFixture(string type_name, map<string, string
 		if (overloaded_flux)
 		{
 			overloaded_operators << "//{overloadOperator}";
-			boost::replace_all(fileContent, "//{overloadOperator}", overloaded_operators.str());
+			replaceAll(fileContent, "//{overloadOperator}", overloaded_operators.str());
 		}
 	}
 
@@ -530,11 +530,14 @@ void BoostGenerator::addStructReadToFixture(string type_name, map<string, string
 
 		overloaded_operators << "\n\treturn stream;\n}\n\n//{overloadOperator}";
 
-		boost::replace_all(fileContent, "//{overloadOperator}", overloaded_operators.str());
+		replaceAll(fileContent, "//{overloadOperator}", overloaded_operators.str());
 	}
 
 	ofstream outputFile(fixture_path);
 	fileContent = cleanClassIdentifier(fileContent);
+
+	cout << "DEBUG: " << fileContent;
+
 	outputFile << fileContent;
 
 	fixture_file.close();
@@ -562,13 +565,13 @@ void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
 	string formatted_type, definitive_read_method;
 	stringstream read_method;
 
-	/*boost::replace_all(type_name, "_&", "");
-	boost::replace_all(type_name, "const_", "");*/
+	/*replaceAll(type_name, "_&", "");
+	replaceAll(type_name, "const_", "");*/
 
 	formatted_type = type_name;
 
-	// boost::replace_all(formatted_type, "_*", "");
-	boost::replace_all(formatted_type, "_", " ");
+	// replaceAll(formatted_type, "_*", "");
+	replaceAll(formatted_type, "_", " ");
 
 	if (type_name.find("*") == string::npos)
 	{
@@ -581,10 +584,10 @@ void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
 	{
 		string tmp_type = formatted_type;
 
-		boost::replace_all(type_name, "*", "s");
-		boost::replace_all(tmp_type, " *", "");
-		boost::replace_all(tmp_type, " ", "_");
-		boost::replace_all(formatted_type, "class_", "");
+		replaceAll(type_name, "*", "s");
+		replaceAll(tmp_type, " *", "");
+		replaceAll(tmp_type, " ", "_");
+		replaceAll(formatted_type, "class_", "");
 
 		read_method << formatted_type << " Read_" << type_name << "(string objectKey)\n\t{\n\t\t"
 					<< tmp_type << " tmp = Read_" << tmp_type << "(objectKey);\n"
@@ -596,7 +599,7 @@ void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
 	// This is necessary, as the AST info will carry the "class" identificator up to this poiunt
 	definitive_read_method = cleanClassIdentifier(read_method.str());
 
-	boost::replace_all(fileContent, "//{readObject}", definitive_read_method);
+	replaceAll(fileContent, "//{readObject}", definitive_read_method);
 
 	ofstream outputFile(fixture_path);
 	outputFile << fileContent;
@@ -626,8 +629,8 @@ void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
 
 /*void BoostGenerator::checkTypes(string type)
 {
-	boost::replace_all(type, "_&", "");
-	boost::replace_all(type, "const_", "");
+	replaceAll(type, "_&", "");
+	replaceAll(type, "const_", "");
 
 	if(find(defaultTypes.begin(), defaultTypes.end(), type) == defaultTypes.end())
 	{
@@ -641,8 +644,8 @@ void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
 
 void BoostGenerator::checkTypes(string type, string support_path)
 {
-	boost::replace_all(type, "_&", "");
-	boost::replace_all(type, "const_", "");
+	replaceAll(type, "_&", "");
+	replaceAll(type, "const_", "");
 
 	ifstream support_file(support_path);
 

@@ -133,7 +133,7 @@ string RandomValuesGenerator::getRandomValue(string type, int nparams)
 				string newType = type.substr(first, last - first);
 				//newType = newType.substr(first + 1);
 
-				boost::replace_all(newType, " ", "_");
+				replaceAll(newType, " ", "_");
 
 				stringstream ss;
 				ss << "{";
@@ -155,8 +155,8 @@ string RandomValuesGenerator::getRandomValue(string type, int nparams)
 				unsigned last = type.find_last_of(">");
 
 				string newType = type.substr(first, last - first);
-				boost::replace_all(newType, ", ", ",");
-				boost::replace_all(newType, " ", "_");
+				replaceAll(newType, ", ", ",");
+				replaceAll(newType, " ", "_");
 
 
 				unsigned splitter = newType.find(",");
