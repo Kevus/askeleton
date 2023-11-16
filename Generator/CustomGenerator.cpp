@@ -94,13 +94,13 @@ bool CustomReader::generateExecutableTests(string class_test, string types_path,
 				fileContent = string( (istreambuf_iterator<char>(tplFile)),
 						 		   istreambuf_iterator<char>() );
 
-				boost::replace_all(fileContent, "{className}", class_test);
+				replaceAll(fileContent, "{className}", class_test);
 
 				//==========================================================
 				// These tags are not used yet, so we will simply delete them
 				//==========================================================
-				boost::replace_all(fileContent, "{pointerInitToken}", "");
-				boost::replace_all(fileContent, "{pointerDestroyToken}", "");
+				replaceAll(fileContent, "{pointerInitToken}", "");
+				replaceAll(fileContent, "{pointerDestroyToken}", "");
 				//==========================================================
 				//==========================================================
 			}
