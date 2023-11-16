@@ -4,7 +4,7 @@ USAGE: askeleton [options] <source0> [... <sourceN>]
 
 OPTIONS:
 
-ASkeleTon - Unit Test Generator for C/C++:
+ASkeleTon - Test harness generation for C/C++ programs:
 
   -extra-arg=<string>        - Additional argument to append to the compiler command line
   -extra-arg-before=<string> - Additional argument to prepend to the compiler command line
