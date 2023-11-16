@@ -98,10 +98,10 @@ string cleanUnnecesaryChars(string sToReplace)
 
 bool isNumeric(string query)
 {
-	try{
-		boost::lexical_cast<double>(query);
+	try {
+		stod(query);
 		return true;
-	} catch(boost::bad_lexical_cast &)
+	}catch(std::invalid_argument &)
 	{
 		return (
 			query.find('\'') != string::npos ||
@@ -157,4 +157,12 @@ void replaceAll(string& str, const string& from, const string& to)
 		start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
 	}
 
+}
+
+bool endsWith (std::string const &fullString, std::string const &ending) {
+    if (fullString.length() >= ending.length()) {
+        return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
+    } else {
+        return false;
+    }
 }

@@ -519,8 +519,6 @@ vector<string> ASTUTGen::obtainTestData(string type, string value)
 	replaceAll(value, "\"", "");
 	result.push_back(value);
 
-	// Although this looks repetitive, the lexical_cast<string> is necessary like this
-	// because res is a different type depending on the conditional
 	if (type.find("bool") != string::npos || type.find("_Bool") != string::npos)
 	{
 		result.push_back(
@@ -532,27 +530,27 @@ vector<string> ASTUTGen::obtainTestData(string type, string value)
 	}
 	else if (type.find("char") != string::npos)
 	{
-		char res = boost::lexical_cast<char>(value);
-		result.push_back(boost::lexical_cast<string>(res + 1));
-		result.push_back(boost::lexical_cast<string>(res - 1));
+		char res = value.c_str()[0];
+		result.push_back(to_string(res + 1));
+		result.push_back(to_string(res - 1));
 	}
 	else if (type.find("int") != string::npos)
 	{
-		int res = boost::lexical_cast<int>(value);
-		result.push_back(boost::lexical_cast<string>(res + 1));
-		result.push_back(boost::lexical_cast<string>(res - 1));
+		int res = stoi(value);
+		result.push_back(to_string(res + 1));
+		result.push_back(to_string(res - 1));
 	}
 	else if (type.find("double") != string::npos)
 	{
-		double res = boost::lexical_cast<double>(value);
-		result.push_back(boost::lexical_cast<string>(res + 1));
-		result.push_back(boost::lexical_cast<string>(res - 1));
+		double res = stod(value);
+		result.push_back(to_string(res + 1));
+		result.push_back(to_string(res - 1));
 	}
 	else if (type.find("float") != string::npos)
 	{
-		float res = boost::lexical_cast<float>(value);
-		result.push_back(boost::lexical_cast<string>(res + 1));
-		result.push_back(boost::lexical_cast<string>(res - 1));
+		float res = stof(value);
+		result.push_back(to_string(res + 1));
+		result.push_back(to_string(res - 1));
 	}
 
 	return result;
