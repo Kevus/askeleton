@@ -17,7 +17,7 @@ class ConfigGenerator
 {
 public:
 
-	ConfigGenerator(string f_Name = "ASTUTGeneratedTestsConfig");
+	ConfigGenerator(string f_Name = "ASKGeneratedTestsConfig");
 	~ConfigGenerator(){
 		if(cfg_file.is_open()) 
 			cfg_file.close();

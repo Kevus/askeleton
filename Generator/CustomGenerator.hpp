@@ -16,7 +16,7 @@ void initialize_file(string source);
 class CustomGenerator
 {
 public:
-	CustomGenerator(string filename = "ASTUTGeneratedTestsConfig");
+	CustomGenerator(string filename = "ASKGeneratedTestsConfig");
 	~CustomGenerator();
 
 	void generateTypesFile(string funct_name, map<string, string> param_type, vector<string> insert_order, string return_type);

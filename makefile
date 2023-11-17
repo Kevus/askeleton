@@ -12,9 +12,9 @@ CXXFLAGS	:= $(LLVMCXXFLAGS) $(RTTIFLAG) -fexceptions -gdwarf-4
 LLVMLDFLAGS	:= $(shell llvm-config --ldflags --system-libs --libs) $(LDFLAGS)
 
 SOURCES =	\
-	auxiliary_functions.cpp ASTUTGen.cpp ASTUTMatchers.cpp \
+	auxiliary_functions.cpp ASKGen.cpp ASKMatchers.cpp \
 	Generator/RandomValuesGenerator.cpp Generator/CustomGenerator.cpp \
-	Generator/ConfigGenerator.cpp Generator/TestFrameworks.cpp astut.cpp
+	Generator/ConfigGenerator.cpp Generator/TestFrameworks.cpp askeleton.cpp
 
 OBJECTS = $(SOURCES:.cpp=.o)
 EXES = $(OBJECTS:.o=)
@@ -38,13 +38,13 @@ CLANGLIBS = \
 
 
 askeleton:	\
-	auxiliary_functions.o ASTUTGen.o ASTUTMatchers.o \
+	auxiliary_functions.o ASKGen.o ASKMatchers.o \
 	Generator/RandomValuesGenerator.o Generator/CustomGenerator.o \
-	Generator/ConfigGenerator.o Generator/TestFrameworks.o astut.o
+	Generator/ConfigGenerator.o Generator/TestFrameworks.o askeleton.o
 	$(CXX) -o $@ $^ $(CLANGLIBS) $(LLVMLDFLAGS)
 
-askeleton.o: auxiliary_functions.hpp ASTUTGen.hpp ASTUTMatchers.hpp Generator/RandomValuesGenerator.hpp Generator/CustomGenerator.hpp Generator/ConfigGenerator.hpp Generator/TestFrameworks.hpp	\
-	auxiliary_functions.o ASTUTGen.o ASTUTMatchers.o Generator/RandomValuesGenerator.o Generator/CustomGenerator.o Generator/ConfigGenerator.o Generator/TestFrameworks.o
+askeleton.o: auxiliary_functions.hpp ASKGen.hpp ASKMatchers.hpp Generator/RandomValuesGenerator.hpp Generator/CustomGenerator.hpp Generator/ConfigGenerator.hpp Generator/TestFrameworks.hpp	\
+	auxiliary_functions.o ASKGen.o ASKMatchers.o Generator/RandomValuesGenerator.o Generator/CustomGenerator.o Generator/ConfigGenerator.o Generator/TestFrameworks.o
 
 install: askeleton
 	cp askeleton /usr/local/bin
