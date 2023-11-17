@@ -32,7 +32,7 @@ string getCommentHeader(string filename)
 	auto t = time(nullptr);
 	auto tm = *localtime(&t);
 
-	// ASTUT Banner
+	// ASK Banner
 	buffer << "#" << string(55, '/') << "\n"
 		   << "#////" << string(47, ' ') << "////\n"
 		   << "#//// ASKELETON TEST GENERATOR" << string(30, ' ') << "////\n"
