@@ -50,7 +50,10 @@ struct Fixture {
 		getConfigParameters("{cfgName}.cfg");
 	}
 
-	~Fixture() {}
+	~Fixture() {
+		for (auto *pointer : pointers)
+            delete pointer;
+	}
 
 	bool getConfigParameters(string cfgPath)
 	{
@@ -522,6 +525,7 @@ struct Fixture {
 	{className} {classNameTest}
 
 	map<string, map<string, string> > configContent;
+	vector<void *> pointers;
 
 };
 
