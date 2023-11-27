@@ -10,7 +10,7 @@ clean:
 	rm -rf $(TARGET) $(OBJS) *~
 
 {cfgName}.o: 
-	$(CXX) {cppPath} -c $<
+	$(CXX) {cppPath} -c $< -o {cfgName}.o
 
 tests.o:
 	$(CXX) $(TARGET).cpp -c $< -o tests.o
