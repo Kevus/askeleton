@@ -580,15 +580,17 @@ void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
 	}
 	else
 	{
+		string method_name = formatted_type;
 		string tmp_type = formatted_type;
 
 		replaceAll(type_name, "*", "s");
+		replaceAll(method_name, " *", "");
 		replaceAll(tmp_type, " *", "");
-		replaceAll(tmp_type, " ", "_");
+		replaceAll(method_name, " ", "_");
 		replaceAll(formatted_type, "class_", "");
 
 		read_method << formatted_type << " Read_" << type_name << "(string objectKey)\n\t{\n\t\t"
-					<< tmp_type << " tmp = Read_" << tmp_type << "(objectKey);\n"
+					<< tmp_type << " tmp = Read_" << method_name << "(objectKey);\n"
 					<< "\t\t" << formatted_type << "result = &tmp;\n"
 					<< "\t\treturn result;\n\t}\n"
 					<< "\t//{readObject}";

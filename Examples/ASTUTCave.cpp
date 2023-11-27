@@ -115,6 +115,8 @@ int& ihavepointers(int& a)
     return a;
 }
 
+ int funcion_puntero(unsigned long *valor) { *valor = 4; return *valor; }
+
 std::string methodwithswitch(int a)
 {
     switch (a)
