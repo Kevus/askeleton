@@ -580,8 +580,10 @@ void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
 	}
 	else
 	{
+		stringstream allocation_instruction;
 		string method_name = formatted_type;
 		string tmp_type = formatted_type;
+
 
 		replaceAll(type_name, "*", "s");
 		replaceAll(method_name, " *", "");
@@ -597,8 +599,16 @@ void BoostGenerator::addNewTypeToFixture(string type_name, string fixture_path)
 		//			<< "\t\treturn result;\n\t}\n"
 		//			<< "\t//{readObject}";
 
+
+		// e.g.: int *val = (int*)malloc(sizeof(int))
+		allocation_instruction << formatted_type << "result = (" << formatted_type << ")malloc(sizeof(" << tmp_type << "))"; 
+
 		read_method << formatted_type << " Read_" << type_name << "(string objectKey)\n\t{\n"
-					<< "\t\t" << formatted_type << "result = new " << tmp_type << ";\n"
+					<< "\t\t" << allocation_instruction.str() << ";\n"
+					<< "\t\tif(result == NULL) {\n"
+					<< "\t\t\tcerr << \"Error in memory allocation\\n\";\n"
+					<< "\t\t\texit(EXIT_FAILURE);\n"
+					<< "\t\t}\n"
 					<< "\t\t*result = Read_" << method_name << "(objectKey);\n"
 					<< "\t\tpointers.push_back(result);\n"
 					<< "\t\treturn result;\n\t}\n"
