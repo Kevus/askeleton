@@ -52,7 +52,7 @@ struct Fixture {
 
 	~Fixture() {
 		for (auto *pointer : pointers)
-            delete pointer;
+            free(pointer);
 	}
 
 	bool getConfigParameters(string cfgPath)

@@ -1,13 +1,14 @@
 {
-    "files.associations": {
-        "sstream": "cpp",
-        "string": "cpp",
-        "ctime": "cpp",
-        "*.tcc": "cpp",
-        "iosfwd": "cpp",
-        "iostream": "cpp",
-        "memory_resource": "cpp",
-        "ostream": "cpp",
-        "random": "cpp"
-    }
+	"files.associations": {
+		"sstream": "cpp",
+		"string": "cpp",
+		"ctime": "cpp",
+		"*.tcc": "cpp",
+		"iosfwd": "cpp",
+		"iostream": "cpp",
+		"memory_resource": "cpp",
+		"ostream": "cpp",
+		"random": "cpp"
+	},
+	"cmake.configureOnOpen": false
 }
