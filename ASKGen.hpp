@@ -26,6 +26,10 @@ public:
 
     virtual void run(const MatchFinder::MatchResult &Result);
 
+    // TODO: utilizar los typedefs
+    typedef std::pair<string, string> Parameter;
+    typedef std::map<string, Parameter> Parameters;
+
 private:
     void apply_FD1(const MatchFinder::MatchResult &Result);
     void apply_MD1(const MatchFinder::MatchResult &Result);
