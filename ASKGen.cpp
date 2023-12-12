@@ -1,5 +1,54 @@
 #include "ASKGen.hpp"
 
+string format_return_type(const QualType &type) {
+    return cleanUnnecesaryChars(type.getCanonicalType().getAsString());
+}
+
+// TODO: revisar eficiencia
+void get_full_parameters(
+    const ArrayRef<ParmVarDecl *> &original_parameters,
+    std::map<string, std::pair<string, string>> &mapped_parameters,
+    std::vector<string> &ordered_parameters) {
+
+    unsigned noname_count = 0;
+    for (ParmVarDecl *i : original_parameters) {
+        // Heredia: usando el canonical type en vez de el original type para NEO
+        // tmp_type = i->getOriginalType().getAsString();
+        string tmp_type = i->getOriginalType().getCanonicalType().getAsString();
+        string tmp_name = i->getQualifiedNameAsString();
+
+        if (tmp_name == "")
+            tmp_name = tmp_type + "_" + to_string(noname_count++);
+
+        string formatted_type = cleanUnnecesaryChars(tmp_type);
+
+        mapped_parameters.insert(
+            make_pair(tmp_name, make_pair(tmp_type, formatted_type)));
+        ordered_parameters.push_back(tmp_name);
+    }
+}
+
+void get_parameters(const ArrayRef<ParmVarDecl *> &parameters,
+                    std::map<string, string> &param_types,
+                    std::vector<string> &insert_order) {
+
+    unsigned noname_count = 0;
+    for (ParmVarDecl *i : parameters) {
+        // Heredia: usando el canonical type en vez de el original type para NEO
+        // tmp_type = i->getOriginalType().getAsString();
+        string tmp_type = i->getOriginalType().getCanonicalType().getAsString();
+        string tmp_name = i->getQualifiedNameAsString();
+
+        if (tmp_name == "")
+            tmp_name = tmp_type + "_" + to_string(noname_count++);
+
+        tmp_type = cleanUnnecesaryChars(tmp_type);
+
+        param_types.insert(make_pair(tmp_name, tmp_type));
+        insert_order.push_back(tmp_name);
+    }
+}
+
 void ASKGen::run(const MatchFinder::MatchResult &Result) {
     apply_FD1(Result);
     apply_MD1(Result);
@@ -141,11 +190,13 @@ void ASKGen::apply_CT1(const MatchFinder::MatchResult &Result) {
                     overloadedFlux = true;
             }
 
-            generateCustomTypeFixture(filename,
-                                      // UT->getNameAsString(),
-                                      UT->getQualifiedNameAsString(),
-                                      field_decl, overloadedEq, overloadedFlux,
-                                      bGen);
+            string record_name = UT->getQualifiedNameAsString();
+            if (record_name.find("anonymous") != string::npos)
+                record_name =
+                    UT->getTypedefNameForAnonDecl()->getNameAsString();
+
+            generateCustomTypeFixture(filename, record_name, field_decl,
+                                      overloadedEq, overloadedFlux, bGen);
 
             // addReadTypeToFixture(type_name, pram_type, insertion_order)
 
@@ -155,8 +206,7 @@ void ASKGen::apply_CT1(const MatchFinder::MatchResult &Result) {
                          << FullLocation.getSpellingLineNumber() << ":"
                          << FullLocation.getSpellingColumnNumber() << " - ";
 
-            llvm::outs() << UT->getNameAsString() << " in file " << filename
-                         << "\n";
+            llvm::outs() << record_name << " in file " << filename << "\n";
             // Print auxiliary
             // ======================================================================
         }
@@ -338,7 +388,7 @@ void ASKGen::apply_DG2(const MatchFinder::MatchResult &Result) {
 // General method for testing functions
 void ASKGen::generateFunctionTest(string source_file, string function_name,
                                   ArrayRef<ParmVarDecl *> parameters,
-                                  QualType return_type, BoostGenerator bGen) {
+                                  QualType return_qtype, BoostGenerator bGen) {
 
     ConfigGenerator cfg_gen(source_file);
     string function_cfg_name = function_name;
@@ -352,39 +402,17 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
         function_cfg_name +=
             "_" + to_string(function_occurrences[function_name]);
 
+    // Format the return type
+    string return_type = format_return_type(return_qtype);
+
     // Get the parameters
     map<string, string> param_type;
     vector<string> insert_order;
+    get_parameters(parameters, param_type, insert_order);
 
-    string rtn_type =
-        cleanUnnecesaryChars(return_type.getCanonicalType().getAsString());
-    string tmp_type;
-    string tmp_name;
-
-    cout << rtn_type << endl;
-
-    int noname_count = 0;
-
-    for (auto i : parameters) {
-        // Heredia: usando el canonical type en vez de el original type para NEO
-        // tmp_type = i->getOriginalType().getAsString();
-        tmp_type = i->getOriginalType().getCanonicalType().getAsString();
-        tmp_name = i->getQualifiedNameAsString();
-
-        // TEST: check if this solves anything
-        /*if(tmp_name == "")
-            abort_test = true;*/
-        if (tmp_name == "") {
-            tmp_name = tmp_type + "_" + to_string(noname_count);
-            noname_count++;
-        }
-
-        tmp_type = cleanUnnecesaryChars(tmp_type);
-        cout << tmp_type << " " << tmp_name << endl;
-
-        param_type.insert(pair<string, string>(tmp_name, tmp_type));
-        insert_order.push_back(tmp_name);
-    }
+    map<string, pair<string, string>> param_type_2;
+    vector<string> insert_order_2;
+    get_full_parameters(parameters, param_type_2, insert_order_2);
 
     /*CustomGenerator cgen(source_file);
     cgen.generateTypesFile(function_name, param_type, insert_order, rtn_type);
@@ -394,9 +422,13 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
     // if(!abort_test)
     //{
     cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order,
-                             rtn_type);
-    bGen.generateBoostAssert(source_file, function_name, function_cfg_name,
-                             param_type, insert_order, rtn_type);
+                             return_type);
+    // bGen.generateBoostAssert(source_file, function_name, function_cfg_name,
+    //                          param_type, insert_order, return_type);
+    bGen.generateBoostAssert(
+        source_file, function_name, function_cfg_name, param_type_2,
+        insert_order_2,
+        {return_qtype.getCanonicalType().getAsString(), return_type});
     //}
 }
 
