@@ -92,6 +92,8 @@ void ConfigGenerator::generateTestCase(string funct_name,
     } // if
 }
 
+// void ConfigGenerator::generateTestCases(string function_name, map<string)
+
 void ConfigGenerator::generateConstructorTest(string constructor_name,
                                               map<string, string> param_type,
                                               vector<string> insert_order) {
