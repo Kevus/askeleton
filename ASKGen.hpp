@@ -53,6 +53,10 @@ private:
                                    vector<FieldDecl *> parameters,
                                    bool overloadedEq, bool overloadedFlux,
                                    BoostGenerator bGen);
+    void
+    generateCustomTypeFixture(string source,
+                              const std::vector<const clang::CXXRecordDecl *> &,
+                              const BoostGenerator &);
 
     void generateTestData(string source, string function_name, string param,
                           string type, string value);
