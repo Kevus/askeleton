@@ -194,16 +194,17 @@ void BoostGenerator::generateBoostAssert(
              return_type.first.find("vector") != string::npos ||
              return_type.first.find("map") != string::npos);
 
+        string formatted, original;
         // Lets check pointers...
         for (auto i : insertion_order) {
-            cout << param_type.at(i).second << " " << param_type.at(i).first
-                 << endl;
+            tie(original, formatted) = param_type.at(i);
             checkTypes(param_type.at(i),
                        "Generated/UT/" + class_test + "/SupportedTypes.txt");
+            replaceAll(ptype, "struct_", "");
 
-            if (param_type.at(i).second.find("_&") != string::npos ||
-                param_type.at(i).second.find("const_") != string::npos) {
-                ptype = param_type.at(i).second;
+            if (formatted.find("_&") != string::npos ||
+                formatted.find("const_") != string::npos) {
+                ptype = formatted;
 
                 replaceAll(ptype, "_",
                            " "); // delete '_' for using it as a type
@@ -211,6 +212,7 @@ void BoostGenerator::generateBoostAssert(
 
                 test_case << "\n\t" << ptype << " ";
 
+                // TODO: generalizar
                 replaceAll(ptype, " ", "_");
                 replaceAll(ptype, "const_", "");
                 replaceAll(ptype, "*", "s");
@@ -221,23 +223,29 @@ void BoostGenerator::generateBoostAssert(
             }
         }
 
-        cout << return_type.second << " " << return_type.first << endl;
+        tie(original, formatted) = return_type;
         checkTypes(return_type,
                    "Generated/UT/" + class_test + "/SupportedTypes.txt");
-        if (return_type.second.find("_&") != string::npos ||
-            return_type.second.find("const_") != string::npos) {
-            ptype = return_type.second;
+        replaceAll(formatted, "struct_", "");
+        cout << "EN GENERATE BOOST ASSERT " << original << " " << formatted
+             << endl;
+
+        if (formatted.find("_&") != string::npos ||
+            formatted.find("const_") != string::npos) {
+            ptype = formatted;
             replaceAll(ptype, "_", " ");
             replaceAll(ptype, " &", "");
 
             test_case << "\t" << ptype << " return_" << function_cfg_name;
 
+            // TODO: generalizar
             replaceAll(ptype, " ", "_");
             replaceAll(ptype, "const_", "");
             replaceAll(ptype, "*", "s");
+            cout << "RECTIFICACION " << ptype << endl;
 
             test_case << " = Read_" << ptype << "(\"" << function_cfg_name
-                      << ".return_" << return_type.second << "\");\n";
+                      << ".return_" << formatted << "\");\n";
         }
 
         // Now we will create the assertion sentence
@@ -253,6 +261,7 @@ void BoostGenerator::generateBoostAssert(
 
         for (auto i : insertion_order) {
             string formatted_type = param_type.at(i).second;
+            replaceAll(formatted_type, "struct_", "");
             if (formatted_type.find("_&") == string::npos &&
                 formatted_type.find("const_") == string::npos) {
                 replaceAll(formatted_type, "*", "s");
@@ -272,12 +281,12 @@ void BoostGenerator::generateBoostAssert(
         else
             test_case << ") == ";
 
-        if (return_type.second.find("_&") == string::npos &&
-            return_type.second.find("const_") == string::npos) {
-            string read = "Read_" + return_type.second;
+        if (formatted.find("_&") == string::npos &&
+            formatted.find("const_") == string::npos) {
+            string read = "Read_" + formatted;
             replaceAll(read, "*", "s");
             test_case << read << "(\"" << function_name << ".return_"
-                      << return_type.second << "\"))";
+                      << formatted << "\"))";
         } else {
             test_case << "return_" << function_cfg_name << ")";
         }
@@ -367,9 +376,11 @@ void BoostGenerator::generateBoostAssert(string class_test,
 
                 test_case << "\n\t" << ptype << " ";
 
+                // TODO: generalizar
                 replaceAll(ptype, " ", "_");
                 replaceAll(ptype, "const_", "");
                 replaceAll(ptype, "*", "s");
+                replaceAll(ptype, "struct_", "");
 
                 test_case << function_cfg_name << "_" << i << " = Read_"
                           << ptype << "(\"" << function_cfg_name << "." << i
@@ -387,9 +398,12 @@ void BoostGenerator::generateBoostAssert(string class_test,
 
             test_case << "\t" << ptype << " return_" << function_cfg_name;
 
+            // TODO: generalizar
             replaceAll(ptype, " ", "_");
             replaceAll(ptype, "const_", "");
             replaceAll(ptype, "*", "s");
+            replaceAll(ptype, "struct_", "");
+            cout << ptype << endl;
 
             test_case << " = Read_" << ptype << "(\"" << function_cfg_name
                       << ".return_" << return_type << "\");\n";
@@ -541,8 +555,6 @@ void BoostGenerator::addStructReadToFixture(string type_name,
                                             bool overloaded_flux) {
     bool existFlag = fileExists(fixture_path);
 
-    cout << "addstructreadtofixture: " << type_name << endl;
-
     if (!existFlag)
         generateFixture(fixture_path);
 
@@ -586,8 +598,10 @@ void BoostGenerator::addStructReadToFixture(string type_name,
     stringstream overloaded_operators;
     stringstream read_method;
 
-    read_method << type_name << " Read_"
-                << "struct_" << type_name << "(string objectKey)\n\t{\n"
+    // TODO: requiere revisión
+    // Eliminado el prefijo struct_
+    read_method << type_name << " Read_" << type_name
+                << "(string objectKey)\n\t{\n"
                 << "\t\tstring object = readObject(objectKey);\n"
                 << "\t\tboost::replace_all(object, \";\", \"\");\n"
                 << "\t\tvector<string> values;\n\n"
@@ -701,9 +715,6 @@ void BoostGenerator::addNewTypeToFixture(const std::pair<string, string> &type,
     stringstream read_method;
 
     tie(original_type, formatted_type) = type;
-
-    cout << "addNewTypeToFixture: " << original_type << " " << formatted_type
-         << endl;
 
     if (!existFlag)
         generateFixture(fixture_path);
@@ -892,6 +903,8 @@ void BoostGenerator::checkTypes(const std::pair<string, string> &type,
                                 string support_path) {
     string original_type, formatted_type;
     tie(original_type, formatted_type) = type;
+
+    cout << original_type << " " << formatted_type << endl;
 
     replaceAll(formatted_type, "_&", "");
     replaceAll(formatted_type, "const_", "");

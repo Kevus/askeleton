@@ -8,10 +8,21 @@ string format_return_type(const QualType &type) {
 void get_full_parameters(
     const ArrayRef<ParmVarDecl *> &original_parameters,
     std::map<string, std::pair<string, string>> &mapped_parameters,
-    std::vector<string> &ordered_parameters) {
+    std::vector<string> &ordered_parameters,
+    std::vector<const CXXRecordDecl *> &records) {
 
     unsigned noname_count = 0;
     for (ParmVarDecl *i : original_parameters) {
+
+        // TODO: revisar
+        // Ajuste temporal para crear las lecturas de los structs
+        bool is_struct = false;
+        QualType type = i->getType();
+        if (const RecordType *recordType = type->getAs<RecordType>()) {
+            records.push_back(cast<CXXRecordDecl>(recordType->getDecl()));
+            is_struct = true;
+        }
+
         // Heredia: usando el canonical type en vez de el original type para NEO
         // tmp_type = i->getOriginalType().getAsString();
         string tmp_type = i->getOriginalType().getCanonicalType().getAsString();
@@ -21,6 +32,11 @@ void get_full_parameters(
             tmp_name = tmp_type + "_" + to_string(noname_count++);
 
         string formatted_type = cleanUnnecesaryChars(tmp_type);
+
+        // TODO: eliminar
+        // Por ahora, evitamos que se generen nuevos tipos con las estructuras
+        if (is_struct)
+            formatted_type = "struct_" + formatted_type;
 
         mapped_parameters.insert(
             make_pair(tmp_name, make_pair(tmp_type, formatted_type)));
@@ -52,7 +68,7 @@ void get_parameters(const ArrayRef<ParmVarDecl *> &parameters,
 void ASKGen::run(const MatchFinder::MatchResult &Result) {
     apply_FD1(Result);
     apply_MD1(Result);
-    apply_CT1(Result); // Necessary for structs and classes
+    // apply_CT1(Result); // Necessary for structs and classes
     apply_CC1(Result);
 
     // Kevin: dejamos estos fuera, nos interesa ahora solo las funciones, los
@@ -189,7 +205,7 @@ void ASKGen::apply_CT1(const MatchFinder::MatchResult &Result) {
                          string::npos)
                     overloadedFlux = true;
             }
-
+            // TODO: extraer en función
             string record_name = UT->getQualifiedNameAsString();
             if (record_name.find("anonymous") != string::npos)
                 record_name =
@@ -389,7 +405,6 @@ void ASKGen::apply_DG2(const MatchFinder::MatchResult &Result) {
 void ASKGen::generateFunctionTest(string source_file, string function_name,
                                   ArrayRef<ParmVarDecl *> parameters,
                                   QualType return_qtype, BoostGenerator bGen) {
-
     ConfigGenerator cfg_gen(source_file);
     string function_cfg_name = function_name;
 
@@ -402,28 +417,45 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
         function_cfg_name +=
             "_" + to_string(function_occurrences[function_name]);
 
-    // Format the return type
-    string return_type = format_return_type(return_qtype);
-
-    // Get the parameters
+    // TODO: mentenido por retrocompatiblidad, eliminar
     map<string, string> param_type;
     vector<string> insert_order;
     get_parameters(parameters, param_type, insert_order);
 
+    // Get the parameters
     map<string, pair<string, string>> param_type_2;
     vector<string> insert_order_2;
-    get_full_parameters(parameters, param_type_2, insert_order_2);
+    vector<const CXXRecordDecl *> records;
+    get_full_parameters(parameters, param_type_2, insert_order_2, records);
+
+    // TODO: ajuste temporal, revisar
+    bool is_return_a_struct = false;
+    if (const RecordType *recordType = return_qtype->getAs<RecordType>()) {
+        is_return_a_struct = true;
+        records.push_back(cast<CXXRecordDecl>(recordType->getDecl()));
+    }
+    // Fin ajuste temporal
+
+    // Format the return type
+    string return_type = format_return_type(return_qtype);
+
+    // TODO: ajuste temporal, revisar
+    if (is_return_a_struct)
+        return_type = "struct_" + return_type;
+    generateCustomTypeFixture(source_file, records, bGen);
+    // Fin ajuste temporal
 
     /*CustomGenerator cgen(source_file);
-    cgen.generateTypesFile(function_name, param_type, insert_order, rtn_type);
-    cgen.generateTestCasesFile(function_name, param_type, insert_order,
-    rtn_type);*/
+    cgen.generateTypesFile(function_name, param_type, insert_order,
+    rtn_type); cgen.generateTestCasesFile(function_name, param_type,
+    insert_order, rtn_type);*/
 
     // if(!abort_test)
     //{
     cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order,
                              return_type);
-    // bGen.generateBoostAssert(source_file, function_name, function_cfg_name,
+    // bGen.generateBoostAssert(source_file, function_name,
+    // function_cfg_name,
     //                          param_type, insert_order, return_type);
     bGen.generateBoostAssert(
         source_file, function_name, function_cfg_name, param_type_2,
@@ -511,6 +543,25 @@ void ASKGen::generateCustomTypeFixture(string source, string type_name,
 
     bGen.addStructReadToFixture(type_name, param_type, insert_order,
                                 overloadedEq, overloadedFlux);
+}
+
+void ASKGen::generateCustomTypeFixture(
+    string filename, const vector<const CXXRecordDecl *> &records,
+    const BoostGenerator &boostGen) {
+
+    // TODO: generalizar
+    for (const CXXRecordDecl *record : records) {
+        vector<FieldDecl *> field_decl;
+        string record_name = record->getQualifiedNameAsString();
+        if (record_name.find("anonymous") != string::npos)
+            record_name =
+                record->getTypedefNameForAnonDecl()->getNameAsString();
+
+        for (FieldDecl *field : record->fields())
+            field_decl.push_back(field);
+        generateCustomTypeFixture(filename, record_name, field_decl, false,
+                                  false, boostGen);
+    }
 }
 
 void ASKGen::generateTestData(string source, string function_name, string param,
