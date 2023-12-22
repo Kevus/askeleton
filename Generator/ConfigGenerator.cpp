@@ -92,6 +92,30 @@ void ConfigGenerator::generateTestCase(string funct_name,
     } // if
 }
 
+void ConfigGenerator::generateTestCase(
+    string funct_name, const map<string, pair<string, string>> &param_type,
+    const vector<string> &insert_order,
+    const pair<string, string> &return_type) {
+
+    if (cfg_file.is_open()) {
+        string original, formatted;
+        cfg_file << funct_name << ":\n{\n";
+
+        for (auto i : insert_order) {
+            tie(original, formatted) = param_type.at(i);
+            replaceAll(formatted, "struct_", "");
+            cfg_file << "\t" << i << "=" << rvg.getRandomValue(formatted)
+                     << ";#" << original << "\n";
+        }
+
+        tie(original, formatted) = return_type;
+        replaceAll(formatted, "struct_", "");
+        cfg_file << "\treturn_" << formatted << "="
+                 << rvg.getRandomValue(formatted) << ":#" << original
+                 << "\n};\n\n";
+    }
+}
+
 // void ConfigGenerator::generateTestCases(string function_name, map<string)
 
 void ConfigGenerator::generateConstructorTest(string constructor_name,

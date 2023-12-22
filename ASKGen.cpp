@@ -9,24 +9,32 @@ void get_full_parameters(
     const ArrayRef<ParmVarDecl *> &original_parameters,
     std::map<string, std::pair<string, string>> &mapped_parameters,
     std::vector<string> &ordered_parameters,
-    std::vector<const CXXRecordDecl *> &records) {
+    std::vector<const CXXRecordDecl *> &records,
+    std::vector<const EnumDecl *> &enums) {
 
     unsigned noname_count = 0;
     for (ParmVarDecl *i : original_parameters) {
+        string tmp_type = i->getOriginalType().getCanonicalType().getAsString();
+        string tmp_name = i->getQualifiedNameAsString();
 
         // TODO: revisar
         // Ajuste temporal para crear las lecturas de los structs
-        bool is_struct = false;
+        bool is_struct = isStruct(i->getType());
         QualType type = i->getType();
+        // if(is_struct) {
+        //     records
+        // }
         if (const RecordType *recordType = type->getAs<RecordType>()) {
+            cout << "Detected struct: " << tmp_type << endl;
             records.push_back(cast<CXXRecordDecl>(recordType->getDecl()));
             is_struct = true;
+        } else if (const Type *unqualifiedType =
+                       type.getUnqualifiedType().getTypePtrOrNull()) {
+            if (const EnumType *enumType = unqualifiedType->getAs<EnumType>())
+                enums.push_back(enumType->getDecl());
         }
-
         // Heredia: usando el canonical type en vez de el original type para NEO
         // tmp_type = i->getOriginalType().getAsString();
-        string tmp_type = i->getOriginalType().getCanonicalType().getAsString();
-        string tmp_name = i->getQualifiedNameAsString();
 
         if (tmp_name == "")
             tmp_name = tmp_type + "_" + to_string(noname_count++);
@@ -417,33 +425,34 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
         function_cfg_name +=
             "_" + to_string(function_occurrences[function_name]);
 
-    // TODO: mentenido por retrocompatiblidad, eliminar
-    map<string, string> param_type;
-    vector<string> insert_order;
-    get_parameters(parameters, param_type, insert_order);
-
     // Get the parameters
-    map<string, pair<string, string>> param_type_2;
-    vector<string> insert_order_2;
+    map<string, pair<string, string>> param_type;
+    vector<string> insert_order;
     vector<const CXXRecordDecl *> records;
-    get_full_parameters(parameters, param_type_2, insert_order_2, records);
-
-    // TODO: ajuste temporal, revisar
-    bool is_return_a_struct = false;
-    if (const RecordType *recordType = return_qtype->getAs<RecordType>()) {
-        is_return_a_struct = true;
-        records.push_back(cast<CXXRecordDecl>(recordType->getDecl()));
-    }
-    // Fin ajuste temporal
+    vector<const EnumDecl *> enums;
+    get_full_parameters(parameters, param_type, insert_order, records, enums);
 
     // Format the return type
     string return_type = format_return_type(return_qtype);
-
-    // TODO: ajuste temporal, revisar
-    if (is_return_a_struct)
+    if (const RecordType *recordType = return_qtype->getAs<RecordType>()) {
+        records.push_back(cast<CXXRecordDecl>(recordType->getDecl()));
+        // FIXME: no deberia ser necesario hacer esto
         return_type = "struct_" + return_type;
-    generateCustomTypeFixture(source_file, records, bGen);
-    // Fin ajuste temporal
+    } else if (const EnumType *enumType = return_qtype->getAs<EnumType>()) {
+        EnumDecl *enumDecl = enumType->getDecl();
+        // TODO: terminar
+        // enumType->anon
+        if (enumDecl) {
+            string enumName = enumDecl->getNameAsString();
+            enums.push_back(enumType->getDecl());
+            cout << "Return is a enum "
+                 << (enumName.empty() ? "Empty Name" : enumName) << endl;
+        } else {
+            cout << "EnumDecl is null\n";
+        }
+    }
+
+    generateCustomTypeFixture(source_file, records, {}, bGen);
 
     /*CustomGenerator cgen(source_file);
     cgen.generateTypesFile(function_name, param_type, insert_order,
@@ -452,14 +461,16 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
 
     // if(!abort_test)
     //{
-    cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order,
-                             return_type);
+    cfg_gen.generateTestCase(
+        function_cfg_name, param_type, insert_order,
+        {return_qtype.getCanonicalType().getAsString(), return_type});
+    // cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order,
+    //                          return_type);
     // bGen.generateBoostAssert(source_file, function_name,
     // function_cfg_name,
     //                          param_type, insert_order, return_type);
     bGen.generateBoostAssert(
-        source_file, function_name, function_cfg_name, param_type_2,
-        insert_order_2,
+        source_file, function_name, function_cfg_name, param_type, insert_order,
         {return_qtype.getCanonicalType().getAsString(), return_type});
     //}
 }
@@ -511,26 +522,43 @@ void ASKGen::generateConstructorTest(string source, string constructor_name,
                                         insert_order);
 }
 
+void ASKGen::generateEnumTypeFixture(string source,
+                                     const pair<string, string> &type,
+                                     BoostGenerator &bGen) {
+    cout << "Checking: " << type.first << endl;
+    if (bGen.checkIfSupported(type, source))
+        return;
+
+    cout << "Adding to Fixture\n";
+
+    bGen.addEnumReadToFixture(type);
+
+    bGen.addTypeToSupported(type, source);
+}
+
+// TODO: utilizar la pareja para el type
 void ASKGen::generateCustomTypeFixture(string source, string type_name,
                                        vector<FieldDecl *> parameters,
                                        bool overloadedEq, bool overloadedFlux,
                                        BoostGenerator bGen) {
+
+    if (bGen.checkIfSupported({type_name, ""}, source))
+        return;
+
+    // CHECK: se utiliza?
     ConfigGenerator cfg_gen(source);
 
     // Get the parameters
     map<string, string> param_type;
     vector<string> insert_order;
 
-    string tmp_type;
-    string tmp_name;
-
     int noname_count = 0;
-
     for (auto i : parameters) {
-        tmp_type = i->getType().getAsString();
+        string tmp_type = i->getType().getAsString();
         tmp_type = cleanUnnecesaryChars(tmp_type);
 
-        tmp_name = i->getNameAsString();
+        // CHECK: se utiliza?
+        string tmp_name = i->getNameAsString();
 
         if (tmp_name == "") {
             tmp_name = tmp_type + "_" + to_string(noname_count);
@@ -543,13 +571,14 @@ void ASKGen::generateCustomTypeFixture(string source, string type_name,
 
     bGen.addStructReadToFixture(type_name, param_type, insert_order,
                                 overloadedEq, overloadedFlux);
+
+    bGen.addTypeToSupported({type_name, ""}, source);
 }
 
 void ASKGen::generateCustomTypeFixture(
     string filename, const vector<const CXXRecordDecl *> &records,
-    const BoostGenerator &boostGen) {
+    const vector<const EnumDecl *> &enums, BoostGenerator &boostGen) {
 
-    // TODO: generalizar
     for (const CXXRecordDecl *record : records) {
         vector<FieldDecl *> field_decl;
         string record_name = record->getQualifiedNameAsString();
@@ -561,6 +590,12 @@ void ASKGen::generateCustomTypeFixture(
             field_decl.push_back(field);
         generateCustomTypeFixture(filename, record_name, field_decl, false,
                                   false, boostGen);
+    }
+
+    for (const EnumDecl *enumDecl : enums) {
+        string original = enumDecl->getNameAsString();
+        string formatted = cleanUnnecesaryChars(original);
+        generateEnumTypeFixture(filename, {original, formatted}, boostGen);
     }
 }
 

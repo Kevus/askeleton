@@ -90,7 +90,7 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName,
     generateMakefile(makefile_path);
 }
 
-void BoostGenerator::generateFixture(string outputPath) {
+void BoostGenerator::generateFixture(string outputPath) const {
     if (!fileExists(outputPath)) {
         string templatePath =
             ASKELETON_HOME + "Generator/Templates/Fixture.tpl";
@@ -149,6 +149,7 @@ void BoostGenerator::generateBoostAssert(
     const map<string, pair<string, string>> &param_type,
     const vector<string> &insertion_order,
     const pair<string, string> &return_type) {
+
     string templatePath = ASKELETON_HOME + "Generator/Templates/BoostTest.tpl";
     string outputPath =
         "Generated/UT/" + class_test + "/" + class_test + "_test.cpp";
@@ -227,8 +228,6 @@ void BoostGenerator::generateBoostAssert(
         checkTypes(return_type,
                    "Generated/UT/" + class_test + "/SupportedTypes.txt");
         replaceAll(formatted, "struct_", "");
-        cout << "EN GENERATE BOOST ASSERT " << original << " " << formatted
-             << endl;
 
         if (formatted.find("_&") != string::npos ||
             formatted.find("const_") != string::npos) {
@@ -242,7 +241,6 @@ void BoostGenerator::generateBoostAssert(
             replaceAll(ptype, " ", "_");
             replaceAll(ptype, "const_", "");
             replaceAll(ptype, "*", "s");
-            cout << "RECTIFICACION " << ptype << endl;
 
             test_case << " = Read_" << ptype << "(\"" << function_cfg_name
                       << ".return_" << formatted << "\");\n";
@@ -403,7 +401,6 @@ void BoostGenerator::generateBoostAssert(string class_test,
             replaceAll(ptype, "const_", "");
             replaceAll(ptype, "*", "s");
             replaceAll(ptype, "struct_", "");
-            cout << ptype << endl;
 
             test_case << " = Read_" << ptype << "(\"" << function_cfg_name
                       << ".return_" << return_type << "\");\n";
@@ -599,7 +596,7 @@ void BoostGenerator::addStructReadToFixture(string type_name,
     stringstream read_method;
 
     // TODO: requiere revisión
-    // Eliminado el prefijo struct_
+    // Heredia: Eliminado el prefijo struct_
     read_method << type_name << " Read_" << type_name
                 << "(string objectKey)\n\t{\n"
                 << "\t\tstring object = readObject(objectKey);\n"
@@ -700,6 +697,89 @@ void BoostGenerator::addStructReadToFixture(string type_name,
 
     fixture_file.close();
     outputFile.close();
+}
+
+void BoostGenerator::addEnumReadToFixture(
+    const std::pair<std::string, std::string> &type) {
+
+    string original_type, formatted_type;
+    tie(original_type, formatted_type) = type;
+
+    if (!fileExists(fixture_path))
+        generateFixture(fixture_path);
+
+    /** For example:
+        TOD_resultType Read_TOD_resultType(string objectKey) {
+            try {
+                return static_cast<TOD_resultType>(
+                    std::stoi(readObject(objectKey)));
+        } catch (const std::exception &e) {
+                std::cerr << "Please, check the value of " << objectKey
+                    << ". The conversion is invalid: " << e.what()
+                    << "\nDefault value is returned instead\n";
+                return TOD_resultType();
+            }
+        }
+    */
+    stringstream read_method;
+    if (original_type.find("*") == string::npos) {
+        read_method
+            << original_type << " Read_" << formatted_type
+            << "(string objectKey) {\n"
+            << "\t\ttry{"
+            << "\t\t\t\treturn static_cast<" << original_type
+            << ">(std::stoi(readObject(objectKey)));"
+            << "\t\t} catch (const std::exception &e) {"
+            << "std::cerr << \"Please, check the value of \" << objectyKey"
+            << "\t\t\t\t<<\". The conversion is invalid: \" << e.what()"
+            << "\t\t\t\t<< \"\\nDefault value is returned instead\\n\";"
+            << "\t\treturn " << original_type << "();"
+            << "\t\t}";
+    } else {
+        stringstream allocation_instruction;
+        string method_name = original_type;
+        string tmp_type = original_type;
+
+        // unsigned_long_* -> unsigned_long_s
+        replaceAll(formatted_type, "*", "s");
+        // unsigned long * -> unsigned long
+        replaceAll(method_name, " *", "");
+        // unsigned long -> unsigned_long
+        replaceAll(method_name, " ", "_");
+        // unsigned long * -> unsigned long
+        replaceAll(tmp_type, " *", "");
+        // ¿?
+        replaceAll(original_type, "class_", "");
+
+        // e.g. int *val = (int*)malloc(sizeof(int))
+        allocation_instruction << original_type << "result = (" << original_type
+                               << ")malloc(sizeof(" << tmp_type << "))";
+
+        read_method << original_type << " Read_" << formatted_type
+                    << "(string objectKey)\n\t{\n"
+                    << "\t\t" << allocation_instruction.str() << ";\n"
+                    << "\t\tif(result == NULL) {\n"
+                    << "\t\t\tcerr << \"Error in memory allocation\\n\";\n"
+                    << "\t\t\texit(EXIT_FAILURE);\n"
+                    << "\t\t}\n"
+                    << "\t\t*result = Read_" << method_name << "(objectKey);\n"
+                    << "\t\tpointers.push_back(result);\n"
+                    << "\t\treturn result;\n\t}\n"
+                    << "\t//{readObject}";
+    }
+
+    // This is necessary, as the AST info will carry the "class" identificator
+    // up to this poiunt
+    // CHECK: es necesario todavia?
+    // string definitive_read_method = cleanClassIdentifier(read_method.str());
+
+    ifstream fixture_file(fixture_path);
+    ofstream outputFile(fixture_path);
+    string fileContent = string((istreambuf_iterator<char>(fixture_file)),
+                                istreambuf_iterator<char>());
+
+    replaceAll(fileContent, "//{readObject}", read_method.str());
+    outputFile << fileContent;
 }
 
 void BoostGenerator::addNewTypeToFixture(const std::pair<string, string> &type,
@@ -899,12 +979,45 @@ string::npos)
     }
 }*/
 
+// TODO: revisar eficiencia: abrir fichero + recorrerlo con O(n) + cerrarlo
+bool BoostGenerator::checkIfSupported(const pair<string, string> &type,
+                                      const string &supportedPath) {
+    ifstream supportedFile("Generated/UT/" + supportedPath +
+                           "/SupportedTypes.txt");
+    const string &original = type.first;
+
+    cout << "Comprobando " << original
+         << "en Generated/UT/" + supportedPath + "/SupportedTypes.txt\n";
+
+    string line;
+    bool found = false;
+    while (getline(supportedFile, line) && !found) {
+        if (line == original)
+            found = true;
+    }
+
+    return found;
+}
+
+void BoostGenerator::addTypeToSupported(const pair<string, string> &type,
+                                        const string &supportedPath) {
+    ofstream supportedFile(
+        "Generated/UT/" + supportedPath + "/SupportedTypes.txt", ios::app);
+
+    if (!supportedFile.is_open()) {
+        cerr << "Supported types file " << supportedPath
+             << " couldn't be open. Type " << type.second
+             << " will not be supported\n";
+        return;
+    }
+
+    supportedFile << type.first << '\n';
+}
+
 void BoostGenerator::checkTypes(const std::pair<string, string> &type,
                                 string support_path) {
     string original_type, formatted_type;
     tie(original_type, formatted_type) = type;
-
-    cout << original_type << " " << formatted_type << endl;
 
     replaceAll(formatted_type, "_&", "");
     replaceAll(formatted_type, "const_", "");
@@ -914,6 +1027,7 @@ void BoostGenerator::checkTypes(const std::pair<string, string> &type,
     string line;
     bool found = false;
 
+    // FIXME: ¿no comprueba para estos tipos?
     if (formatted_type.find("struct_") == string::npos &&
         formatted_type.find("char_*") == string::npos &&
         formatted_type.find("list") == string::npos &&

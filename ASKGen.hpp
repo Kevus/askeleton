@@ -26,10 +26,6 @@ public:
 
     virtual void run(const MatchFinder::MatchResult &Result);
 
-    // TODO: utilizar los typedefs
-    typedef std::pair<string, string> Parameter;
-    typedef std::map<string, Parameter> Parameters;
-
 private:
     void apply_FD1(const MatchFinder::MatchResult &Result);
     void apply_MD1(const MatchFinder::MatchResult &Result);
@@ -53,10 +49,12 @@ private:
                                    vector<FieldDecl *> parameters,
                                    bool overloadedEq, bool overloadedFlux,
                                    BoostGenerator bGen);
-    void
-    generateCustomTypeFixture(string source,
-                              const std::vector<const clang::CXXRecordDecl *> &,
-                              const BoostGenerator &);
+    void generateCustomTypeFixture(
+        string source, const std::vector<const clang::CXXRecordDecl *> &,
+        const vector<const EnumDecl *> &, BoostGenerator &);
+    void generateEnumTypeFixture(string source,
+                                 const pair<string, string> &type,
+                                 BoostGenerator &bGen);
 
     void generateTestData(string source, string function_name, string param,
                           string type, string value);
