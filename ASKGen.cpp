@@ -25,7 +25,6 @@ void get_full_parameters(
         //     records
         // }
         if (const RecordType *recordType = type->getAs<RecordType>()) {
-            cout << "Detected struct: " << tmp_type << endl;
             records.push_back(cast<CXXRecordDecl>(recordType->getDecl()));
             is_struct = true;
         } else if (const Type *unqualifiedType =
@@ -440,19 +439,13 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
         return_type = "struct_" + return_type;
     } else if (const EnumType *enumType = return_qtype->getAs<EnumType>()) {
         EnumDecl *enumDecl = enumType->getDecl();
-        // TODO: terminar
-        // enumType->anon
         if (enumDecl) {
-            string enumName = enumDecl->getNameAsString();
+            string enumName = enumDecl->getQualifiedNameAsString();
             enums.push_back(enumType->getDecl());
-            cout << "Return is a enum "
-                 << (enumName.empty() ? "Empty Name" : enumName) << endl;
-        } else {
-            cout << "EnumDecl is null\n";
         }
     }
 
-    generateCustomTypeFixture(source_file, records, {}, bGen);
+    generateCustomTypeFixture(source_file, records, enums, bGen);
 
     /*CustomGenerator cgen(source_file);
     cgen.generateTypesFile(function_name, param_type, insert_order,
@@ -525,14 +518,15 @@ void ASKGen::generateConstructorTest(string source, string constructor_name,
 void ASKGen::generateEnumTypeFixture(string source,
                                      const pair<string, string> &type,
                                      BoostGenerator &bGen) {
-    cout << "Checking: " << type.first << endl;
-    if (bGen.checkIfSupported(type, source))
+    if (bGen.checkIfSupported(type, source)) {
+        cout << "Enum type " << type.first << " " << type.second
+             << " is supported\n";
         return;
-
-    cout << "Adding to Fixture\n";
+    }
 
     bGen.addEnumReadToFixture(type);
 
+    cout << "Trying to add type " << type.first << "\n";
     bGen.addTypeToSupported(type, source);
 }
 
@@ -593,7 +587,11 @@ void ASKGen::generateCustomTypeFixture(
     }
 
     for (const EnumDecl *enumDecl : enums) {
-        string original = enumDecl->getNameAsString();
+        // string original = enumDecl->getNameAsString();
+        string original = enumDecl->getQualifiedNameAsString();
+        if (original.find("anonymous") != string::npos)
+            original = enumDecl->getTypedefNameForAnonDecl()->getNameAsString();
+
         string formatted = cleanUnnecesaryChars(original);
         generateEnumTypeFixture(filename, {original, formatted}, boostGen);
     }
