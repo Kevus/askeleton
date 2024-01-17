@@ -74,9 +74,9 @@ void get_parameters(const ArrayRef<ParmVarDecl *> &parameters,
 
 void ASKGen::run(const MatchFinder::MatchResult &Result) {
     apply_FD1(Result);
-    apply_MD1(Result);
+    // apply_MD1(Result);
     // apply_CT1(Result); // Necessary for structs and classes
-    apply_CC1(Result);
+    // apply_CC1(Result);
 
     // Kevin: dejamos estos fuera, nos interesa ahora solo las funciones, los
     // datos vendrán por KLEE apply_DG1(Result); apply_DG2(Result);
@@ -110,7 +110,6 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
 
                 // TO-DO: MODIFICAR PARA AÑADIR MAS O MENOS FRAMEWORKS
                 BoostGenerator bGen(source_file, filename, false);
-
                 generateFunctionTest(filename, UT->getName().str(),
                                      UT->parameters(), UT->getReturnType(),
                                      bGen);
@@ -412,6 +411,7 @@ void ASKGen::apply_DG2(const MatchFinder::MatchResult &Result) {
 void ASKGen::generateFunctionTest(string source_file, string function_name,
                                   ArrayRef<ParmVarDecl *> parameters,
                                   QualType return_qtype, BoostGenerator bGen) {
+    string return_type = format_return_type(return_qtype);
     ConfigGenerator cfg_gen(source_file);
     string function_cfg_name = function_name;
 
@@ -432,7 +432,6 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
     get_full_parameters(parameters, param_type, insert_order, records, enums);
 
     // Format the return type
-    string return_type = format_return_type(return_qtype);
     if (const RecordType *recordType = return_qtype->getAs<RecordType>()) {
         records.push_back(cast<CXXRecordDecl>(recordType->getDecl()));
         // FIXME: no deberia ser necesario hacer esto
@@ -444,6 +443,35 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
             enums.push_back(enumType->getDecl());
         }
     }
+
+    cout << "\n\n--------------\n";
+    unsigned i = 0;
+    cout << "Params list: (";
+    for (auto t : param_type)
+        cout << i++ << " - " << t.second.first << " " << t.first << ", ";
+    cout << ")\n";
+
+    i = 0;
+    cout << "Records list: (";
+    for (auto t : records) {
+        string record_name = t->getQualifiedNameAsString();
+        if (record_name.find("anonymous") != string::npos)
+            record_name = t->getTypedefNameForAnonDecl()->getNameAsString();
+        cout << i++ << " - " << record_name << ", ";
+    }
+    cout << ")\n";
+
+    cout << "Return type: " << return_type << "\n";
+
+    i = 0;
+    cout << "Enumeration list: (";
+    for (auto t : enums) {
+        string enum_name = t->getQualifiedNameAsString();
+        if (enum_name.find("anonymous") != string::npos)
+            enum_name = t->getTypedefNameForAnonDecl()->getNameAsString();
+        cout << i++ << " - " << enum_name << ", ";
+    }
+    cout << ")\n";
 
     generateCustomTypeFixture(source_file, records, enums, bGen);
 
@@ -518,15 +546,12 @@ void ASKGen::generateConstructorTest(string source, string constructor_name,
 void ASKGen::generateEnumTypeFixture(string source,
                                      const pair<string, string> &type,
                                      BoostGenerator &bGen) {
-    if (bGen.checkIfSupported(type, source)) {
-        cout << "Enum type " << type.first << " " << type.second
-             << " is supported\n";
+
+    if (bGen.checkIfSupported(type, source))
         return;
-    }
 
     bGen.addEnumReadToFixture(type);
 
-    cout << "Trying to add type " << type.first << "\n";
     bGen.addTypeToSupported(type, source);
 }
 

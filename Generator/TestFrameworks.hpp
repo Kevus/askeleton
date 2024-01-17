@@ -32,6 +32,8 @@ public:
     // Add the enum defined in type to the Fixture
     void addEnumReadToFixture(const std::pair<std::string, std::string> &type);
 
+    // TODO: lectura para
+
     // CHECK: por que se pide el fixture_path si ya esta como miembro?
     void addNewTypeToFixture(string type_name, string fixture_path);
     void addNewTypeToFixture(const std::pair<string, string> &type,
