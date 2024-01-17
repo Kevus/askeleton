@@ -985,12 +985,12 @@ string::npos)
     }
 }*/
 
+// NOTE: LEE CORRECTAMENTE
 // TODO: revisar eficiencia: abrir fichero + recorrerlo con O(n) + cerrarlo
 bool BoostGenerator::checkIfSupported(const pair<string, string> &type,
                                       const string &supportedPath) {
-    // ifstream supportedFile("Generated/UT/" + supportedPath +
-    //                        "/SupportedTypes.txt");
-    ifstream supportedFile(supportedPath);
+    ifstream supportedFile("Generated/UT/" + supportedPath +
+                           "/SupportedTypes.txt");
     const string &original = type.first;
 
     string line;
@@ -1001,62 +1001,68 @@ bool BoostGenerator::checkIfSupported(const pair<string, string> &type,
             found = true;
     }
 
+    cout << "checkIfSupported: "
+         << ("Generated/UT/" + supportedPath + "/SupportedTypes.txt") << " "
+         << (found ? "Tipo soportado" : "Tipo no soportado") << endl;
+
     return found;
 }
 
-void BoostGenerator::addTypeToSupported(
-    const pair<string, string> &original_type, const string &support_path) {
-    string type = original_type.first;
-    replaceAll(type, "_&", "");
-    replaceAll(type, "const_", "");
+// void BoostGenerator::addTypeToSupported(
+//     const pair<string, string> &original_type, const string &support_path) {
+//     string type = original_type.first;
+//     const string fullSupportPath =
+//         "Generated/UT/" + support_path + "/SupportedTypes.txt";
+//     replaceAll(type, "_&", "");
+//     replaceAll(type, "const_", "");
 
-    ifstream support_file(support_path);
+//     ifstream support_file(fullSupportPath);
 
-    string line;
-    bool found = false;
-    cout << "en addTypeToSupported " << support_path << endl;
+//     string line;
+//     bool found = false;
+//     cout << "en addTypeToSupported " << fullSupportPath << endl;
 
-    if (type.find("struct_") == string::npos &&
-        type.find("char_*") == string::npos &&
-        type.find("list") == string::npos &&
-        type.find("vector") == string::npos &&
-        type.find("map") == string::npos) {
-        while (std::getline(support_file, line)) {
-            // Heredia: esto implicaria que Record y RecordType es el mismo
-            // if (line.find(type) != string::npos) {
-            if (line == type) {
-                cout << "line:" << line << " - type:" << type << endl;
-                found = true;
-            }
-        }
+//     if (type.find("struct_") == string::npos &&
+//         type.find("char_*") == string::npos &&
+//         type.find("list") == string::npos &&
+//         type.find("vector") == string::npos &&
+//         type.find("map") == string::npos) {
+//         while (std::getline(support_file, line)) {
+//             // Heredia: esto implicaria que Record y RecordType es el mismo
+//             // if (line.find(type) != string::npos) {
+//             if (line == type) {
+//                 cout << "line:" << line << " - type:" << type << endl;
+//                 found = true;
+//             }
+//         }
 
-        if (!found) {
-            cout << original_type.second << endl;
-            ofstream output(support_path, ios_base::app);
-            output << original_type.second << endl;
+//         if (!found) {
+//             cout << "addTypeToSupported escribiendo en " << fullSupportPath
+//                  << " " << original_type.second << endl;
+//             ofstream output(fullSupportPath, ios_base::app);
+//             output << original_type.second << endl;
 
-            // addNewTypeToFixture(type, fixture_path);
-        }
-    }
-}
-
-// void BoostGenerator::addTypeToSupported(const pair<string, string> &type,
-//                                         const string &supportedPath) {
-//     ofstream supportedFile(
-//         "Generated/UT/" + supportedPath + "/SupportedTypes.txt",
-//         ios_base::app);
-
-//     cout << "Adding " << type.first << " " << type.second << endl;
-
-//     if (!supportedFile.is_open()) {
-//         cout << "Supported types file " << supportedPath
-//              << " couldn't be open. Type " << type.second
-//              << " will not be supported\n";
-//         return;
+//             // addNewTypeToFixture(type, fixture_path);
+//         }
 //     }
-
-//     supportedFile << type.first << endl;
 // }
+
+void BoostGenerator::addTypeToSupported(const pair<string, string> &type,
+                                        const string &supportedPath) {
+    const string fullSupportedPath =
+        "Generated/UT/" + supportedPath + "/SupportedTypes.txt";
+
+    ofstream supportedFile(fullSupportedPath, ios_base::app);
+
+    if (!supportedFile.is_open()) {
+        cout << "Supported types file " << supportedPath
+             << " couldn't be open. Type " << type.second
+             << " will not be supported\n";
+        return;
+    }
+
+    supportedFile << type.first << endl;
+}
 
 void BoostGenerator::checkTypes(const std::pair<string, string> &type,
                                 string support_path) {
