@@ -199,8 +199,8 @@ void BoostGenerator::generateBoostAssert(
         // Lets check pointers...
         for (auto i : insertion_order) {
             tie(original, formatted) = param_type.at(i);
-            checkTypes(param_type.at(i),
-                       "Generated/UT/" + class_test + "/SupportedTypes.txt");
+            // checkTypes(param_type.at(i),
+            //            "Generated/UT/" + class_test + "/SupportedTypes.txt");
             replaceAll(ptype, "struct_", "");
 
             if (formatted.find("_&") != string::npos ||
@@ -225,8 +225,8 @@ void BoostGenerator::generateBoostAssert(
         }
 
         tie(original, formatted) = return_type;
-        checkTypes(return_type,
-                   "Generated/UT/" + class_test + "/SupportedTypes.txt");
+        // checkTypes(return_type,
+        //            "Generated/UT/" + class_test + "/SupportedTypes.txt");
         replaceAll(formatted, "struct_", "");
 
         if (formatted.find("_&") != string::npos ||
@@ -788,6 +788,78 @@ void BoostGenerator::addEnumReadToFixture(
     outputFile.close();
 }
 
+void BoostGenerator::addPointerReadToFixture(
+    const std::pair<std::string, std::string> &type) {
+    string original_type, formatted_type;
+    tie(original_type, formatted_type) = type;
+    bool existFlag = fileExists(fixture_path);
+
+    if (!existFlag)
+        generateFixture(fixture_path);
+
+    ifstream fixture_file(fixture_path);
+    string fileContent = string((istreambuf_iterator<char>(fixture_file)),
+                                istreambuf_iterator<char>());
+
+    /** For example:
+        int *Read_int_s(string objectKey) {
+            int *result = (int*)malloc(sizeof(int));
+            if(result == NULL) {
+                cerr << "Error in memory allocation\n";
+                exit(EXIT_FAILURE);
+            }
+            *result = Read_int(objectKey);
+            pointers.push_back(result);
+            return result;
+        }
+
+        *** PAY ATTENTION that we need the read method of the basic type ***
+    */
+
+    stringstream read_method, allocation_instruction;
+    string method_name = original_type, tmp_type = original_type;
+
+    // TODO: eliminar
+    // unsigned_long_* -> unsigned_long_s
+    replaceAll(formatted_type, "*", "s");
+    // unsigned long * -> unsigned long
+    replaceAll(method_name, " *", "");
+    // unsigned long -> unsigned_long
+    replaceAll(method_name, " ", "_");
+    // unsigned long * -> unsigned long
+    replaceAll(tmp_type, " *", "");
+    // ¿?
+    replaceAll(original_type, "class_", "");
+
+    // e.g. int *val = (int*)malloc(sizeof(int))
+    allocation_instruction << original_type << "result = (" << original_type
+                           << ")malloc(sizeof(" << tmp_type << "))";
+
+    read_method << original_type << " Read_" << formatted_type
+                << "(string objectKey)\n\t{\n"
+                << "\t\t" << allocation_instruction.str() << ";\n"
+                << "\t\tif(result == NULL) {\n"
+                << "\t\t\tcerr << \"Error in memory allocation\\n\";\n"
+                << "\t\t\texit(EXIT_FAILURE);\n"
+                << "\t\t}\n"
+                << "\t\t*result = Read_" << method_name << "(objectKey);\n"
+                << "\t\tpointers.push_back(result);\n"
+                << "\t\treturn result;\n\t}\n"
+                << "\t//{readObject}";
+
+    // This is necessary, as the AST info will carry the "class"
+    // identificator up to this poiunt CHECK: es necesario todavia?
+    string definitive_read_method = cleanClassIdentifier(read_method.str());
+
+    replaceAll(fileContent, "//{readObject}", definitive_read_method);
+
+    ofstream outputFile(fixture_path);
+    outputFile << fileContent;
+
+    fixture_file.close();
+    outputFile.close();
+}
+
 void BoostGenerator::addNewTypeToFixture(const std::pair<string, string> &type,
                                          string fixture_path) {
     /*** EXAMPLE ***
@@ -991,61 +1063,23 @@ bool BoostGenerator::checkIfSupported(const pair<string, string> &type,
                                       const string &supportedPath) {
     ifstream supportedFile("Generated/UT/" + supportedPath +
                            "/SupportedTypes.txt");
-    const string &original = type.first;
+
+    string typeClean = type.first;
+    replaceAll(typeClean, " ", "_");
 
     string line;
     bool found = false;
     while (getline(supportedFile, line) && !found) {
-        // if (line.find(original) != string::npos)
-        if (line == original)
+        if (line == typeClean)
             found = true;
     }
 
-    cout << "checkIfSupported: "
-         << ("Generated/UT/" + supportedPath + "/SupportedTypes.txt") << " "
-         << (found ? "Tipo soportado" : "Tipo no soportado") << endl;
+    cout << "checking " << typeClean << " in "
+         << ("Generated/UT/" + supportedPath + "/SupportedTypes.txt") << ": "
+         << (found ? "detected" : "not detected") << "\n";
 
     return found;
 }
-
-// void BoostGenerator::addTypeToSupported(
-//     const pair<string, string> &original_type, const string &support_path) {
-//     string type = original_type.first;
-//     const string fullSupportPath =
-//         "Generated/UT/" + support_path + "/SupportedTypes.txt";
-//     replaceAll(type, "_&", "");
-//     replaceAll(type, "const_", "");
-
-//     ifstream support_file(fullSupportPath);
-
-//     string line;
-//     bool found = false;
-//     cout << "en addTypeToSupported " << fullSupportPath << endl;
-
-//     if (type.find("struct_") == string::npos &&
-//         type.find("char_*") == string::npos &&
-//         type.find("list") == string::npos &&
-//         type.find("vector") == string::npos &&
-//         type.find("map") == string::npos) {
-//         while (std::getline(support_file, line)) {
-//             // Heredia: esto implicaria que Record y RecordType es el mismo
-//             // if (line.find(type) != string::npos) {
-//             if (line == type) {
-//                 cout << "line:" << line << " - type:" << type << endl;
-//                 found = true;
-//             }
-//         }
-
-//         if (!found) {
-//             cout << "addTypeToSupported escribiendo en " << fullSupportPath
-//                  << " " << original_type.second << endl;
-//             ofstream output(fullSupportPath, ios_base::app);
-//             output << original_type.second << endl;
-
-//             // addNewTypeToFixture(type, fixture_path);
-//         }
-//     }
-// }
 
 void BoostGenerator::addTypeToSupported(const pair<string, string> &type,
                                         const string &supportedPath) {
@@ -1061,7 +1095,11 @@ void BoostGenerator::addTypeToSupported(const pair<string, string> &type,
         return;
     }
 
-    supportedFile << type.first << endl;
+    string typeClean = type.first;
+    replaceAll(typeClean, " ", "_");
+    supportedFile << typeClean << endl;
+    cout << "Added " << typeClean << " to supported in "
+         << ("Generated/UT/" + supportedPath + "/SupportedTypes.txt") << "\n";
 }
 
 void BoostGenerator::checkTypes(const std::pair<string, string> &type,
