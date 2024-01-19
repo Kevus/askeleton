@@ -5,45 +5,42 @@ string format_return_type(const QualType &type) {
 }
 
 // TODO: revisar eficiencia
-void get_full_parameters(
-    const ArrayRef<ParmVarDecl *> &original_parameters,
-    std::map<string, std::pair<string, string>> &mapped_parameters,
-    std::vector<string> &ordered_parameters,
-    std::vector<const CXXRecordDecl *> &records,
-    std::vector<const EnumDecl *> &enums) {
+void get_full_parameters(const ArrayRef<ParmVarDecl *> &original_parameters,
+                         map<string, pair<string, string>> &mapped_parameters,
+                         vector<string> &ordered_parameters,
+                         vector<const CXXRecordDecl *> &records,
+                         vector<const EnumDecl *> &enums,
+                         vector<pair<string, string>> &pointers) {
 
     unsigned noname_count = 0;
     for (ParmVarDecl *i : original_parameters) {
-        string tmp_type = i->getOriginalType().getCanonicalType().getAsString();
-        string tmp_name = i->getQualifiedNameAsString();
+        // QualType type = i->getType();
+        QualType originalType = i->getOriginalType();
 
-        // TODO: revisar
-        // Ajuste temporal para crear las lecturas de los structs
-        bool is_struct = isStruct(i->getType());
-        QualType type = i->getType();
-        // if(is_struct) {
-        //     records
-        // }
-        if (const RecordType *recordType = type->getAs<RecordType>()) {
-            records.push_back(cast<CXXRecordDecl>(recordType->getDecl()));
-            is_struct = true;
-        } else if (const Type *unqualifiedType =
-                       type.getUnqualifiedType().getTypePtrOrNull()) {
-            if (const EnumType *enumType = unqualifiedType->getAs<EnumType>())
-                enums.push_back(enumType->getDecl());
-        }
         // Heredia: usando el canonical type en vez de el original type para NEO
-        // tmp_type = i->getOriginalType().getAsString();
+        string tmp_type = originalType.getCanonicalType().getAsString();
+        string tmp_name = i->getQualifiedNameAsString();
+        replaceAll(tmp_type, "struct ", "");
 
         if (tmp_name == "")
             tmp_name = tmp_type + "_" + to_string(noname_count++);
-
         string formatted_type = cleanUnnecesaryChars(tmp_type);
 
-        // TODO: eliminar
-        // Por ahora, evitamos que se generen nuevos tipos con las estructuras
-        if (is_struct)
-            formatted_type = "struct_" + formatted_type;
+        if (originalType->isPointerType()) {
+            replaceAll(formatted_type, "*", "s");
+            pointers.push_back({tmp_type, formatted_type});
+        } else if (const RecordType *recordType =
+                       originalType->getAs<RecordType>()) {
+            records.push_back(cast<CXXRecordDecl>(recordType->getDecl()));
+            // TODO: eliminar
+            // Por ahora, evitamos que se generen nuevos tipos con las
+            // estructuras
+            // formatted_type = "struct_" + formatted_type;
+        } else if (const Type *unqualifiedType =
+                       originalType.getUnqualifiedType().getTypePtrOrNull()) {
+            if (const EnumType *enumType = unqualifiedType->getAs<EnumType>())
+                enums.push_back(enumType->getDecl());
+        }
 
         mapped_parameters.insert(
             make_pair(tmp_name, make_pair(tmp_type, formatted_type)));
@@ -429,10 +426,17 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
     vector<string> insert_order;
     vector<const CXXRecordDecl *> records;
     vector<const EnumDecl *> enums;
-    get_full_parameters(parameters, param_type, insert_order, records, enums);
+    vector<pair<string, string>> pointers;
+    get_full_parameters(parameters, param_type, insert_order, records, enums,
+                        pointers);
 
-    // Format the return type
-    if (const RecordType *recordType = return_qtype->getAs<RecordType>()) {
+    // Processing return type
+    if (return_qtype->isPointerType()) {
+        string tmp_type = return_qtype.getCanonicalType().getAsString();
+        string formatted_type = cleanUnnecesaryChars(tmp_type);
+        pointers.push_back({tmp_type, formatted_type});
+    } else if (const RecordType *recordType =
+                   return_qtype->getAs<RecordType>()) {
         records.push_back(cast<CXXRecordDecl>(recordType->getDecl()));
         // FIXME: no deberia ser necesario hacer esto
         return_type = "struct_" + return_type;
@@ -473,7 +477,14 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
     }
     cout << ")\n";
 
-    generateCustomTypeFixture(source_file, records, enums, bGen);
+    i = 0;
+    cout << "Pointers list: (";
+    for (const pair<string, string> &pointer : pointers) {
+        cout << i++ << " - " << pointer.first << ", ";
+    }
+    cout << ")\n";
+
+    generateCustomTypeFixture(source_file, records, enums, pointers, bGen);
 
     /*CustomGenerator cgen(source_file);
     cgen.generateTypesFile(function_name, param_type, insert_order,
@@ -596,7 +607,8 @@ void ASKGen::generateCustomTypeFixture(string source, string type_name,
 
 void ASKGen::generateCustomTypeFixture(
     string filename, const vector<const CXXRecordDecl *> &records,
-    const vector<const EnumDecl *> &enums, BoostGenerator &boostGen) {
+    const vector<const EnumDecl *> &enums,
+    const vector<pair<string, string>> &pointers, BoostGenerator &boostGen) {
 
     for (const CXXRecordDecl *record : records) {
         vector<FieldDecl *> field_decl;
@@ -616,9 +628,16 @@ void ASKGen::generateCustomTypeFixture(
         string original = enumDecl->getQualifiedNameAsString();
         if (original.find("anonymous") != string::npos)
             original = enumDecl->getTypedefNameForAnonDecl()->getNameAsString();
-
         string formatted = cleanUnnecesaryChars(original);
+
         generateEnumTypeFixture(filename, {original, formatted}, boostGen);
+    }
+
+    for (const pair<string, string> &pointer : pointers) {
+        if (!boostGen.checkIfSupported(pointer, filename)) {
+            boostGen.addPointerReadToFixture(pointer);
+            boostGen.addTypeToSupported(pointer, filename);
+        }
     }
 }
 

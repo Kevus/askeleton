@@ -45,13 +45,20 @@ private:
     void generateConstructorTest(string source, string constructor_name,
                                  ArrayRef<ParmVarDecl *> parameters,
                                  BoostGenerator bgen);
+    // This generates a struct read
     void generateCustomTypeFixture(string source, string type_name,
                                    vector<FieldDecl *> parameters,
                                    bool overloadedEq, bool overloadedFlux,
                                    BoostGenerator bGen);
-    void generateCustomTypeFixture(
-        string source, const std::vector<const clang::CXXRecordDecl *> &,
-        const vector<const EnumDecl *> &, BoostGenerator &);
+
+    // Receives a list of every type and generates a read for each one
+    void generateCustomTypeFixture(string filename,
+                                   const vector<const CXXRecordDecl *> &records,
+                                   const vector<const EnumDecl *> &enums,
+                                   const vector<pair<string, string>> &pointers,
+                                   BoostGenerator &);
+
+    //   This generates a enum read
     void generateEnumTypeFixture(string source,
                                  const pair<string, string> &type,
                                  BoostGenerator &bGen);
