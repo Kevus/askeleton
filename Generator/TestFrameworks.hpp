@@ -52,6 +52,7 @@ public:
 private:
     void generateFixture(string outputPath) const;
     void generateMakefile(string outputPath);
+	void generateSupported() const;
     // vector<string> fillDefaultTypes(string path);
     // TODO: eliminar esta version mas adelante
     void checkTypes(string type, string support_path);
@@ -62,6 +63,6 @@ private:
     bool isFromClass;
 
     // TODO: agregar el supported_path ?
-    string fixture_path, makefile_path;
+    string fixture_path, makefile_path, supported_path;
     string ASKELETON_HOME;
 };
