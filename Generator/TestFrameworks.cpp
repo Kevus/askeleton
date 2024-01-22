@@ -15,7 +15,9 @@ string cleanClassIdentifier(string sToReplace) {
 
 BoostGenerator::BoostGenerator(string filePath, string cfgName,
                                bool isFromClass)
-    : isFromClass(isFromClass) {
+    : isFromClass(isFromClass)
+	, supported_path{"Generated/UT/" + cfgName + "/SupportedTypes.txt"} 
+	{
     // Time utilities
     auto t = time(nullptr);
     auto tm = *localtime(&t);
@@ -88,6 +90,7 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName,
 
     generateFixture(fixture_path);
     generateMakefile(makefile_path);
+	generateSupported();
 }
 
 void BoostGenerator::generateFixture(string outputPath) const {
@@ -144,6 +147,15 @@ void BoostGenerator::generateMakefile(string outputPath) {
     }                     // if fileExist
 }
 
+void BoostGenerator::generateSupported() const {
+	if(!fileExists(supported_path))
+		system(("cp -r " + 
+			ASKELETON_HOME + 
+			"Generator/Templates/SupportedTypes.txt " + 
+			supported_path
+		).c_str());
+}
+
 void BoostGenerator::generateBoostAssert(
     string class_test, string function_name, string function_cfg_name,
     const map<string, pair<string, string>> &param_type,
@@ -176,13 +188,14 @@ void BoostGenerator::generateBoostAssert(
             //==========================================================
             //==========================================================
 
+			// TODO: no se necesita ya
             // Copy makefile and supported types for compiling tests
             // system(("cp -r " + ASKELETON_HOME + "Generator/Templates/makefile
             // Generated/UT/" + class_test + "/").c_str());
-            system(("cp -r " + ASKELETON_HOME +
-                    "Generator/Templates/SupportedTypes.txt Generated/UT/" +
-                    class_test + "/")
-                       .c_str());
+            // system(("cp -r " + ASKELETON_HOME +
+            //         "Generator/Templates/SupportedTypes.txt Generated/UT/" +
+            //         class_test + "/")
+            //            .c_str());
         } else {
             ifstream tmp_output(outputPath);
             fileContent = string((istreambuf_iterator<char>(tmp_output)),
@@ -341,13 +354,14 @@ void BoostGenerator::generateBoostAssert(string class_test,
             //==========================================================
             //==========================================================
 
+			// TODO: no se necesita ya
             // Copy makefile and supported types for compiling tests
             // system(("cp -r " + ASKELETON_HOME + "Generator/Templates/makefile
             // Generated/UT/" + class_test + "/").c_str());
-            system(("cp -r " + ASKELETON_HOME +
-                    "Generator/Templates/SupportedTypes.txt Generated/UT/" +
-                    class_test + "/")
-                       .c_str());
+            // system(("cp -r " + ASKELETON_HOME +
+            //         "Generator/Templates/SupportedTypes.txt Generated/UT/" +
+            //         class_test + "/")
+            //            .c_str());
         } else {
             ifstream tmp_output(outputPath);
             fileContent = string((istreambuf_iterator<char>(tmp_output)),

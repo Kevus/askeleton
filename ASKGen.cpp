@@ -501,10 +501,13 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
     // bGen.generateBoostAssert(source_file, function_name,
     // function_cfg_name,
     //                          param_type, insert_order, return_type);
+	string return_type_string = return_qtype.getCanonicalType().getAsString();
     bGen.generateBoostAssert(
         source_file, function_name, function_cfg_name, param_type, insert_order,
-        {return_qtype.getCanonicalType().getAsString(), return_type});
+        {return_type_string, return_type});
     //}
+
+	cout << "llego\n";
 }
 
 // Method for constructing constructor test
