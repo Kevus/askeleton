@@ -8,7 +8,7 @@ LLVMCXXFLAGS :=	\
 	-fdata-sections -O2 -DNDEBUG  -fno-exceptions -D_GNU_SOURCE	\
 	-D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -DFULL_DEBUG
 
-CXXFLAGS	:= $(LLVMCXXFLAGS) $(RTTIFLAG) -fexceptions -gdwarf-4
+CXXFLAGS	:= $(LLVMCXXFLAGS) $(RTTIFLAG) -fexceptions -gdwarf-4 -DFULL_DEBUG
 LLVMLDFLAGS	:= $(shell llvm-config --ldflags --system-libs --libs) $(LDFLAGS)
 
 SOURCES =	\

@@ -421,12 +421,15 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
         function_cfg_name +=
             "_" + to_string(function_occurrences[function_name]);
 
-    // Get the parameters
+    // Order of the parameters
     map<string, pair<string, string>> param_type;
     vector<string> insert_order;
+
+    // Typed parameters
     vector<const CXXRecordDecl *> records;
     vector<const EnumDecl *> enums;
     vector<pair<string, string>> pointers;
+
     get_full_parameters(parameters, param_type, insert_order, records, enums,
                         pointers);
 
@@ -448,8 +451,7 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
         }
     }
 
-	#ifdef FULL_DEBUG
-
+#ifdef FULL_DEBUG
     cout << "\n\n--------------\n";
     unsigned i = 0;
     cout << "Params list: (";
@@ -486,7 +488,7 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
     }
     cout << ")\n";
 
-	#endif /* FULL_DEBUG */
+#endif /* FULL_DEBUG */
 
     generateCustomTypeFixture(source_file, records, enums, pointers, bGen);
 
@@ -497,20 +499,20 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
 
     // if(!abort_test)
     //{
-    cfg_gen.generateTestCase(
-        function_cfg_name, param_type, insert_order,
-        {return_qtype.getCanonicalType().getAsString(), return_type});
+    string return_type_string = return_qtype.getCanonicalType().getAsString();
+    cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order,
+                             {return_type_string, return_type});
     // cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order,
     //                          return_type);
     // bGen.generateBoostAssert(source_file, function_name,
     // function_cfg_name,
     //                          param_type, insert_order, return_type);
-	string return_type_string = return_qtype.getCanonicalType().getAsString();
-    bGen.generateBoostAssert(
-        source_file, function_name, function_cfg_name, param_type, insert_order,
-        {return_type_string, return_type});
+    bGen.generateBoostAssert(source_file, function_name, function_cfg_name,
+                             param_type, insert_order,
+                             {return_type_string, return_type});
     //}
 
+    cout << "llego\n";
 }
 
 // Method for constructing constructor test
