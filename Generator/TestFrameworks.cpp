@@ -15,9 +15,8 @@ string cleanClassIdentifier(string sToReplace) {
 
 BoostGenerator::BoostGenerator(string filePath, string cfgName,
                                bool isFromClass)
-    : isFromClass(isFromClass)
-	, supported_path{"Generated/UT/" + cfgName + "/SupportedTypes.txt"} 
-	{
+    : isFromClass(isFromClass),
+      supported_path{"Generated/UT/" + cfgName + "/SupportedTypes.txt"} {
     // Time utilities
     auto t = time(nullptr);
     auto tm = *localtime(&t);
@@ -90,7 +89,7 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName,
 
     generateFixture(fixture_path);
     generateMakefile(makefile_path);
-	generateSupported();
+    generateSupported();
 }
 
 void BoostGenerator::generateFixture(string outputPath) const {
@@ -148,19 +147,11 @@ void BoostGenerator::generateMakefile(string outputPath) {
 }
 
 void BoostGenerator::generateSupported() const {
-	if(!fileExists(supported_path))
-		system(("cp -r " + 
-			ASKELETON_HOME + 
-			"Generator/Templates/SupportedTypes.txt " + 
-			supported_path
-		).c_str());
+    if (!fileExists(supported_path))
+        system(("cp -r " + ASKELETON_HOME +
+                "Generator/Templates/SupportedTypes.txt " + supported_path)
+                   .c_str());
 }
-
-void BoostGenerator::generateBoostAssert(const string &classTest, const string &functionName, const string &funcCfgName,
-		const vector<InfoVariable> &params,
-		const InfoType &returnType) {
-			
-		}
 
 void BoostGenerator::generateBoostAssert(
     string class_test, string function_name, string function_cfg_name,
@@ -194,7 +185,7 @@ void BoostGenerator::generateBoostAssert(
             //==========================================================
             //==========================================================
 
-			// TODO: no se necesita ya
+            // TODO: no se necesita ya
             // Copy makefile and supported types for compiling tests
             // system(("cp -r " + ASKELETON_HOME + "Generator/Templates/makefile
             // Generated/UT/" + class_test + "/").c_str());
@@ -218,8 +209,6 @@ void BoostGenerator::generateBoostAssert(
         // Lets check pointers...
         for (auto i : insertion_order) {
             tie(original, formatted) = param_type.at(i);
-            // checkTypes(param_type.at(i),
-            //            "Generated/UT/" + class_test + "/SupportedTypes.txt");
             replaceAll(ptype, "struct_", "");
 
             if (formatted.find("_&") != string::npos ||
@@ -244,8 +233,6 @@ void BoostGenerator::generateBoostAssert(
         }
 
         tie(original, formatted) = return_type;
-        // checkTypes(return_type,
-        //            "Generated/UT/" + class_test + "/SupportedTypes.txt");
         replaceAll(formatted, "struct_", "");
 
         if (formatted.find("_&") != string::npos ||
@@ -360,7 +347,7 @@ void BoostGenerator::generateBoostAssert(string class_test,
             //==========================================================
             //==========================================================
 
-			// TODO: no se necesita ya
+            // TODO: no se necesita ya
             // Copy makefile and supported types for compiling tests
             // system(("cp -r " + ASKELETON_HOME + "Generator/Templates/makefile
             // Generated/UT/" + class_test + "/").c_str());
@@ -1094,11 +1081,11 @@ bool BoostGenerator::checkIfSupported(const pair<string, string> &type,
             found = true;
     }
 
-	#ifdef FULL_DEBUG
+#ifdef FULL_DEBUG
     cout << "checking " << typeClean << " in "
          << ("Generated/UT/" + supportedPath + "/SupportedTypes.txt") << ": "
          << (found ? "detected" : "not detected") << "\n";
-	#endif /* FULL_DEBUG */
+#endif /* FULL_DEBUG */
 
     return found;
 }
@@ -1120,11 +1107,11 @@ void BoostGenerator::addTypeToSupported(const pair<string, string> &type,
     string typeClean = type.first;
     replaceAll(typeClean, " ", "_");
     supportedFile << typeClean << endl;
-	
-	#ifdef FULL_DEBUG
+
+#ifdef FULL_DEBUG
     cout << "Added " << typeClean << " to supported in "
          << ("Generated/UT/" + supportedPath + "/SupportedTypes.txt") << "\n";
-	#endif /* FULL_DEBUG */
+#endif /* FULL_DEBUG */
 }
 
 void BoostGenerator::checkTypes(const std::pair<string, string> &type,
