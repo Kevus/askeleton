@@ -11,6 +11,9 @@
 //DATE: {dateOfGeneration}
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifndef {cfgName}_FIXTURE_HPP
+#define {cfgName}_FIXTURE_HPP
+
 #include "{filePath}"
 #define BOOST_TEST_MODULE {cfgName}_TEST
 #include <boost/test/included/unit_test.hpp>
@@ -174,7 +177,7 @@ struct Fixture {
 	//==========================================================
 	char Read_char(string objectKey)
 	{
-		return boost::lexical_cast<char>(readObject(objectKey));
+		return readObject(objectKey)[0];
 	}
 
 	signed char Read_signed_char(string objectKey)
@@ -196,7 +199,7 @@ struct Fixture {
 	//==========================================================
 	short Read_short(string objectKey)
 	{
-		return boost::lexical_cast<short>(readObject(objectKey));
+		return stoi(readObject(objectKey));
 	}
 
 	short int Read_short_int(string objectKey)
@@ -221,7 +224,7 @@ struct Fixture {
 	//==========================================================
 	unsigned short Read_unsigned_short(string objectKey)
 	{
-		return boost::lexical_cast<unsigned short>(readObject(objectKey));
+		return stoul(readObject(objectKey));
 	}
 
 	unsigned short int Read_unsigned_short_int(string objectKey)
@@ -237,7 +240,7 @@ struct Fixture {
 	//==========================================================
 	int Read_int(string objectKey)
 	{
-		return boost::lexical_cast<int>(readObject(objectKey));
+		return stoi(readObject(objectKey));
 	}
 
 	signed Read_signed(string objectKey)
@@ -258,7 +261,7 @@ struct Fixture {
 	//==========================================================
 	unsigned Read_unsigned_int(string objectKey)
 	{
-		return boost::lexical_cast<unsigned int>(readObject(objectKey));
+		return stoul(readObject(objectKey));
 	}
 
 	unsigned int Read_unsigned(string objectKey)
@@ -280,7 +283,7 @@ struct Fixture {
 	//==========================================================
 	long Read_long(string objectKey)
 	{
-		return boost::lexical_cast<long>(readObject(objectKey));
+		return stol(readObject(objectKey));
 	}
 
 	long int Read_long_int(string objectKey)
@@ -305,7 +308,7 @@ struct Fixture {
 	//==========================================================
 	unsigned long Read_unsigned_long(string objectKey)
 	{
-		return boost::lexical_cast<unsigned long>(readObject(objectKey));
+		return stoul(readObject(objectKey));
 	}
 
 	unsigned long int Read_unsigned_long_int(string objectKey)
@@ -322,7 +325,7 @@ struct Fixture {
 	//==========================================================
 	long long Read_long_long(string objectKey)
 	{
-		return boost::lexical_cast<long long>(readObject(objectKey));
+		return stoll(readObject(objectKey));
 	}
 
 	long long int Read_long_long_int(string objectKey)
@@ -347,7 +350,7 @@ struct Fixture {
 	//==========================================================
 	unsigned long long Read_unsigned_long_long(string objectKey)
 	{
-		return boost::lexical_cast<unsigned long long>(readObject(objectKey));
+		return stoull(readObject(objectKey));
 	}
 
 	unsigned long long int Read_unsigned_long_long_int(string objectKey)
@@ -362,7 +365,7 @@ struct Fixture {
 	//==========================================================
 	double Read_double(string objectKey)
 	{
-		return boost::lexical_cast<double>(readObject(objectKey));
+		return stod(readObject(objectKey));
 	}
 
 	long double Read_long_double(string objectKey)
@@ -371,12 +374,17 @@ struct Fixture {
 	}
 
 	//==========================================================
-	// MIXED TYPES
+	// EQUIVALENT TYPES:
+	// float
 	//==========================================================
 	float Read_float(string objectKey)
 	{
-		return boost::lexical_cast<float>(readObject(objectKey));
+		return stof(readObject(objectKey));
 	}
+
+	//==========================================================
+	// MIXED TYPES
+	//==========================================================
 
 	bool Read_bool(string objectKey)
 	{
@@ -396,7 +404,9 @@ struct Fixture {
 	char* Read_char_s(string objectKey)
 	{
 		string s_value = readObject(objectKey);
- 		char* result = strdup(s_value.c_str());
+		
+		char *result = strdup(s_value.empty() ? "" : s_value.c_str());
+		pointers.push_back(result);
 
 		return result;
 	}
@@ -404,6 +414,18 @@ struct Fixture {
 	//==========================================================
 	// SPECIAL TYPES
 	//==========================================================
+	template <typename T>
+	T convertFromString(const std::string& str) {
+		std::istringstream iss(str);
+		T result;
+		
+		if (!(iss >> result)) {
+			throw std::invalid_argument("No se puede convertir la cadena " << str);
+		}
+
+		return result;
+	}
+	
 	template <typename T>
 	list<T> Read_list(string objectKey)
 	{
@@ -530,3 +552,5 @@ struct Fixture {
 };
 
 //{overloadOperator}
+
+#endif /* {cfgName}_FIXTURE_HPP */
