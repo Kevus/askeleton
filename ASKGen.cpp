@@ -448,6 +448,8 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
         }
     }
 
+	#ifdef FULL_DEBUG
+
     cout << "\n\n--------------\n";
     unsigned i = 0;
     cout << "Params list: (";
@@ -484,6 +486,8 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
     }
     cout << ")\n";
 
+	#endif /* FULL_DEBUG */
+
     generateCustomTypeFixture(source_file, records, enums, pointers, bGen);
 
     /*CustomGenerator cgen(source_file);
@@ -507,7 +511,6 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
         {return_type_string, return_type});
     //}
 
-	cout << "llego\n";
 }
 
 // Method for constructing constructor test

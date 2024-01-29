@@ -1,4 +1,5 @@
 #include "ConfigGenerator.hpp"
+#include "../VariableInfo.hpp"
 #include <regex>
 
 class BoostGenerator {
@@ -16,6 +17,10 @@ public:
         const std::map<string, std::pair<string, string>> &param_type,
         const vector<string> &insertion_order,
         const std::pair<string, string> &return_type);
+	void generateBoostAssert(
+		const string &classTest, const string &functionName, const string &funcCfgName,
+		const vector<InfoVariable> &params,
+		const InfoType &returnType);
 
     void generateBoostConstructorAssert(string class_test,
                                         string constructor_name,

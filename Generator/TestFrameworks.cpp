@@ -156,6 +156,12 @@ void BoostGenerator::generateSupported() const {
 		).c_str());
 }
 
+void BoostGenerator::generateBoostAssert(const string &classTest, const string &functionName, const string &funcCfgName,
+		const vector<InfoVariable> &params,
+		const InfoType &returnType) {
+			
+		}
+
 void BoostGenerator::generateBoostAssert(
     string class_test, string function_name, string function_cfg_name,
     const map<string, pair<string, string>> &param_type,
@@ -1088,9 +1094,11 @@ bool BoostGenerator::checkIfSupported(const pair<string, string> &type,
             found = true;
     }
 
+	#ifdef FULL_DEBUG
     cout << "checking " << typeClean << " in "
          << ("Generated/UT/" + supportedPath + "/SupportedTypes.txt") << ": "
          << (found ? "detected" : "not detected") << "\n";
+	#endif /* FULL_DEBUG */
 
     return found;
 }
@@ -1112,8 +1120,11 @@ void BoostGenerator::addTypeToSupported(const pair<string, string> &type,
     string typeClean = type.first;
     replaceAll(typeClean, " ", "_");
     supportedFile << typeClean << endl;
+	
+	#ifdef FULL_DEBUG
     cout << "Added " << typeClean << " to supported in "
          << ("Generated/UT/" + supportedPath + "/SupportedTypes.txt") << "\n";
+	#endif /* FULL_DEBUG */
 }
 
 void BoostGenerator::checkTypes(const std::pair<string, string> &type,

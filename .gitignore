@@ -2,3 +2,5 @@
 **/Generated
 *.o
 .vscode/
+Generated*/
+askeleton
