@@ -153,6 +153,12 @@ void BoostGenerator::generateSupported() const {
                    .c_str());
 }
 
+void BoostGenerator::generateBoostAssert(const string &classTest,
+                                         const string &functionName,
+                                         const string &funcCfgName,
+                                         const vector<InfoVariable> &params,
+                                         const InfoType &returnType) {}
+
 void BoostGenerator::generateBoostAssert(
     string class_test, string function_name, string function_cfg_name,
     const map<string, pair<string, string>> &param_type,
