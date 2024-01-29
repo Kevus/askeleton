@@ -1,11 +1,8 @@
 #ifndef VARIABLE_INFO_HPP
 #define VARIABLE_INFO_HPP
 
-#include <map>
 #include <set>
 #include <string>
-
-#include <clang/AST/Decl.h>
 
 static const std::set<std::string> primitives = {"_Bool",
                                                  "bool",
@@ -46,26 +43,18 @@ static const std::set<std::string> primitives = {"_Bool",
 // A pair which represents the type and the name of a parameter
 typedef std::pair<std::string, std::string> Parameter;
 
-class VariableInfo {
-public:
-    VariableInfo(const std::string &originalType,
-                 const std::string &varName = "");
-    VariableInfo(const QualType &);
-    VariableInfo(const ParmVarDecl *);
+struct InfoType {
+	InfoType() = default;
+	InfoType(std::string original, std::string formatted);
+	
+	std::string original, formatted;
+};
 
-    bool isReturned() const;
-    Parameter getAsParameter() const;
-    const std::string &getName() const;
+struct InfoVariable: public InfoType {
+	InfoVariable() = default;
+	InfoVariable(std::string name, std::string original, std::string formatted);
 
-    bool isPrimitiveType() const;
-    bool wasAddedToFixture(const std::string &fixture) const;
-    void addToFixture(const std::string &fixture) const;
-
-private:
-    static std::map<std::string, std::set<std::string>> &getTypes();
-
-    std::string varName, originalType, formattedType;
-    bool isReturned_, isStruct_;
+	std::string name;
 };
 
 #endif /* VARIABLE_INFO_HPP */
