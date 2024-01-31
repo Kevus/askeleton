@@ -1,5 +1,5 @@
 #include "ConfigGenerator.hpp"
-#include "../VariableInfo.hpp"
+#include "VariableInfo.hpp"
 #include <regex>
 
 class BoostGenerator {
