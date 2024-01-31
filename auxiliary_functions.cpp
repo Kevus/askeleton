@@ -1,4 +1,5 @@
 #include "auxiliary_functions.hpp"
+#include <regex>
 
 // Method to check if a file exists given a path
 bool fileExists(const string &filename) {
@@ -148,6 +149,10 @@ void replaceAll(string &str, const string &from, const string &to) {
         start_pos += to.length(); // In case 'to' contains 'from', like
                                   // replacing 'x' with 'yx'
     }
+}
+
+void removeAll(string &str, const string &substringToRemove) {
+	std::regex_replace(str, std::regex(substringToRemove), "");
 }
 
 bool endsWith(std::string const &fullString, std::string const &ending) {

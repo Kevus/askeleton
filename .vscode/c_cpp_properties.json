@@ -7,12 +7,13 @@
                 "/snap/klee/6/usr/local/include",
                 "/home/heredia/assenter_src/NEO_UT/include",
                 "/lib/llvm-15/include",
-                "/home/heredia/astutmatcher/**"
+                "/home/heredia/astutmatcher/**",
+                "${workspaceFolder}/include"
             ],
             "defines": [],
             "compilerPath": "/usr/local/bin/clang++",
             "cStandard": "c17",
-            "cppStandard": "c++14",
+            "cppStandard": "c++20",
             "intelliSenseMode": "linux-clang-x64",
             "compilerArgs": [
                 "-std=c++14"

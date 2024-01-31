@@ -46,7 +46,9 @@ typedef std::pair<std::string, std::string> Parameter;
 struct InfoType {
 	InfoType() = default;
 	InfoType(std::string original, std::string formatted);
-	
+
+	bool isContainer() const;
+	bool isPointer() const;
 	std::string original, formatted;
 };
 

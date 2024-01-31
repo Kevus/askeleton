@@ -58,6 +58,20 @@ void initializeFrameworks(bool BoostFramework, bool CatchFramework,
                           bool GtestFramework);
 void readFrameworks();
 void replaceAll(string &str, const string &from, const string &to);
+
+/**
+ * @brief Removes all occurrences of the specified substring from the given string.
+ *
+ * @param str The string to be modified.
+ * @param substringToRemove The substring to be removed from the original string.
+ *
+ * @details This function performs an in-place modification of the input string.
+ *          It uses std::regex_replace to replace all occurrences of the specified
+ *          substring with an empty string.
+ *
+ * @see std::regex_replace
+ */
+void removeAll(string &originalString, const string &substringToRemove);
 bool endsWith(const string &str, const string &suffix);
 
 // Returns true if str2 is included in str1
