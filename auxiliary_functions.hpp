@@ -10,6 +10,7 @@
 #include <sstream>
 #include <streambuf>
 #include <string>
+#include <initializer_list>
 
 #include <map>
 
@@ -72,20 +73,59 @@ void replaceAll(string &str, const string &from, const string &to);
  * @see std::regex_replace
  */
 void removeAll(string &originalString, const string &substringToRemove);
+
+/**
+ * @brief Removes all occurrences of specified substrings from the given string.
+ *
+ * This function iterates over the list of substrings and removes all occurrences
+ * of each substring from the provided string.
+ *
+ * @param str The string from which to remove the substrings.
+ * @param substrings The list of substrings to remove.
+ */
+void removeAll(string &originalString, const initializer_list<string> &substringToRemove);
+
+/**
+ * @brief Checks if a substring is present in the given string.
+ *
+ * This function searches for the specified substring within the main string.
+ *
+ * @param originalString The main string to search within.
+ * @param substring The substring to search for.
+ * @return True if the substring is found, false otherwise.
+ */
+bool containsSubstring(const string &originalString, const string &substring);
+
+/**
+ * @brief Checks if any of the specified substrings are present in the given string.
+ *
+ * This function searches for any of the specified substrings within the main string.
+ *
+ * @param originalString The main string to search within.
+ * @param substrings The list of substrings to search for.
+ * @return True if at least one substring is found, false otherwise.
+ */
+bool containsAnySubstring(const string &originalString, const initializer_list<string> &substrings);
+
 bool endsWith(const string &str, const string &suffix);
 
+// TODO: eliminar
 // Returns true if str2 is included in str1
 bool includes(const string &str1, const string &str2);
 
+// TODO: eliminar
 // Returns true if str2 is included in str1
 bool includes(const char *str1, const char *str2);
 
+// TODO: eliminar
 // Returns true if type is a struct
 bool isStruct(const QualType &type);
 
+// TODO: eliminar
 // Returns the name of the type, which must be a struct
 string getStructName(const QualType &type);
 
+// TODO: eliminar
 // Returns true if type is a enum
 bool isEnum(const QualType &);
 

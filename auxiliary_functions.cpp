@@ -155,6 +155,22 @@ void removeAll(string &str, const string &substringToRemove) {
 	std::regex_replace(str, std::regex(substringToRemove), "");
 }
 
+void removeAll(string &str, const initializer_list<string> &substrings) {
+	for(const auto &sub: substrings)
+		removeAll(str, sub);
+}
+
+bool containsSubstring(const string &original, const string &substring) {
+	return original.find(substring) != string::npos;
+}
+
+bool containsAnySubstring(const string &original, const initializer_list<string> &substrings) {
+	for(const auto &s: substrings)
+		if(containsSubstring(original, s))
+			return true;
+	return false;
+}
+
 bool endsWith(std::string const &fullString, std::string const &ending) {
     if (fullString.length() >= ending.length()) {
         return (0 == fullString.compare(fullString.length() - ending.length(),
