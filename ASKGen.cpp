@@ -440,9 +440,8 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
         pointers.push_back({tmp_type, formatted_type});
     } else if (const RecordType *recordType =
                    return_qtype->getAs<RecordType>()) {
+		removeAll(return_type, "struct_");
         records.push_back(cast<CXXRecordDecl>(recordType->getDecl()));
-        // FIXME: no deberia ser necesario hacer esto
-        return_type = "struct_" + return_type;
     } else if (const EnumType *enumType = return_qtype->getAs<EnumType>()) {
         EnumDecl *enumDecl = enumType->getDecl();
         if (enumDecl) {
@@ -507,12 +506,20 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
     // bGen.generateBoostAssert(source_file, function_name,
     // function_cfg_name,
     //                          param_type, insert_order, return_type);
-    bGen.generateBoostAssert(source_file, function_name, function_cfg_name,
-                             param_type, insert_order,
-                             {return_type_string, return_type});
-    //}
 
-    cout << "llego\n";
+	vector<InfoVariable> params;
+	for(const auto &name: insert_order) {
+		const auto &[original, formatted] = param_type[name];
+		params.push_back({name, original, formatted});
+	}
+	InfoType returnType(return_type_string, return_type);
+
+	bGen.generateBoostAssert(source_file, function_name, function_cfg_name, 
+		params, returnType);
+    // bGen.generateBoostAssert(source_file, function_name, function_cfg_name,
+    //                          param_type, insert_order,
+    //                          {return_type_string, return_type});
+    //}
 }
 
 // Method for constructing constructor test

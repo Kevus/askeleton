@@ -1,5 +1,6 @@
 #include "TestFrameworks.hpp"
 #include "constants.hpp"
+#include "BoostContents.hpp"
 
 using namespace askeleton;
 
@@ -193,93 +194,45 @@ void BoostGenerator::generateBoostAssert(const string &classTest,
 								istreambuf_iterator<char>());
 	}
 
-	bool isReturnTypeContainer = returnType.isContainer();
+	bool isReturnContainer = returnType.isContainer();
 
-	for(const InfoVariable &actualVariable: params) {
-		const auto& [original, formatted, name] = actualVariable;
-
-		// CHECK: para que?
-		if(formatted.find("_&") != string::npos || formatted.find("const_") != string::npos) {
-			testCaseContent 
-				<< "\n\t" << original << " " << funcCfgName << "_" << name 
-				<< " = Read_" << formatted << "(\"" << funcCfgName << "." << name << "\");\n";
-
-		}
-	}
+	// Reads of references
+	for(const InfoVariable &actualVariable: params) 
+		if(actualVariable.isReference()) 
+			testCaseContent << btcontents::generateVariableAssign(funcCfgName, actualVariable);
 	
-	tie(original, formatted) = return_type;
-	replaceAll(formatted, "struct_", "");
+	if (returnType.isReference()) 
+		testCaseContent << btcontents::generateVariableAssign(funcCfgName, returnType);
 
-	if (formatted.find("_&") != string::npos ||
-		formatted.find("const_") != string::npos) {
-		ptype = formatted;
-		replaceAll(ptype, "_", " ");
-		replaceAll(ptype, " &", "");
+	// Assertion
+	testCaseContent << (returnType.isContainer() ? "\tBOOST_CHECK((" : "\tBOOST_CHECK_EQUAL(");
 
-		test_case << "\t" << ptype << " return_" << function_cfg_name;
+	if (isFromClass) testCaseContent << classTest << "_test.";
+	testCaseContent << functionName << "(";
 
-		// TODO: generalizar
-		replaceAll(ptype, " ", "_");
-		replaceAll(ptype, "const_", "");
-		replaceAll(ptype, "*", "s");
-
-		test_case << " = Read_" << ptype << "(\"" << function_cfg_name
-					<< ".return_" << formatted << "\");\n";
+	for (const auto &param : params) {
+		if (!isReturnContainer) 
+			testCaseContent << "Read_" << param.formatted << "(\"" << funcCfgName 
+				<< "." << param.name << "\")";
+		else 
+			testCaseContent << funcCfgName << "_" << param.name;
+		
+		if (&param != &params.back()) testCaseContent << ",";
 	}
 
-	// Now we will create the assertion sentence
-	if (!return_container)
-		test_case << "\tBOOST_CHECK_EQUAL(";
+	testCaseContent << (isReturnContainer ? ") == " : "),");
+
+	if (!isReturnContainer)
+		testCaseContent << "Read_" << returnType.formatted << "(\"" << functionName << ".return_"
+					<< returnType.formatted << "\"));";
 	else
-		test_case << "\tBOOST_CHECK((";
+		testCaseContent << "return_" << funcCfgName << "));";
+	
+	testCaseContent << "\n" << ASSERT;
 
-	if (isFromClass)
-		test_case << class_test << "_test.";
-
-	test_case << function_name << "(";
-
-	for (auto i : insertion_order) {
-		string formatted_type = param_type.at(i).second;
-		replaceAll(formatted_type, "struct_", "");
-		if (formatted_type.find("_&") == string::npos &&
-			formatted_type.find("const_") == string::npos) {
-			replaceAll(formatted_type, "*", "s");
-			test_case << "Read_" << formatted_type << "(\""
-						<< function_cfg_name << "." << i << "\")";
-		} else {
-			test_case << function_cfg_name << "_" << i;
-		}
-
-		if (i != insertion_order.back())
-			test_case << ",";
-	}
-
-	// test_case << "));\n{assert}";
-	if (!return_container)
-		test_case << "),";
-	else
-		test_case << ") == ";
-
-	if (formatted.find("_&") == string::npos &&
-		formatted.find("const_") == string::npos) {
-		string read = "Read_" + formatted;
-		replaceAll(read, "*", "s");
-		test_case << read << "(\"" << function_name << ".return_"
-					<< formatted << "\"))";
-	} else {
-		test_case << "return_" << function_cfg_name << ")";
-	}
-
-	if (!return_container)
-		test_case << ";";
-	else
-		test_case << ");";
-
-	test_case << "\n//{assert}";
-
-	string result_test_case = cleanClassIdentifier(test_case.str());
+	string result_test_case = cleanClassIdentifier(testCaseContent.str());
 	replaceAll(result_test_case, "::", "_");
-	replaceAll(fileContent, "//{assert}", result_test_case);
+	replaceAll(fileContent, ASSERT, result_test_case);
 
 	ofstream outputFile(outputPath);
 	outputFile << fileContent;
