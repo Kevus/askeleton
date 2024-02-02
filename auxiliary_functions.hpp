@@ -6,11 +6,11 @@
 
 #include <algorithm>
 #include <fstream>
+#include <initializer_list>
 #include <iostream>
 #include <sstream>
 #include <streambuf>
 #include <string>
-#include <initializer_list>
 
 #include <map>
 
@@ -61,14 +61,18 @@ void readFrameworks();
 void replaceAll(string &str, const string &from, const string &to);
 
 /**
- * @brief Removes all occurrences of the specified substring from the given string.
+ * @brief Removes all occurrences of the specified substring from the given
+ * string.
  *
  * @param str The string to be modified.
- * @param substringToRemove The substring to be removed from the original string.
+ * @param substringToRemove The substring to be removed from the original
+ * string.
  *
  * @details This function performs an in-place modification of the input string.
- *          It uses std::regex_replace to replace all occurrences of the specified
- *          substring with an empty string.
+ *          It uses std::regex_replace to replace all occurrences of the
+ * specified substring with an empty string.
+ *
+ * @bug No funciona
  *
  * @see std::regex_replace
  */
@@ -77,13 +81,16 @@ void removeAll(string &originalString, const string &substringToRemove);
 /**
  * @brief Removes all occurrences of specified substrings from the given string.
  *
- * This function iterates over the list of substrings and removes all occurrences
- * of each substring from the provided string.
+ * This function iterates over the list of substrings and removes all
+ * occurrences of each substring from the provided string.
  *
  * @param str The string from which to remove the substrings.
  * @param substrings The list of substrings to remove.
+ *
+ * @bug No funciona
  */
-void removeAll(string &originalString, const initializer_list<string> &substringToRemove);
+void removeAll(string &originalString,
+               const initializer_list<string> &substringToRemove);
 
 /**
  * @brief Checks if a substring is present in the given string.
@@ -97,15 +104,18 @@ void removeAll(string &originalString, const initializer_list<string> &substring
 bool containsSubstring(const string &originalString, const string &substring);
 
 /**
- * @brief Checks if any of the specified substrings are present in the given string.
+ * @brief Checks if any of the specified substrings are present in the given
+ * string.
  *
- * This function searches for any of the specified substrings within the main string.
+ * This function searches for any of the specified substrings within the main
+ * string.
  *
  * @param originalString The main string to search within.
  * @param substrings The list of substrings to search for.
  * @return True if at least one substring is found, false otherwise.
  */
-bool containsAnySubstring(const string &originalString, const initializer_list<string> &substrings);
+bool containsAnySubstring(const string &originalString,
+                          const initializer_list<string> &substrings);
 
 bool endsWith(const string &str, const string &suffix);
 

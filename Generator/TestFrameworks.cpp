@@ -162,7 +162,7 @@ void BoostGenerator::generateBoostAssert(const string &classTest,
                                          const string &funcCfgName,
                                          const vector<InfoVariable> &params,
                                          const InfoType &returnType) {
-    using namespace fileitems;
+    using namespace tplitems;
     string fileContent, ptype, 
 		templatePath = ASKELETON_HOME + routes::BT_TEMPLATES_ROUTE,
 		outputPath = routes::generateTestFileRoute(classTest);
