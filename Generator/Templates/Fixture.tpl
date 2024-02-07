@@ -420,7 +420,7 @@ struct Fixture {
 		T result;
 		
 		if (!(iss >> result)) {
-			throw std::invalid_argument("No se puede convertir la cadena " << str);
+			throw std::invalid_argument("No se puede convertir la cadena " + str);
 		}
 
 		return result;

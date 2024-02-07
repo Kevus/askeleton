@@ -111,9 +111,32 @@ void ConfigGenerator::generateTestCase(
         tie(original, formatted) = return_type;
         replaceAll(formatted, "struct_", "");
         cfg_file << "\treturn_" << formatted << "="
-                 << rvg.getRandomValue(formatted) << ":#" << original
+                 << rvg.getRandomValue(formatted) << ";#" << original
                  << "\n};\n\n";
     }
+}
+
+void ConfigGenerator::generateTestCase(const string &functionName,
+                                       const vector<InfoVariable> &params,
+                                       const InfoType &returnType) {
+    if (!cfg_file.is_open())
+        return;
+
+    cfg_file << functionName << ":\n{\n";
+    for (const InfoVariable &param : params) {
+        const string &original = param.original, &name = param.name;
+        string value = rvg.getRandomValue(param.formatted);
+        cfg_file << "\t";
+        if (param.isPointer()) {
+            cfg_file << name << "_input=" << value << ";#" << original << "\n\t"
+                     << name << "_output=" << value << ";#" << original << "\n";
+        } else
+            cfg_file << name << "=" << value << ";#" << original << "\n";
+    }
+
+    cfg_file << "\treturn_" << returnType.formatted << "="
+             << rvg.getRandomValue(returnType.formatted) << ";#"
+             << returnType.original << "\n};\n\n";
 }
 
 // void ConfigGenerator::generateTestCases(string function_name, map<string)

@@ -6,21 +6,11 @@ class BoostGenerator {
 public:
     BoostGenerator(string filePath, string cfgName, bool isFromClass);
 
-    // TODO: eliminar esta version mas adelante
-    void generateBoostAssert(string class_test, string function_name,
-                             string function_cfg_name,
-                             map<string, string> param_type,
-                             vector<string> insertion_order,
-                             string return_type);
-    void generateBoostAssert(
-        string class_test, string function_name, string function_cfg_name,
-        const std::map<string, std::pair<string, string>> &param_type,
-        const vector<string> &insertion_order,
-        const std::pair<string, string> &return_type);
-	void generateBoostAssert(
-		const string &classTest, const string &functionName, const string &funcCfgName,
-		const vector<InfoVariable> &params,
-		const InfoType &returnType);
+    void generateBoostAssert(const string &classTest,
+                             const string &functionName,
+                             const string &funcCfgName,
+                             const vector<InfoVariable> &params,
+                             const InfoType &returnType);
 
     void generateBoostConstructorAssert(string class_test,
                                         string constructor_name,
@@ -57,7 +47,7 @@ public:
 private:
     void generateFixture(string outputPath) const;
     void generateMakefile(string outputPath);
-	void generateSupported() const;
+    void generateSupported() const;
     // vector<string> fillDefaultTypes(string path);
     // TODO: eliminar esta version mas adelante
     void checkTypes(string type, string support_path);
