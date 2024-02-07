@@ -2,6 +2,7 @@
 #define CONFIGGENERATOR_HPP
 
 #include "../auxiliary_functions.hpp"
+#include "VariableInfo.hpp"
 
 #include <map>
 #include <vector>
@@ -21,9 +22,11 @@ public:
             cfg_file.close();
     }
 
-    void generateTestCases();
     vector<string> getGenerated();
 
+    void generateTestCase(const string &functionName,
+                          const vector<InfoVariable> &params,
+                          const InfoType &returnType);
     void generateTestCase(string funct_name, map<string, string> param_type,
                           vector<string> insert_order, string return_type);
     void generateTestCase(string funct_name,

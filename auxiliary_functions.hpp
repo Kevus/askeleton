@@ -117,6 +117,20 @@ bool containsSubstring(const string &originalString, const string &substring);
 bool containsAnySubstring(const string &originalString,
                           const initializer_list<string> &substrings);
 
+/**
+ * @brief Extracts the file name (without extension or path) from a given file
+ * route.
+ *
+ * The `extractFileName` function takes a full file path and returns the name of
+ * the file, excluding the extension and path. If no extension is found, it
+ * returns the full file name. The function is platform-agnostic and can be used
+ * on operating systems with different path conventions.
+ *
+ * @param fileRoute Full path of the file to be processed.
+ * @return std::string The file name without the extension or path.
+ */
+string extractFileName(const string &fileRoute);
+
 bool endsWith(const string &str, const string &suffix);
 
 // TODO: eliminar

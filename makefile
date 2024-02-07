@@ -1,4 +1,4 @@
-CXX		:= clang++
+CXX		:= clang++-15
 RTTIFLAG	:= -fno-rtti
 LLVMCXXFLAGS :=	\
 	-g -I/usr/lib/llvm-15/include -fPIC -fvisibility-inlines-hidden	\
@@ -10,10 +10,10 @@ LLVMCXXFLAGS :=	\
 	-Iinclude/ -I.
 
 CXXFLAGS	:= $(LLVMCXXFLAGS) $(RTTIFLAG) -fexceptions -gdwarf-4 -DFULL_DEBUG
-LLVMLDFLAGS	:= $(shell llvm-config --ldflags --system-libs --libs) $(LDFLAGS)
+LLVMLDFLAGS	:= $(shell llvm-config-15 --ldflags --system-libs --libs) $(LDFLAGS)
 
 SOURCES =	\
-	src/BoostContents.cpp src/VariableInfo.cpp \
+	src/generators.cpp src/VariableInfo.cpp \
 	auxiliary_functions.cpp ASKGen.cpp ASKMatchers.cpp \
 	Generator/RandomValuesGenerator.cpp Generator/CustomGenerator.cpp \
 	Generator/ConfigGenerator.cpp Generator/TestFrameworks.cpp askeleton.cpp
@@ -40,17 +40,17 @@ CLANGLIBS = \
 
 
 askeleton:	\
-	src/BoostContents.o src/VariableInfo.o \
+	src/generators.o src/VariableInfo.o \
 	auxiliary_functions.o ASKGen.o ASKMatchers.o \
 	Generator/RandomValuesGenerator.o Generator/CustomGenerator.o \
 	Generator/ConfigGenerator.o Generator/TestFrameworks.o askeleton.o
 	$(CXX) -o $@ $^ $(CLANGLIBS) $(LLVMLDFLAGS)
 
 askeleton.o: auxiliary_functions.hpp ASKGen.hpp ASKMatchers.hpp Generator/RandomValuesGenerator.hpp Generator/CustomGenerator.hpp Generator/ConfigGenerator.hpp Generator/TestFrameworks.hpp	\
-	src/BoostContents.cpp src/VariableInfo.cpp auxiliary_functions.o ASKGen.o ASKMatchers.o Generator/RandomValuesGenerator.o Generator/CustomGenerator.o Generator/ConfigGenerator.o Generator/TestFrameworks.o
+	src/generators.cpp src/VariableInfo.cpp auxiliary_functions.o ASKGen.o ASKMatchers.o Generator/RandomValuesGenerator.o Generator/CustomGenerator.o Generator/ConfigGenerator.o Generator/TestFrameworks.o
 
 install: askeleton
 	cp askeleton /usr/local/bin
 
 clean:
-	rm -f -r *.o Generator/*.o Generated/UT/* Generated_LOG* askeleton
+	rm -f -r *.o Generator/*.o Generated/UT/* src/*.o Generated_LOG* askeleton

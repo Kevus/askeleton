@@ -1,7 +1,9 @@
 #include "ASKGen.hpp"
 
 string format_return_type(const QualType &type) {
-    return cleanUnnecesaryChars(type.getCanonicalType().getAsString());
+    string formatted = type.getCanonicalType().getAsString();
+    replaceAll(formatted, "*", "s");
+    return cleanUnnecesaryChars(formatted);
 }
 
 // TODO: revisar eficiencia
@@ -437,6 +439,7 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
     if (return_qtype->isPointerType()) {
         string tmp_type = return_qtype.getCanonicalType().getAsString();
         string formatted_type = cleanUnnecesaryChars(tmp_type);
+        replaceAll(formatted_type, "*", "s");
         pointers.push_back({tmp_type, formatted_type});
     } else if (const RecordType *recordType =
                    return_qtype->getAs<RecordType>()) {
@@ -491,35 +494,20 @@ void ASKGen::generateFunctionTest(string source_file, string function_name,
 
     generateCustomTypeFixture(source_file, records, enums, pointers, bGen);
 
-    /*CustomGenerator cgen(source_file);
-    cgen.generateTypesFile(function_name, param_type, insert_order,
-    rtn_type); cgen.generateTestCasesFile(function_name, param_type,
-    insert_order, rtn_type);*/
-
-    // if(!abort_test)
-    //{
     string return_type_string = return_qtype.getCanonicalType().getAsString();
-    cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order,
-                             {return_type_string, return_type});
     // cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order,
-    //                          return_type);
-    // bGen.generateBoostAssert(source_file, function_name,
-    // function_cfg_name,
-    //                          param_type, insert_order, return_type);
+    //                          {return_type_string, return_type});
 
+    InfoType returnType(return_type_string, return_type);
     vector<InfoVariable> params;
     for (const auto &name : insert_order) {
         const auto &[original, formatted] = param_type[name];
         params.push_back({name, original, formatted});
     }
-    InfoType returnType(return_type_string, return_type);
 
+    cfg_gen.generateTestCase(function_cfg_name, params, returnType);
     bGen.generateBoostAssert(source_file, function_name, function_cfg_name,
                              params, returnType);
-    // bGen.generateBoostAssert(source_file, function_name, function_cfg_name,
-    //                          param_type, insert_order,
-    //                          {return_type_string, return_type});
-    //}
 }
 
 // Method for constructing constructor test

@@ -1,6 +1,6 @@
 #include "TestFrameworks.hpp"
 #include "constants.hpp"
-#include "BoostContents.hpp"
+#include "generators.hpp"
 
 using namespace askeleton;
 
@@ -20,76 +20,68 @@ string cleanClassIdentifier(string sToReplace) {
 BoostGenerator::BoostGenerator(string filePath, string cfgName,
                                bool isFromClass)
     : isFromClass(isFromClass),
-      supported_path{"Generated/UT/" + cfgName + "/SupportedTypes.txt"} {
+      supported_path{routes::generateSupportPath(cfgName)} {
     // Time utilities
     auto t = time(nullptr);
     auto tm = *localtime(&t);
     ostringstream dateStream;
 
-    if (getenv("ASKELETON_HOME") != NULL) {
-        ASKELETON_HOME = getenv("ASKELETON_HOME");
+    const char *askeletonVarName = ASKELETON_VARNAME.c_str();
+    if (getenv(askeletonVarName) != NULL) {
+        ASKELETON_HOME = getenv(askeletonVarName);
         if (!endsWith(ASKELETON_HOME, "/")) {
             ASKELETON_HOME += "/";
         }
     } else
         ASKELETON_HOME = "";
 
-    valuesToChange.insert(pair<string, string>("{filePath}", filePath));
-    valuesToChange.insert(pair<string, string>("{cfgName}", cfgName));
-
-    // String obtained from 'filePath', containing only the name of the file
-    // without extension
-    string fileName = filePath.substr(filePath.find_last_of("/\\") + 1);
-    fileName = fileName.substr(0, fileName.find_last_of("."));
-    valuesToChange.insert(pair<string, string>("{fileName}", fileName));
+    valuesToChange.insert({tplitems::FILE_PATH, filePath});
+    valuesToChange.insert({tplitems::CFG_NAME, cfgName});
+    valuesToChange.insert({tplitems::FILE_NAME, extractFileName(filePath)});
 
     // Given the filePath to the .h or .hpp, it will look for the .c or .cpp in
     // the same directory. If it doesnt exist, it will show an error
     string cppPath = filePath.substr(0, filePath.find_last_of("."));
     if (fileExists(cppPath + ".cpp")) {
-        valuesToChange.insert(
-            pair<string, string>("{cppPath}", cppPath + ".cpp"));
+        valuesToChange.insert({tplitems::CPP_PATH, cppPath + ".cpp"});
     } else if (fileExists(cppPath + ".c")) {
-        valuesToChange.insert(
-            pair<string, string>("{cppPath}", cppPath + ".c"));
+        valuesToChange.insert({tplitems::CPP_PATH, cppPath + ".c"});
     } else {
         cout << "ERROR: .cpp file not found. It will not be included in the "
                 "makefile"
              << endl;
-        valuesToChange.insert(pair<string, string>("{cppPath}", filePath));
+        valuesToChange.insert({tplitems::CPP_PATH, filePath});
     }
 
     dateStream << put_time(&tm, "%d-%m-%Y %H:%M:%S");
 
-    valuesToChange.insert(
-        pair<string, string>("{dateOfGeneration}", dateStream.str()));
+    valuesToChange.insert({"{dateOfGeneration}", dateStream.str()});
 
     //==========================================================
     // These methods have not been implemented
     //==========================================================
-    valuesToChange.insert(pair<string, string>("{includes}", ""));
-    valuesToChange.insert(pair<string, string>("{namespaces}", ""));
-    // valuesToChange.insert(pair<string,string>("{readObject}", ""));
-    valuesToChange.insert(pair<string, string>("{newMethods}", ""));
+    valuesToChange.insert({tplitems::INCLUDES, ""});
+    valuesToChange.insert({tplitems::NAMESPACES, ""});
+    valuesToChange.insert({tplitems::NEW_METHODS, ""});
     //==========================================================
     //==========================================================
 
     if (isFromClass) {
-        valuesToChange.insert(pair<string, string>("{className}", cfgName));
-        valuesToChange.insert(
-            pair<string, string>("{classNameTest}", cfgName + "_test;"));
+        valuesToChange.insert({tplitems::CLASS_NAME, cfgName});
+        valuesToChange.insert({tplitems::CLASS_NAME_TEST, cfgName + "_test;"});
     } else {
-        valuesToChange.insert(pair<string, string>("{className}", ""));
-        valuesToChange.insert(pair<string, string>("{classNameTest}", ""));
+        valuesToChange.insert({tplitems::CLASS_NAME, ""});
+        valuesToChange.insert({tplitems::CLASS_NAME_TEST, ""});
     }
 
     // We will create the folder if it doesn't exist
-    if (!folderExists("Generated/UT/" + cfgName)) {
+    if (!folderExists(routes::TEST_ROUTE + cfgName)) {
         string sys_command = "mkdir -p Generated/UT/" + cfgName;
         system(sys_command.c_str());
     }
-    fixture_path = "Generated/UT/" + cfgName + "/" + cfgName + "_fixture.hpp";
-    makefile_path = "Generated/UT/" + cfgName + "/makefile";
+    fixture_path =
+        routes::TEST_ROUTE + cfgName + "/" + cfgName + "_fixture.hpp";
+    makefile_path = routes::TEST_ROUTE + cfgName + "/makefile";
 
     generateFixture(fixture_path);
     generateMakefile(makefile_path);
@@ -163,402 +155,110 @@ void BoostGenerator::generateBoostAssert(const string &classTest,
                                          const vector<InfoVariable> &params,
                                          const InfoType &returnType) {
     using namespace tplitems;
-    string fileContent, ptype, 
-		templatePath = ASKELETON_HOME + routes::BT_TEMPLATES_ROUTE,
-		outputPath = routes::generateTestFileRoute(classTest);
+    string fileContent, ptype,
+        templatePath = ASKELETON_HOME + routes::BT_TEMPLATES_ROUTE,
+        outputPath = routes::generateTestFileRoute(classTest);
 
     stringstream testCaseContent;
     ifstream tplFile(templatePath);
 
-	if(!tplFile.is_open())
-		throw ifstream::failure(errors::openFileError(templatePath));
+    if (!tplFile.is_open())
+        throw ifstream::failure(errors::openFileError(templatePath));
 
-	// If file doesnt exist, then replace common tags
-	if (!fileExists(outputPath)) {
-		fileContent = string((istreambuf_iterator<char>(tplFile)),
-								istreambuf_iterator<char>());
+    // If file doesnt exist, then replace common tags
+    if (!fileExists(outputPath)) {
+        fileContent = string((istreambuf_iterator<char>(tplFile)),
+                             istreambuf_iterator<char>());
 
-		replaceAll(fileContent, CLASS_NAME, classTest);
+        replaceAll(fileContent, CLASS_NAME, classTest);
 
-		//==========================================================
-		// These tags are not used yet, so we will simply delete them
-		//==========================================================
-		// CHECK: sigue siendo necesario?
-		replaceAll(fileContent, POINTER_INIT_TOKEN, "");
-		replaceAll(fileContent, POINTER_DESTROY_TOKEN, "");
-		//==========================================================
-		//==========================================================
-	} else {
-		ifstream tempOutput(outputPath);
-		fileContent = string((istreambuf_iterator<char>(tempOutput)),
-								istreambuf_iterator<char>());
-	}
-
-	bool isReturnContainer = returnType.isContainer();
-
-	// Reads of references
-	for(const InfoVariable &actualVariable: params) 
-		if(actualVariable.isReference()) 
-			testCaseContent << btcontents::generateVariableAssign(funcCfgName, actualVariable);
-	
-	if (returnType.isReference()) 
-		testCaseContent << btcontents::generateVariableAssign(funcCfgName, returnType);
-
-	// Assertion
-	testCaseContent << (returnType.isContainer() ? "\tBOOST_CHECK((" : "\tBOOST_CHECK_EQUAL(");
-
-	if (isFromClass) testCaseContent << classTest << "_test.";
-	testCaseContent << functionName << "(";
-
-	for (const auto &param : params) {
-		if (!isReturnContainer) 
-			testCaseContent << "Read_" << param.formatted << "(\"" << funcCfgName 
-				<< "." << param.name << "\")";
-		else 
-			testCaseContent << funcCfgName << "_" << param.name;
-		
-		if (&param != &params.back()) testCaseContent << ",";
-	}
-
-	testCaseContent << (isReturnContainer ? ") == " : "),");
-
-	if (!isReturnContainer)
-		testCaseContent << "Read_" << returnType.formatted << "(\"" << functionName << ".return_"
-					<< returnType.formatted << "\"));";
-	else
-		testCaseContent << "return_" << funcCfgName << "));";
-	
-	testCaseContent << "\n" << ASSERT;
-
-	string result_test_case = cleanClassIdentifier(testCaseContent.str());
-	replaceAll(result_test_case, "::", "_");
-	replaceAll(fileContent, ASSERT, result_test_case);
-
-	ofstream outputFile(outputPath);
-	outputFile << fileContent;
-
-	tplFile.close();
-	outputFile.close();
-}
-
-void BoostGenerator::generateBoostAssert(
-    string class_test, string function_name, string function_cfg_name,
-    const map<string, pair<string, string>> &param_type,
-    const vector<string> &insertion_order,
-    const pair<string, string> &return_type) {
-
-    string templatePath = ASKELETON_HOME + "Generator/Templates/BoostTest.tpl";
-    string outputPath =
-        "Generated/UT/" + class_test + "/" + class_test + "_test.cpp";
-    string fileContent, ptype;
-
-    stringstream test_case;
-
-    bool existFlag = fileExists(outputPath);
-    ifstream tplFile(templatePath);
-
-    if (tplFile.is_open()) {
-        // If file doesnt exist, then replace common tags
-        if (!existFlag) {
-            fileContent = string((istreambuf_iterator<char>(tplFile)),
-                                 istreambuf_iterator<char>());
-
-            replaceAll(fileContent, "{className}", class_test);
-
-            //==========================================================
-            // These tags are not used yet, so we will simply delete them
-            //==========================================================
-            replaceAll(fileContent, "{pointerInitToken}", "");
-            replaceAll(fileContent, "{pointerDestroyToken}", "");
-            //==========================================================
-            //==========================================================
-
-            // TODO: no se necesita ya
-            // Copy makefile and supported types for compiling tests
-            // system(("cp -r " + ASKELETON_HOME + "Generator/Templates/makefile
-            // Generated/UT/" + class_test + "/").c_str());
-            // system(("cp -r " + ASKELETON_HOME +
-            //         "Generator/Templates/SupportedTypes.txt Generated/UT/" +
-            //         class_test + "/")
-            //            .c_str());
-        } else {
-            ifstream tmp_output(outputPath);
-            fileContent = string((istreambuf_iterator<char>(tmp_output)),
-                                 istreambuf_iterator<char>());
-        }
-
-        // List, vector and map will have a different test case
-        bool return_container =
-            (return_type.first.find("list") != string::npos ||
-             return_type.first.find("vector") != string::npos ||
-             return_type.first.find("map") != string::npos);
-
-        string formatted, original;
-        // Lets check pointers...
-        for (auto i : insertion_order) {
-            tie(original, formatted) = param_type.at(i);
-            replaceAll(ptype, "struct_", "");
-
-            if (formatted.find("_&") != string::npos ||
-                formatted.find("const_") != string::npos) {
-                ptype = formatted;
-
-                replaceAll(ptype, "_",
-                           " "); // delete '_' for using it as a type
-                replaceAll(ptype, " &", ""); // Then delete const and/or '&'
-
-                test_case << "\n\t" << ptype << " ";
-
-                // TODO: generalizar
-                replaceAll(ptype, " ", "_");
-                replaceAll(ptype, "const_", "");
-                replaceAll(ptype, "*", "s");
-
-                test_case << function_cfg_name << "_" << i << " = Read_"
-                          << ptype << "(\"" << function_cfg_name << "." << i
-                          << "\");\n";
-            }
-        }
-
-        tie(original, formatted) = return_type;
-        replaceAll(formatted, "struct_", "");
-
-        if (formatted.find("_&") != string::npos ||
-            formatted.find("const_") != string::npos) {
-            ptype = formatted;
-            replaceAll(ptype, "_", " ");
-            replaceAll(ptype, " &", "");
-
-            test_case << "\t" << ptype << " return_" << function_cfg_name;
-
-            // TODO: generalizar
-            replaceAll(ptype, " ", "_");
-            replaceAll(ptype, "const_", "");
-            replaceAll(ptype, "*", "s");
-
-            test_case << " = Read_" << ptype << "(\"" << function_cfg_name
-                      << ".return_" << formatted << "\");\n";
-        }
-
-        // Now we will create the assertion sentence
-        if (!return_container)
-            test_case << "\tBOOST_CHECK_EQUAL(";
-        else
-            test_case << "\tBOOST_CHECK((";
-
-        if (isFromClass)
-            test_case << class_test << "_test.";
-
-        test_case << function_name << "(";
-
-        for (auto i : insertion_order) {
-            string formatted_type = param_type.at(i).second;
-            replaceAll(formatted_type, "struct_", "");
-            if (formatted_type.find("_&") == string::npos &&
-                formatted_type.find("const_") == string::npos) {
-                replaceAll(formatted_type, "*", "s");
-                test_case << "Read_" << formatted_type << "(\""
-                          << function_cfg_name << "." << i << "\")";
-            } else {
-                test_case << function_cfg_name << "_" << i;
-            }
-
-            if (i != insertion_order.back())
-                test_case << ",";
-        }
-
-        // test_case << "));\n{assert}";
-        if (!return_container)
-            test_case << "),";
-        else
-            test_case << ") == ";
-
-        if (formatted.find("_&") == string::npos &&
-            formatted.find("const_") == string::npos) {
-            string read = "Read_" + formatted;
-            replaceAll(read, "*", "s");
-            test_case << read << "(\"" << function_name << ".return_"
-                      << formatted << "\"))";
-        } else {
-            test_case << "return_" << function_cfg_name << ")";
-        }
-
-        if (!return_container)
-            test_case << ";";
-        else
-            test_case << ");";
-
-        test_case << "\n//{assert}";
-
-        string result_test_case = cleanClassIdentifier(test_case.str());
-        replaceAll(result_test_case, "::", "_");
-        replaceAll(fileContent, "//{assert}", result_test_case);
-
-        ofstream outputFile(outputPath);
-        outputFile << fileContent;
-
-        tplFile.close();
-        outputFile.close();
+        //==========================================================
+        // These tags are not used yet, so we will simply delete them
+        //==========================================================
+        // CHECK: sigue siendo necesario?
+        replaceAll(fileContent, POINTER_INIT_TOKEN, "");
+        replaceAll(fileContent, POINTER_DESTROY_TOKEN, "");
+        //==========================================================
+        //==========================================================
+    } else {
+        ifstream tempOutput(outputPath);
+        fileContent = string((istreambuf_iterator<char>(tempOutput)),
+                             istreambuf_iterator<char>());
     }
-}
 
-void BoostGenerator::generateBoostAssert(string class_test,
-                                         string function_name,
-                                         string function_cfg_name,
-                                         map<string, string> param_type,
-                                         vector<string> insertion_order,
-                                         string return_type) {
-    string templatePath = ASKELETON_HOME + "Generator/Templates/BoostTest.tpl";
-    string outputPath =
-        "Generated/UT/" + class_test + "/" + class_test + "_test.cpp";
-    string fileContent;
-    string ptype;
+    bool isReturnContainer = returnType.isContainer();
 
-    stringstream test_case;
-
-    bool existFlag = fileExists(outputPath);
-    ifstream tplFile(templatePath);
-
-    if (tplFile.is_open()) {
-        // If file doesnt exist, then replace common tags
-        if (!existFlag) {
-            fileContent = string((istreambuf_iterator<char>(tplFile)),
-                                 istreambuf_iterator<char>());
-
-            replaceAll(fileContent, "{className}", class_test);
-
-            //==========================================================
-            // These tags are not used yet, so we will simply delete them
-            //==========================================================
-            replaceAll(fileContent, "{pointerInitToken}", "");
-            replaceAll(fileContent, "{pointerDestroyToken}", "");
-            //==========================================================
-            //==========================================================
-
-            // TODO: no se necesita ya
-            // Copy makefile and supported types for compiling tests
-            // system(("cp -r " + ASKELETON_HOME + "Generator/Templates/makefile
-            // Generated/UT/" + class_test + "/").c_str());
-            // system(("cp -r " + ASKELETON_HOME +
-            //         "Generator/Templates/SupportedTypes.txt Generated/UT/" +
-            //         class_test + "/")
-            //            .c_str());
-        } else {
-            ifstream tmp_output(outputPath);
-            fileContent = string((istreambuf_iterator<char>(tmp_output)),
-                                 istreambuf_iterator<char>());
-        }
-
-        // List, vector and map will have a different test case
-        bool return_container = (return_type.find("list") != string::npos ||
-                                 return_type.find("vector") != string::npos ||
-                                 return_type.find("map") != string::npos);
-
-        // Lets check pointers...
-        for (auto i : insertion_order) {
-            checkTypes(param_type[i],
-                       "Generated/UT/" + class_test + "/SupportedTypes.txt");
-
-            if (param_type[i].find("_&") != string::npos ||
-                param_type[i].find("const_") != string::npos) {
-                ptype = param_type[i];
-
-                replaceAll(ptype, "_",
-                           " "); // delete '_' for using it as a type
-                replaceAll(ptype, " &", ""); // Then delete const and/or '&'
-
-                test_case << "\n\t" << ptype << " ";
-
-                // TODO: generalizar
-                replaceAll(ptype, " ", "_");
-                replaceAll(ptype, "const_", "");
-                replaceAll(ptype, "*", "s");
-                replaceAll(ptype, "struct_", "");
-
-                test_case << function_cfg_name << "_" << i << " = Read_"
-                          << ptype << "(\"" << function_cfg_name << "." << i
-                          << "\");\n";
-            }
-        }
-
-        checkTypes(return_type,
-                   "Generated/UT/" + class_test + "/SupportedTypes.txt");
-        if (return_type.find("_&") != string::npos ||
-            return_type.find("const_") != string::npos) {
-            ptype = return_type;
-            replaceAll(ptype, "_", " ");
-            replaceAll(ptype, " &", "");
-
-            test_case << "\t" << ptype << " return_" << function_cfg_name;
-
-            // TODO: generalizar
-            replaceAll(ptype, " ", "_");
-            replaceAll(ptype, "const_", "");
-            replaceAll(ptype, "*", "s");
-            replaceAll(ptype, "struct_", "");
-
-            test_case << " = Read_" << ptype << "(\"" << function_cfg_name
-                      << ".return_" << return_type << "\");\n";
-        }
-
-        // Now we will create the assertion sentence
-        if (!return_container)
-            test_case << "\tBOOST_CHECK_EQUAL(";
-        else
-            test_case << "\tBOOST_CHECK((";
-
-        if (isFromClass)
-            test_case << class_test << "_test.";
-
-        test_case << function_name << "(";
-
-        for (auto i : insertion_order) {
-            if (param_type[i].find("_&") == string::npos &&
-                param_type[i].find("const_") == string::npos) {
-                replaceAll(param_type[i], "*", "s");
-                test_case << "Read_" << param_type[i] << "(\""
-                          << function_cfg_name << "." << i << "\")";
-            } else {
-                test_case << function_cfg_name << "_" << i;
-            }
-
-            if (i != insertion_order.back())
-                test_case << ",";
-        }
-
-        // test_case << "));\n{assert}";
-        if (!return_container)
-            test_case << "),";
-        else
-            test_case << ") == ";
-
-        if (return_type.find("_&") == string::npos &&
-            return_type.find("const_") == string::npos) {
-            string read = "Read_" + return_type;
-            replaceAll(read, "*", "s");
-            test_case << read << "(\"" << function_name << ".return_"
-                      << return_type << "\"))";
-        } else {
-            test_case << "return_" << function_cfg_name << ")";
-        }
-
-        if (!return_container)
-            test_case << ";";
-        else
-            test_case << ");";
-
-        test_case << "\n//{assert}";
-
-        string result_test_case = cleanClassIdentifier(test_case.str());
-        replaceAll(result_test_case, "::", "_");
-        replaceAll(fileContent, "//{assert}", result_test_case);
-
-        ofstream outputFile(outputPath);
-        outputFile << fileContent;
-
-        tplFile.close();
-        outputFile.close();
+    // Reads of references
+    for (const InfoVariable &actualVariable : params) {
+        if (actualVariable.isReference())
+            testCaseContent
+                << bt::generateVariableAssign(funcCfgName, actualVariable);
+        else if (actualVariable.isPointer())
+            testCaseContent
+                << bt::generatePointerAssign(funcCfgName, actualVariable);
     }
+
+    if (returnType.isReference())
+        testCaseContent << bt::generateVariableAssign(funcCfgName, returnType);
+
+    // Assertion
+    testCaseContent << (returnType.isContainer() ? "\tBOOST_CHECK(("
+                                                 : "\tBOOST_CHECK_EQUAL(");
+
+    if (returnType.isPointer())
+        testCaseContent << "*";
+
+    if (isFromClass)
+        testCaseContent << classTest << "_test.";
+    testCaseContent << functionName << "(";
+
+    for (const auto &param : params) {
+        if (isReturnContainer)
+            testCaseContent << funcCfgName << "_" << param.name;
+        else if (param.isPointer())
+            testCaseContent << funcCfgName << "_" << param.name;
+        else
+            testCaseContent << "Read_" << param.formatted << "(\""
+                            << funcCfgName << "." << param.name << "\")";
+
+        if (&param != &params.back())
+            testCaseContent << ",";
+    }
+
+    testCaseContent << (isReturnContainer ? ") == " : "),");
+
+    if (!isReturnContainer) {
+        if (returnType.isPointer())
+            testCaseContent << "*";
+        testCaseContent << "Read_" << returnType.formatted << "(\""
+                        << functionName << ".return_" << returnType.formatted
+                        << "\"));";
+
+    } else
+        testCaseContent << (returnType.isPointer() ? "*" : "") << "return_"
+                        << funcCfgName << "));";
+
+    for (const auto &param : params) {
+        if (param.isPointer()) {
+            testCaseContent << "\n\tBOOST_CHECK_EQUAL(*" << funcCfgName << "_"
+                            << param.name << ", "
+                            << "*Read_" << param.formatted << "(\""
+                            << funcCfgName << "." << param.name
+                            << "_output\"));";
+        }
+    }
+
+    testCaseContent << "\n" << ASSERT;
+
+    string result_test_case = cleanClassIdentifier(testCaseContent.str());
+    replaceAll(result_test_case, "::", "_");
+    replaceAll(fileContent, ASSERT, result_test_case);
+
+    ofstream outputFile(outputPath);
+    outputFile << fileContent;
+
+    tplFile.close();
+    outputFile.close();
 }
 
 void BoostGenerator::generateBoostConstructorAssert(
