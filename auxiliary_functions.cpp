@@ -152,7 +152,7 @@ void replaceAll(string &str, const string &from, const string &to) {
 }
 
 void removeAll(string &str, const string &substringToRemove) {
-    std::regex_replace(str, std::regex(substringToRemove), "");
+    str = std::regex_replace(str, std::regex(substringToRemove), "");
 }
 
 void removeAll(string &str, const initializer_list<string> &substrings) {

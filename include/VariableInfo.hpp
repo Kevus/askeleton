@@ -40,27 +40,34 @@ static const std::set<std::string> primitives = {"_Bool",
                                                  "unsigned long int",
                                                  "unsigned long long",
                                                  "unsigned long long int"};
-                                   
+
 static const std::vector<std::string> containers = {"map", "list", "vector"};
 
 // A pair which represents the type and the name of a parameter
 typedef std::pair<std::string, std::string> Parameter;
 
 struct InfoType {
-	InfoType() = default;
-	InfoType(std::string original, std::string formatted);
+    InfoType() = default;
+    InfoType(std::string original);
+    InfoType(std::string original, std::string formatted);
 
-	bool isContainer() const;
-	bool isPointer() const;
-	bool isReference() const;
-	std::string original, formatted;
+    bool isContainer() const;
+    bool isPointer() const;
+    bool isReference() const;
+
+    InfoType getUnderlyingType() const;
+
+    std::string original, formatted;
+
+private:
+    static std::string formatType(const std::string &);
 };
 
-struct InfoVariable: public InfoType {
-	InfoVariable() = default;
-	InfoVariable(std::string name, std::string original, std::string formatted);
+struct InfoVariable : public InfoType {
+    InfoVariable() = default;
+    InfoVariable(std::string name, std::string original, std::string formatted);
 
-	std::string name;
+    std::string name;
 };
 
 #endif /* VARIABLE_INFO_HPP */
