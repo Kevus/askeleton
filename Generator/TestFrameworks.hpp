@@ -31,6 +31,12 @@ public:
     void
     addPointerReadToFixture(const std::pair<std::string, std::string> &type);
 
+	void addPointerReadToFixture(const InfoType &type);
+	void addEnumReadToFixture(const InfoType &type);
+	void addRecordReadToFixture(const InfoType &type);
+	void generateCustomTypeFixture(const string &filename, 
+								   const InfoType &type);
+
     // CHECK: por que se pide el fixture_path si ya esta como miembro?
     void addNewTypeToFixture(string type_name, string fixture_path);
     void addNewTypeToFixture(const std::pair<string, string> &type,
@@ -39,6 +45,7 @@ public:
     //  Checks if a type was added to the supportedPath
     bool checkIfSupported(const std::pair<string, string> &type,
                           const string &supportedPath);
+	bool isTypeSupported(const InfoType &type, const string &className);
 
     //  Add a type as supported in the supportedPath file
     void addTypeToSupported(const std::pair<string, string> &type,
@@ -52,6 +59,8 @@ private:
     // TODO: eliminar esta version mas adelante
     void checkTypes(string type, string support_path);
     void checkTypes(const std::pair<string, string> &type, string support_path);
+	void addReadObjectToFixture(const std::string &method);
+	void addOverloadToFixture(const std::string &overload);
 
     map<string, string> valuesToChange;
     // vector<string> defaultTypes;

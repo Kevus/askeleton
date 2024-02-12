@@ -72,8 +72,6 @@ void replaceAll(string &str, const string &from, const string &to);
  *          It uses std::regex_replace to replace all occurrences of the
  * specified substring with an empty string.
  *
- * @bug No funciona
- *
  * @see std::regex_replace
  */
 void removeAll(string &originalString, const string &substringToRemove);
@@ -86,8 +84,6 @@ void removeAll(string &originalString, const string &substringToRemove);
  *
  * @param str The string from which to remove the substrings.
  * @param substrings The list of substrings to remove.
- *
- * @bug No funciona
  */
 void removeAll(string &originalString,
                const initializer_list<string> &substringToRemove);
@@ -130,6 +126,45 @@ bool containsAnySubstring(const string &originalString,
  * @return std::string The file name without the extension or path.
  */
 string extractFileName(const string &fileRoute);
+
+/**
+ * @brief Remove specified type qualifiers from the given C++ type.
+ *
+ * This function removes the specified type qualifiers, such as "const," "enum," "class," and "struct,"
+ * from the provided C++ type string.
+ *
+ * @param type The C++ type string from which to remove qualifiers.
+ */
+void removeTypeQualifiers(string &type);
+
+/**
+ * @brief Replace certain characters in the given C++ type.
+ *
+ * This function replaces '*' with 's' and '&' with 'r' in the provided C++ type string.
+ *
+ * @param type The C++ type string in which to replace characters.
+ */
+void replaceTypeCharacters(string &type);
+
+/**
+ * @brief Remove leading whitespaces from the given string.
+ *
+ * This function removes leading whitespaces from the provided string by erasing characters
+ * until a non-whitespace character is encountered.
+ *
+ * @param s The string from which to remove leading whitespaces.
+ */
+void ltrim(std::string &s);
+
+/**
+ * @brief Remove trailing whitespaces from the given string.
+ *
+ * This function removes trailing whitespaces from the provided string by erasing characters
+ * starting from the end until a non-whitespace character is encountered.
+ *
+ * @param s The string from which to remove trailing whitespaces.
+ */
+void rtrim(std::string &s);
 
 bool endsWith(const string &str, const string &suffix);
 

@@ -1,5 +1,4 @@
-#ifndef VARIABLE_INFO_HPP
-#define VARIABLE_INFO_HPP
+#pragma once
 
 #include "auxiliary_functions.hpp"
 
@@ -46,28 +45,37 @@ static const std::vector<std::string> containers = {"map", "list", "vector"};
 // A pair which represents the type and the name of a parameter
 typedef std::pair<std::string, std::string> Parameter;
 
+struct InfoVariable;
+
 struct InfoType {
     InfoType() = default;
-    InfoType(std::string original);
-    InfoType(std::string original, std::string formatted);
+	InfoType(const clang::QualType &);
+    InfoType(const std::string &original);
+    InfoType(const std::string &original, const std::string &formatted);
 
     bool isContainer() const;
     bool isPointer() const;
     bool isReference() const;
+	bool isRecord() const;
+	bool isEnum() const;
 
     InfoType getUnderlyingType() const;
+	std::vector<InfoVariable> getRecordFields() const;
 
     std::string original, formatted;
 
-private:
+protected:
     static std::string formatType(const std::string &);
+	bool isRecord_, isEnum_;
+	std::vector<InfoVariable> recordFields;
 };
 
 struct InfoVariable : public InfoType {
     InfoVariable() = default;
-    InfoVariable(std::string name, std::string original, std::string formatted);
+	InfoVariable(const clang::ParmVarDecl *);
+	InfoVariable(const clang::FieldDecl *);
+    InfoVariable(const std::string &name, const std::string &original, const std::string &formatted);
 
     std::string name;
+	static unsigned NO_NAME_COUNT;
 };
-
-#endif /* VARIABLE_INFO_HPP */

@@ -178,6 +178,32 @@ string extractFileName(const string &fileRoute) {
     return fileName;
 }
 
+void removeTypeQualifiers(string &type) {
+	removeAll(type, "const");
+	removeAll(type, "enum");
+	removeAll(type, "class");
+	removeAll(type, "struct");
+
+	ltrim(type);
+}
+
+void replaceTypeCharacters(string &type) {
+	replaceAll(type, "*", "s");
+	replaceAll(type, "&", "r");
+}
+
+void ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }));
+}
+
+void rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
+}
+
 bool endsWith(std::string const &fullString, std::string const &ending) {
     if (fullString.length() >= ending.length()) {
         return (0 == fullString.compare(fullString.length() - ending.length(),

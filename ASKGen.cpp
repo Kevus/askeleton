@@ -73,9 +73,9 @@ void get_parameters(const ArrayRef<ParmVarDecl *> &parameters,
 
 void ASKGen::run(const MatchFinder::MatchResult &Result) {
     apply_FD1(Result);
-    // apply_MD1(Result);
-    // apply_CT1(Result); // Necessary for structs and classes
-    // apply_CC1(Result);
+    apply_MD1(Result);
+    apply_CT1(Result); // Necessary for structs and classes
+    apply_CC1(Result);
 
     // Kevin: dejamos estos fuera, nos interesa ahora solo las funciones, los
     // datos vendrán por KLEE apply_DG1(Result); apply_DG2(Result);
@@ -407,108 +407,154 @@ void ASKGen::apply_DG2(const MatchFinder::MatchResult &Result) {
 }
 
 // General method for testing functions
-void ASKGen::generateFunctionTest(string source_file, string function_name,
-                                  ArrayRef<ParmVarDecl *> parameters,
-                                  QualType return_qtype, BoostGenerator bGen) {
-    string return_type = format_return_type(return_qtype);
-    ConfigGenerator cfg_gen(source_file);
-    string function_cfg_name = function_name;
+void ASKGen::generateFunctionTest(string sourceFile, string originalFunctionName,
+                                  ArrayRef<ParmVarDecl *> originalParameters,
+                                  QualType originalReturnType, BoostGenerator bGen) {
+    ConfigGenerator cfg_gen(sourceFile);
+	string functionName = function_occurrences[originalFunctionName]++ > 1 ?
+		originalFunctionName + "_" + to_string(function_occurrences[originalFunctionName]) :
+		originalFunctionName;
 
-    // if( function_occurrences.find(function_name) ==
-    // function_occurrences.end() )
-    //	function_occurences.insert( pair<string, int> (function_name, 1));
-    function_occurrences[function_name]++;
+	// Getting the parameters
+	vector<InfoVariable> parameters;
+	transform(
+		originalParameters.begin(), originalParameters.end(), back_inserter(parameters),
+		[](const ParmVarDecl *param) { return param; }
+	);
 
-    if (function_occurrences[function_name] > 1)
-        function_cfg_name +=
-            "_" + to_string(function_occurrences[function_name]);
+	// Getting the return type
+	InfoType returnType(originalReturnType);
 
-    // Order of the parameters
-    map<string, pair<string, string>> param_type;
-    vector<string> insert_order;
-
-    // Typed parameters
-    vector<const CXXRecordDecl *> records;
-    vector<const EnumDecl *> enums;
-    vector<pair<string, string>> pointers;
-
-    get_full_parameters(parameters, param_type, insert_order, records, enums,
-                        pointers);
-
-    // Processing return type
-    if (return_qtype->isPointerType()) {
-        string tmp_type = return_qtype.getCanonicalType().getAsString();
-        string formatted_type = cleanUnnecesaryChars(tmp_type);
-        replaceAll(formatted_type, "*", "s");
-        pointers.push_back({tmp_type, formatted_type});
-    } else if (const RecordType *recordType =
-                   return_qtype->getAs<RecordType>()) {
-        records.push_back(cast<CXXRecordDecl>(recordType->getDecl()));
-    } else if (const EnumType *enumType = return_qtype->getAs<EnumType>()) {
-        EnumDecl *enumDecl = enumType->getDecl();
-        if (enumDecl) {
-            string enumName = enumDecl->getQualifiedNameAsString();
-            enums.push_back(enumType->getDecl());
-        }
-    }
-    replaceAll(return_type, "struct_", "");
-
-#ifdef FULL_DEBUG
+	// ---------------------------------------
+	// DISPLAY AUXILIARY INFORMATION
+	// ---------------------------------------
     cout << "\n\n--------------\n";
     unsigned i = 0;
     cout << "Params list: (";
-    for (auto t : param_type)
-        cout << i++ << " - " << t.second.first << " " << t.first << ", ";
-    cout << ")\n";
+    for (auto &param : parameters) {
+        cout << i++ << " - " << param.original << " " << param.name;
+		if(&param != &parameters.back())
+			cout << ", ";
+	}
 
-    i = 0;
-    cout << "Records list: (";
-    for (auto t : records) {
-        string record_name = t->getQualifiedNameAsString();
-        if (record_name.find("anonymous") != string::npos)
-            record_name = t->getTypedefNameForAnonDecl()->getNameAsString();
-        cout << i++ << " - " << record_name << ", ";
-    }
-    cout << ")\n";
+    cout << ")\nReturn type: " << returnType.original << "\n";
+	// ---------------------------------------
 
-    cout << "Return type: " << return_type << "\n";
+	// Checking if the parameters are supported
+	for(const InfoType &param: parameters)
+		bGen.generateCustomTypeFixture(sourceFile, param);
+	bGen.generateCustomTypeFixture(sourceFile, returnType);
 
-    i = 0;
-    cout << "Enumeration list: (";
-    for (auto t : enums) {
-        string enum_name = t->getQualifiedNameAsString();
-        if (enum_name.find("anonymous") != string::npos)
-            enum_name = t->getTypedefNameForAnonDecl()->getNameAsString();
-        cout << i++ << " - " << enum_name << ", ";
-    }
-    cout << ")\n";
+    cfg_gen.generateTestCase(functionName, parameters, returnType);
 
-    i = 0;
-    cout << "Pointers list: (";
-    for (const pair<string, string> &pointer : pointers) {
-        cout << i++ << " - " << pointer.first << ", ";
-    }
-    cout << ")\n";
-
-#endif /* FULL_DEBUG */
-
-    generateCustomTypeFixture(source_file, records, enums, pointers, bGen);
-
-    string return_type_string = return_qtype.getCanonicalType().getAsString();
-    // cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order,
-    //                          {return_type_string, return_type});
-
-    InfoType returnType(return_type_string, return_type);
-    vector<InfoVariable> params;
-    for (const auto &name : insert_order) {
-        const auto &[original, formatted] = param_type[name];
-        params.push_back({name, original, formatted});
-    }
-
-    cfg_gen.generateTestCase(function_cfg_name, params, returnType);
-    bGen.generateBoostAssert(source_file, function_name, function_cfg_name,
-                             params, returnType);
+    bGen.generateBoostAssert(sourceFile, originalFunctionName, functionName,
+                             parameters, returnType);
 }
+
+
+// // General method for testing functions
+// void ASKGen::generateFunctionTest(string source_file, string function_name,
+//                                   ArrayRef<ParmVarDecl *> parameters,
+//                                   QualType return_qtype, BoostGenerator bGen) {
+//     string return_type = format_return_type(return_qtype);
+//     ConfigGenerator cfg_gen(source_file);
+//     string function_cfg_name = function_name;
+
+//     // if( function_occurrences.find(function_name) ==
+//     // function_occurrences.end() )
+//     //	function_occurences.insert( pair<string, int> (function_name, 1));
+//     function_occurrences[function_name]++;
+
+//     if (function_occurrences[function_name] > 1)
+//         function_cfg_name +=
+//             "_" + to_string(function_occurrences[function_name]);
+
+//     // Order of the parameters
+//     map<string, pair<string, string>> param_type;
+//     vector<string> insert_order;
+
+//     // Typed parameters
+//     vector<const CXXRecordDecl *> records;
+//     vector<const EnumDecl *> enums;
+//     vector<pair<string, string>> pointers;
+
+//     get_full_parameters(parameters, param_type, insert_order, records, enums,
+//                         pointers);
+
+//     // Processing return type
+//     if (return_qtype->isPointerType()) {
+//         string tmp_type = return_qtype.getCanonicalType().getAsString();
+//         string formatted_type = cleanUnnecesaryChars(tmp_type);
+//         replaceAll(formatted_type, "*", "s");
+//         pointers.push_back({tmp_type, formatted_type});
+//     } else if (const RecordType *recordType =
+//                    return_qtype->getAs<RecordType>()) {
+//         records.push_back(cast<CXXRecordDecl>(recordType->getDecl()));
+//     } else if (const EnumType *enumType = return_qtype->getAs<EnumType>()) {
+//         EnumDecl *enumDecl = enumType->getDecl();
+//         if (enumDecl) {
+//             string enumName = enumDecl->getQualifiedNameAsString();
+//             enums.push_back(enumType->getDecl());
+//         }
+//     }
+//     replaceAll(return_type, "struct_", "");
+
+// #ifdef FULL_DEBUG
+//     cout << "\n\n--------------\n";
+//     unsigned i = 0;
+//     cout << "Params list: (";
+//     for (auto t : param_type)
+//         cout << i++ << " - " << t.second.first << " " << t.first << ", ";
+//     cout << ")\n";
+
+//     i = 0;
+//     cout << "Records list: (";
+//     for (auto t : records) {
+//         string record_name = t->getQualifiedNameAsString();
+//         if (record_name.find("anonymous") != string::npos)
+//             record_name = t->getTypedefNameForAnonDecl()->getNameAsString();
+//         cout << i++ << " - " << record_name << ", ";
+//     }
+//     cout << ")\n";
+
+//     cout << "Return type: " << return_type << "\n";
+
+//     i = 0;
+//     cout << "Enumeration list: (";
+//     for (auto t : enums) {
+//         string enum_name = t->getQualifiedNameAsString();
+//         if (enum_name.find("anonymous") != string::npos)
+//             enum_name = t->getTypedefNameForAnonDecl()->getNameAsString();
+//         cout << i++ << " - " << enum_name << ", ";
+//     }
+//     cout << ")\n";
+
+//     i = 0;
+//     cout << "Pointers list: (";
+//     for (const pair<string, string> &pointer : pointers) {
+//         cout << i++ << " - " << pointer.first << ", ";
+//     }
+//     cout << ")\n";
+
+// #endif /* FULL_DEBUG */
+
+//     generateCustomTypeFixture(source_file, records, enums, pointers, bGen);
+
+//     string return_type_string = return_qtype.getCanonicalType().getAsString();
+//     // cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order,
+//     //                          {return_type_string, return_type});
+
+//     InfoType returnType(return_type_string, return_type);
+//     vector<InfoVariable> params;
+//     for (const auto &name : insert_order) {
+//         const auto &[original, formatted] = param_type[name];
+//         params.push_back({name, original, formatted});
+//     }
+
+//     cfg_gen.generateTestCase(function_cfg_name, params, returnType);
+//     bGen.generateBoostAssert(source_file, function_name, function_cfg_name,
+//                              params, returnType);
+// }
 
 // Method for constructing constructor test
 void ASKGen::generateConstructorTest(string source, string constructor_name,

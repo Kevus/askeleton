@@ -24,6 +24,14 @@ string askeleton::bt::generatePointerAssign(const string &funcCfgName,
             variable.name + "_input\");\n");
 }
 
+string askeleton::bt::generateReferenceAssign(const string &functionName,
+											  const InfoVariable &reference) {
+	InfoType underlying = reference.getUnderlyingType();
+	return ("\t" + underlying.original + " " + functionName + "_" + reference.name +
+            " = " + "Read_" + underlying.formatted + "(\"" + functionName + "." +
+            reference.name + "_input\");");
+}
+
 string askeleton::routes::generateSupportPath(const string &className) {
     return routes::TEST_ROUTE + className + "/" + files::SUPPORTED_TYPES;
 }

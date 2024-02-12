@@ -11,8 +11,7 @@
 //DATE: {dateOfGeneration}
 ////////////////////////////////////////////////////////////////////////////////
 
-#ifndef {cfgName}_FIXTURE_HPP
-#define {cfgName}_FIXTURE_HPP
+#pragma once
 
 #include "{filePath}"
 #define BOOST_TEST_MODULE {cfgName}_TEST
@@ -552,5 +551,3 @@ struct Fixture {
 };
 
 //{overloadOperator}
-
-#endif /* {cfgName}_FIXTURE_HPP */
