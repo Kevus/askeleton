@@ -127,7 +127,7 @@ void ConfigGenerator::generateTestCase(const string &functionName,
         const string &original = param.original, &name = param.name;
         string value = rvg.getRandomValue(param.formatted);
         cfg_file << "\t";
-        if (param.isPointer()) {
+        if (param.isPointer() || param.isReference()) {
             cfg_file << name << "_input=" << value << ";#" << original << "\n\t"
                      << name << "_output=" << value << ";#" << original << "\n";
         } else
