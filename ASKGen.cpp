@@ -407,55 +407,63 @@ void ASKGen::apply_DG2(const MatchFinder::MatchResult &Result) {
 }
 
 // General method for testing functions
-void ASKGen::generateFunctionTest(string sourceFile, string originalFunctionName,
+void ASKGen::generateFunctionTest(string sourceFile,
+                                  string originalFunctionName,
                                   ArrayRef<ParmVarDecl *> originalParameters,
-                                  QualType originalReturnType, BoostGenerator bGen) {
+                                  QualType originalReturnType,
+                                  BoostGenerator bGen) {
     ConfigGenerator cfg_gen(sourceFile);
-	string functionName = function_occurrences[originalFunctionName]++ > 1 ?
-		originalFunctionName + "_" + to_string(function_occurrences[originalFunctionName]) :
-		originalFunctionName;
+    string functionName =
+        function_occurrences[originalFunctionName]++ > 1
+            ? originalFunctionName + "_" +
+                  to_string(function_occurrences[originalFunctionName])
+            : originalFunctionName;
 
-	// Getting the parameters
-	vector<InfoVariable> parameters;
-	transform(
-		originalParameters.begin(), originalParameters.end(), back_inserter(parameters),
-		[](const ParmVarDecl *param) { return param; }
-	);
+    // Getting the parameters
+    vector<InfoVariable> parameters;
+    transform(originalParameters.begin(), originalParameters.end(),
+              back_inserter(parameters),
+              [](const ParmVarDecl *param) { return param; });
 
-	// Getting the return type
-	InfoType returnType(originalReturnType);
+    // Getting the return type
+    InfoType returnType(originalReturnType);
 
-	// ---------------------------------------
-	// DISPLAY AUXILIARY INFORMATION
-	// ---------------------------------------
+    // ---------------------------------------
+    // DISPLAY AUXILIARY INFORMATION
+    // ---------------------------------------
     cout << "\n\n--------------\n";
     unsigned i = 0;
     cout << "Params list: (";
     for (auto &param : parameters) {
         cout << i++ << " - " << param.original << " " << param.name;
-		if(&param != &parameters.back())
-			cout << ", ";
-	}
+        if (&param != &parameters.back())
+            cout << ", ";
+    }
 
     cout << ")\nReturn type: " << returnType.original << "\n";
-	// ---------------------------------------
+    // ---------------------------------------
+    // END OF DISPLAY
+    // ---------------------------------------
 
-	// Checking if the parameters are supported
-	for(const InfoType &param: parameters)
-		bGen.generateCustomTypeFixture(sourceFile, param);
-	bGen.generateCustomTypeFixture(sourceFile, returnType);
+    // Checking if the parameters are supported
+    for (const InfoType &param : parameters)
+        bGen.generateCustomTypeFixture(sourceFile, param);
+    bGen.generateCustomTypeFixture(sourceFile, returnType);
 
+    std::cout << "generando el cfg_gen\n";
     cfg_gen.generateTestCase(functionName, parameters, returnType);
 
+    std::cout << "generando el bgen\n";
     bGen.generateBoostAssert(sourceFile, originalFunctionName, functionName,
                              parameters, returnType);
+    std::cout << "todo generado\n";
 }
-
 
 // // General method for testing functions
 // void ASKGen::generateFunctionTest(string source_file, string function_name,
 //                                   ArrayRef<ParmVarDecl *> parameters,
-//                                   QualType return_qtype, BoostGenerator bGen) {
+//                                   QualType return_qtype, BoostGenerator bGen)
+//                                   {
 //     string return_type = format_return_type(return_qtype);
 //     ConfigGenerator cfg_gen(source_file);
 //     string function_cfg_name = function_name;
@@ -540,7 +548,8 @@ void ASKGen::generateFunctionTest(string sourceFile, string originalFunctionName
 
 //     generateCustomTypeFixture(source_file, records, enums, pointers, bGen);
 
-//     string return_type_string = return_qtype.getCanonicalType().getAsString();
+//     string return_type_string =
+//     return_qtype.getCanonicalType().getAsString();
 //     // cfg_gen.generateTestCase(function_cfg_name, param_type, insert_order,
 //     //                          {return_type_string, return_type});
 
