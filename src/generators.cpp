@@ -19,17 +19,17 @@ string askeleton::bt::generateVariableAssign(const string &funcCfgName,
 
 string askeleton::bt::generatePointerAssign(const string &funcCfgName,
                                             const InfoVariable &variable) {
-    return ("\n\t" + variable.original + funcCfgName + "_" + variable.name +
+    return ("\t" + variable.original + funcCfgName + "_" + variable.name +
             " = Read_" + variable.formatted + "(\"" + funcCfgName + "." +
-            variable.name + "_input\");\n");
+            variable.name + "_input\");");
 }
 
 string askeleton::bt::generateReferenceAssign(const string &functionName,
-											  const InfoVariable &reference) {
-	InfoType underlying = reference.getUnderlyingType();
-	return ("\t" + underlying.original + " " + functionName + "_" + reference.name +
-            " = " + "Read_" + underlying.formatted + "(\"" + functionName + "." +
-            reference.name + "_input\");");
+                                              const InfoVariable &reference) {
+    InfoType underlying = reference.getUnderlyingType();
+    return ("\t" + underlying.original + " " + functionName + "_" +
+            reference.name + " = " + "Read_" + underlying.formatted + "(\"" +
+            functionName + "." + reference.name + "_input\");");
 }
 
 string askeleton::routes::generateSupportPath(const string &className) {
