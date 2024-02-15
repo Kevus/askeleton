@@ -4,7 +4,9 @@ using std::string;
 InfoType::InfoType(const clang::QualType &type)
     : original(type.getCanonicalType().getAsString()), formatted(),
       isRecord_(false), isEnum_(false), recordFields() {
-    if (const CXXRecordDecl *record = type->getAsCXXRecordDecl()) {
+    if (InfoType::isExcludedType(original)) {
+        original = InfoType::excludedTypes.at(original);
+    } else if (const CXXRecordDecl *record = type->getAsCXXRecordDecl()) {
         isRecord_ = true;
         string original = record->getQualifiedNameAsString();
         if (original.find("anonymous") != string::npos)
@@ -75,6 +77,15 @@ string InfoType::formatType(const string &name) {
     string formatted = cleanUnnecesaryChars(name);
     replaceAll(formatted, "*", "s");
     return formatted;
+}
+
+const std::map<std::string, std::string> InfoType::excludedTypes = {
+    {"class std::basic_string<char>", "std::string"},
+    {"const char *", "const char *"},
+    {"char *", "char *"}};
+
+bool InfoType::isExcludedType(const std::string &type) {
+    return InfoType::excludedTypes.contains(type);
 }
 
 InfoVariable::InfoVariable(const clang::ParmVarDecl *param)

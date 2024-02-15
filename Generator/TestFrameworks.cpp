@@ -175,7 +175,6 @@ void BoostGenerator::generateBoostAssert(const string &classTest,
         //==========================================================
         // These tags are not used yet, so we will simply delete them
         //==========================================================
-        // CHECK: sigue siendo necesario?
         replaceAll(fileContent, POINTER_INIT_TOKEN, "");
         replaceAll(fileContent, POINTER_DESTROY_TOKEN, "");
         //==========================================================
@@ -200,23 +199,22 @@ void BoostGenerator::generateBoostAssert(const string &classTest,
                 << "\n";
     }
 
-    if (returnType.isReference())
-        testCaseContent << bt::generateVariableAssign(funcCfgName, returnType);
-
     // Assertion
     testCaseContent << (returnType.isContainer() ? "\tBOOST_CHECK(("
-                                                 : "\tBOOST_CHECK_EQUAL(");
+                                                 : "\tBOOST_CHECK_EQUAL(")
+                    << "\n\t\t";
 
     if (returnType.isPointer())
         testCaseContent << "*";
 
     if (isFromClass)
         testCaseContent << classTest << "_test.";
-    testCaseContent << functionName << "(\n\t\t";
+    testCaseContent << functionName << "(";
 
     for (const auto &param : params) {
-        if (isReturnContainer)
-            testCaseContent << funcCfgName << "_" << param.name;
+        if (param.isContainer())
+            testCaseContent << "Read_" << param.formatted << "(\""
+                            << funcCfgName << "_" << param.name << "\")";
         else if (param.isPointer() || param.isReference())
             testCaseContent << funcCfgName << "_" << param.name;
         else
@@ -229,16 +227,22 @@ void BoostGenerator::generateBoostAssert(const string &classTest,
 
     testCaseContent << (isReturnContainer ? ") == " : "),") << "\n\t\t";
 
-    if (!isReturnContainer) {
-        if (returnType.isPointer())
-            testCaseContent << "*";
+    if (isReturnContainer)
+        testCaseContent << (returnType.isPointer() ? "*" : "") << "Read_"
+                        << returnType.formatted << "(\"return_" << funcCfgName
+                        << "\"))\n\t);";
+    else if (returnType.isPointer())
+        testCaseContent << "*Read_" << returnType.formatted << "(\""
+                        << functionName << ".return_" << returnType.formatted
+                        << "\")\n\t);";
+    else if (returnType.isReference())
+        testCaseContent << "Read_" << returnType.getUnderlyingType().formatted
+                        << "(\"" << functionName << ".return_"
+                        << returnType.formatted << "\")\n\t);";
+    else
         testCaseContent << "Read_" << returnType.formatted << "(\""
                         << functionName << ".return_" << returnType.formatted
                         << "\")\n\t);";
-
-    } else
-        testCaseContent << (returnType.isPointer() ? "*" : "") << "return_"
-                        << funcCfgName << ")\n\t);";
 
     // Asserting references and pointers
     for (const auto &param : params) {
@@ -606,21 +610,20 @@ void BoostGenerator::addPointerReadToFixture(const InfoType &type) {
         }
     */
     stringstream readMethod, allocationInstruction;
+    InfoType underlying = type.getUnderlyingType();
 
-    string unreferenced = type.original;
-    removeAll(unreferenced, " *");
+    allocationInstruction << type.original << "result = (" << type.original
+                          << ")malloc(sizeof(" << underlying.original << "))";
 
-    allocationInstruction << type.formatted << "result = (" << type.formatted
-                          << ")malloc(sizeof(" << unreferenced << "))";
-
-    readMethod << type.formatted << " Read_" << type.formatted
+    readMethod << type.original << " Read_" << type.formatted
                << "(string objectKey)\n\t{\n"
                << "\t\t" << allocationInstruction.str() << ";\n"
                << "\t\tif(result == NULL) {\n"
                << "\t\t\tcerr << \"Error in memory allocation\\n\";\n"
                << "\t\t\texit(EXIT_FAILURE);\n"
                << "\t\t}\n"
-               << "\t\t*result = Read_" << type.formatted << "(objectKey);\n"
+               << "\t\t*result = Read_" << underlying.formatted
+               << "(objectKey);\n"
                << "\t\tpointers.push_back(result);\n"
                << "\t\treturn result;\n\t}\n";
 
@@ -841,24 +844,19 @@ void BoostGenerator::generateCustomTypeFixture(const string &filename,
         return;
 
     if (type.isPointer()) {
-        std::cout << type.original << " ES puntero\n";
         addPointerReadToFixture(type);
         generateCustomTypeFixture(filename, type.getUnderlyingType());
 
     } else if (type.isReference()) {
-        std::cout << type.original << " ES referencia\n";
         generateCustomTypeFixture(filename, type.getUnderlyingType());
 
     } else if (type.isEnum()) {
-        std::cout << type.original << " ES enum\n";
         addEnumReadToFixture(type);
 
     } else if (type.isContainer()) {
-        std::cout << type.original << " ES container\n";
         return;
 
     } else if (type.isRecord()) {
-        std::cout << type.original << " ES record\n";
         addRecordReadToFixture(type);
     }
 

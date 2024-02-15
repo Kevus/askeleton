@@ -152,7 +152,7 @@ void replaceAll(string &str, const string &from, const string &to) {
 }
 
 void removeAll(string &str, const string &substringToRemove) {
-    str = std::regex_replace(str, std::regex(substringToRemove), "");
+    replaceAll(str, substringToRemove, "");
 }
 
 void removeAll(string &str, const initializer_list<string> &substrings) {
@@ -179,29 +179,30 @@ string extractFileName(const string &fileRoute) {
 }
 
 void removeTypeQualifiers(string &type) {
-	removeAll(type, "const");
-	removeAll(type, "enum");
-	removeAll(type, "class");
-	removeAll(type, "struct");
+    removeAll(type, "const");
+    removeAll(type, "enum");
+    removeAll(type, "class");
+    removeAll(type, "struct");
 
-	ltrim(type);
+    ltrim(type);
 }
 
 void replaceTypeCharacters(string &type) {
-	replaceAll(type, "*", "s");
-	replaceAll(type, "&", "r");
+    replaceAll(type, "*", "s");
+    replaceAll(type, "&", "r");
 }
 
 void ltrim(std::string &s) {
     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
-        return !std::isspace(ch);
-    }));
+                return !std::isspace(ch);
+            }));
 }
 
 void rtrim(std::string &s) {
-    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
-        return !std::isspace(ch);
-    }).base(), s.end());
+    s.erase(std::find_if(s.rbegin(), s.rend(),
+                         [](unsigned char ch) { return !std::isspace(ch); })
+                .base(),
+            s.end());
 }
 
 bool endsWith(std::string const &fullString, std::string const &ending) {

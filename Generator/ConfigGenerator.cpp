@@ -134,8 +134,9 @@ void ConfigGenerator::generateTestCase(const string &functionName,
             cfg_file << name << "=" << value << ";#" << original << "\n";
     }
 
-    cfg_file << "\treturn_" << returnType.formatted << "="
-             << rvg.getRandomValue(returnType.formatted) << ";#"
+    cfg_file << "\treturn_"
+             << (returnType.isContainer() ? functionName : returnType.formatted)
+             << "=" << rvg.getRandomValue(returnType.formatted) << ";#"
              << returnType.original << "\n};\n\n";
 }
 
