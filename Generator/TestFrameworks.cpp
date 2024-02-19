@@ -1060,7 +1060,6 @@ string::npos)
     }
 }*/
 
-// NOTE: LEE CORRECTAMENTE
 // TODO: revisar eficiencia: abrir fichero + recorrerlo con O(n) + cerrarlo
 bool BoostGenerator::checkIfSupported(const pair<string, string> &type,
                                       const string &supportedPath) {
@@ -1089,12 +1088,19 @@ bool BoostGenerator::checkIfSupported(const pair<string, string> &type,
 bool BoostGenerator::isTypeSupported(const InfoType &type,
                                      const string &className) {
     ifstream supportedFile("Generated/UT/" + className + "/SupportedTypes.txt");
-    string line;
+    string line, typeClean = type.original;
+    replaceAll(typeClean, " ", "_");
 
+#ifdef FULL_DEBUG
+    cout << "checking " << typeClean << "\n";
+#endif /* FULL_DEBUG */
     while (getline(supportedFile, line))
-        if (line == type.formatted)
+        if (line == typeClean)
             return true;
 
+#ifdef FULL_DEBUG
+    cout << typeClean << " was not found\n";
+#endif /* FULL_DEBUG */
     return false;
 }
 

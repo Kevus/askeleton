@@ -6,10 +6,10 @@ LLVMCXXFLAGS :=	\
 	-Wcast-qual -Wno-missing-field-initializers -pedantic -Wno-long-long	\
 	-Wno-uninitialized -Wdelete-non-virtual-dtor -Wno-comment -ffunction-sections	\
 	-fdata-sections -O2 -DNDEBUG  -fno-exceptions -D_GNU_SOURCE	\
-	-D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -DFULL_DEBUG \
+	-D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS \
 	-Iinclude/ -I.
 
-CXXFLAGS	:= $(LLVMCXXFLAGS) $(RTTIFLAG) -fexceptions -gdwarf-4 -DFULL_DEBUG
+CXXFLAGS	:= $(LLVMCXXFLAGS) $(RTTIFLAG) -fexceptions -gdwarf-4
 LLVMLDFLAGS	:= $(shell llvm-config-15 --ldflags --system-libs --libs) $(LDFLAGS)
 
 SOURCES =	\
