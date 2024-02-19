@@ -216,6 +216,8 @@ void ASKGen::apply_CT1(const MatchFinder::MatchResult &Result) {
                 record_name =
                     UT->getTypedefNameForAnonDecl()->getNameAsString();
 
+            // TODO: esto tiene que cambiarse por
+            // bGen.generateCustomTypeFixture(...)
             generateCustomTypeFixture(filename, record_name, field_decl,
                                       overloadedEq, overloadedFlux, bGen);
 
@@ -428,10 +430,11 @@ void ASKGen::generateFunctionTest(string sourceFile,
     // Getting the return type
     InfoType returnType(originalReturnType);
 
+#ifdef FULL_DEBUG
     // ---------------------------------------
     // DISPLAY AUXILIARY INFORMATION
     // ---------------------------------------
-    cout << "\n\n--------------\n";
+    cout << "--------------\n";
     unsigned i = 0;
     cout << "Params list: (";
     for (auto &param : parameters) {
@@ -444,6 +447,7 @@ void ASKGen::generateFunctionTest(string sourceFile,
     // ---------------------------------------
     // END OF DISPLAY
     // ---------------------------------------
+#endif /* FULL_DEBUG */
 
     // Checking if the parameters are supported
     for (const InfoType &param : parameters)
