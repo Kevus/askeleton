@@ -61,6 +61,20 @@ void readFrameworks();
 void replaceAll(string &str, const string &from, const string &to);
 
 /**
+ * @brief Extracts a substring until a specified character is encountered.
+ * 
+ * This function takes a string and a character as input. It finds the position
+ * of the specified character in the string and returns the substring from the
+ * beginning of the string up to (but not including) that character.
+ * If the character is not found, the entire original string is returned.
+ * 
+ * @param str The input string.
+ * @param c The character to search for.
+ * @return The substring until the specified character.
+ */
+std::string extractSubstringUntilCharacter(const std::string &str, char c);
+
+/**
  * @brief Removes all occurrences of the specified substring from the given
  * string.
  *

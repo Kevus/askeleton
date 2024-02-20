@@ -151,6 +151,12 @@ void replaceAll(string &str, const string &from, const string &to) {
     }
 }
 
+std::string extractSubstringUntilCharacter(const string &str, char c) {
+    size_t pos = str.find(c);
+	return pos != string::npos ? str.substr(0, pos) : str;
+}
+
+
 void removeAll(string &str, const string &substringToRemove) {
     replaceAll(str, substringToRemove, "");
 }

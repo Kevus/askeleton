@@ -135,7 +135,9 @@ void ConfigGenerator::generateTestCase(const string &functionName,
     }
 
     cfg_file << "\treturn_"
-             << (returnType.isContainer() ? functionName : returnType.formatted)
+			 << (returnType.isContainer() ? 
+				extractSubstringUntilCharacter(returnType.formatted, '<') : 
+				returnType.formatted)
              << "=" << rvg.getRandomValue(returnType.formatted) << ";#"
              << returnType.original << "\n};\n\n";
 }
