@@ -214,7 +214,7 @@ void BoostGenerator::generateBoostAssert(const string &classTest,
     for (const auto &param : params) {
         if (param.isContainer())
             testCaseContent << "Read_" << param.formatted << "(\""
-                            << funcCfgName << "_" << param.name << "\")";
+                            << funcCfgName << "." << param.name << "\")";
         else if (param.isPointer() || param.isReference())
             testCaseContent << funcCfgName << "_" << param.name;
         else
@@ -229,8 +229,9 @@ void BoostGenerator::generateBoostAssert(const string &classTest,
 
     if (isReturnContainer)
         testCaseContent << (returnType.isPointer() ? "*" : "") << "Read_"
-                        << returnType.formatted << "(\"return_" << funcCfgName
-                        << "\"))\n\t);";
+                        << returnType.formatted << "(\"" << functionName << ".return_" 
+						<< extractSubstringUntilCharacter(returnType.formatted, '<') 
+						<< "\"))\n\t);";
     else if (returnType.isPointer())
         testCaseContent << "*Read_" << returnType.formatted << "(\""
                         << functionName << ".return_" << returnType.formatted
