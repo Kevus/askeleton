@@ -194,32 +194,39 @@ void ASKGen::apply_CT1(const MatchFinder::MatchResult &Result) {
             // TO-DO: MODIFICAR PARA AÑADIR MAS O MENOS FRAMEWORKS
             BoostGenerator bGen(source_file, filename, false);
 
+			InfoType record(QualType(UT->getTypeForDecl(), 0));
+
+			if(!bGen.isTypeSupported(record, filename)) {
+				bGen.addRecordReadToFixture(record);
+				bGen.addTypeToSupported({record.original, record.formatted}, filename);
+			}
+
             // We'll read the fields here
-            vector<FieldDecl *> field_decl;
+            // vector<FieldDecl *> field_decl;
 
-            for (auto i : UT->fields())
-                field_decl.push_back(i);
+            // for (auto i : UT->fields())
+            //     field_decl.push_back(i);
 
-            bool overloadedEq = false;
-            bool overloadedFlux = false;
-            for (auto i : UT->methods()) {
-                // llvm::outs() << i->getNameAsString() << "\n";
-                if (i->getNameAsString().find("operator==") != string::npos)
-                    overloadedEq = true;
-                else if (i->getNameAsString().find("operator<<") !=
-                         string::npos)
-                    overloadedFlux = true;
-            }
-            // TODO: extraer en función
-            string record_name = UT->getQualifiedNameAsString();
-            if (record_name.find("anonymous") != string::npos)
-                record_name =
-                    UT->getTypedefNameForAnonDecl()->getNameAsString();
+            // bool overloadedEq = false;
+            // bool overloadedFlux = false;
+            // for (auto i : UT->methods()) {
+            //     // llvm::outs() << i->getNameAsString() << "\n";
+            //     if (i->getNameAsString().find("operator==") != string::npos)
+            //         overloadedEq = true;
+            //     else if (i->getNameAsString().find("operator<<") !=
+            //              string::npos)
+            //         overloadedFlux = true;
+            // }
+            // // TODO: extraer en función
+            // string record_name = UT->getQualifiedNameAsString();
+            // if (record_name.find("anonymous") != string::npos)
+            //     record_name =
+            //         UT->getTypedefNameForAnonDecl()->getNameAsString();
 
-            // TODO: esto tiene que cambiarse por
-            // bGen.generateCustomTypeFixture(...)
-            generateCustomTypeFixture(filename, record_name, field_decl,
-                                      overloadedEq, overloadedFlux, bGen);
+            // // TODO: esto tiene que cambiarse por
+            // // bGen.generateCustomTypeFixture(...)
+            // generateCustomTypeFixture(filename, record_name, field_decl,
+            //                           overloadedEq, overloadedFlux, bGen);
 
             // addReadTypeToFixture(type_name, pram_type, insertion_order)
 
@@ -229,7 +236,8 @@ void ASKGen::apply_CT1(const MatchFinder::MatchResult &Result) {
                          << FullLocation.getSpellingLineNumber() << ":"
                          << FullLocation.getSpellingColumnNumber() << " - ";
 
-            llvm::outs() << record_name << " in file " << filename << "\n";
+            // llvm::outs() << record_name << " in file " << filename << "\n";
+            llvm::outs() << record.original << " in file " << filename << "\n";
             // Print auxiliary
             // ======================================================================
         }

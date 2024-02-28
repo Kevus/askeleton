@@ -11,9 +11,11 @@ InfoType::InfoType(const clang::QualType &type)
         string original = record->getQualifiedNameAsString();
         if (original.find("anonymous") != string::npos)
             original = record->getTypedefNameForAnonDecl()->getNameAsString();
-        transform(record->fields().begin(), record->fields().end(),
-                  back_inserter(recordFields),
-                  [](const FieldDecl *field) { return field; });
+		copy_if(record->fields().begin(), record->fields().end(),
+                back_inserter(recordFields),
+                [](const FieldDecl *field) { 
+					return field->getAccess() == AS_public;
+				});
 
     } else if (const Type *unqualified =
                    type.getUnqualifiedType().getTypePtrOrNull()) {
@@ -71,13 +73,13 @@ InfoType InfoType::getUnderlyingType() const {
     return {original, formatted};
 }
 
-vector<InfoVariable> InfoType::getRecordFields() const { return recordFields; }
-
 string InfoType::formatType(const string &name) {
     string formatted = cleanUnnecesaryChars(name);
     replaceAll(formatted, "*", "s");
     return formatted;
 }
+
+vector<InfoVariable> InfoType::getRecordFields() const { return recordFields; }
 
 const std::map<std::string, std::string> InfoType::excludedTypes = {
     {"class std::basic_string<char>", "std::string"},

@@ -276,6 +276,73 @@ void BoostGenerator::generateBoostAssert(const string &classTest,
 }
 
 void BoostGenerator::generateBoostConstructorAssert(
+		const string &classTest, const string &ctorName, const string &ctorCfgName, 
+		const vector<InfoVariable> &params) {
+    string templatePath = ASKELETON_HOME + "Generator/Templates/BoostTest.tpl",
+		outputPath = "Generated/UT/" + classTest + "/" + classTest + "_test.cpp",
+		fileContent, ptype;
+	stringstream testCase;
+	ifstream tplFile(templatePath);
+
+	if(!tplFile.is_open())
+		return;
+
+	if(!fileExists(outputPath)) {
+		fileContent = string((istreambuf_iterator<char>(tplFile)),
+                                 istreambuf_iterator<char>());
+
+		replaceAll(fileContent, tplitems::CLASS_NAME, classTest);
+		replaceAll(fileContent, tplitems::POINTER_INIT_TOKEN, "");
+        replaceAll(fileContent, tplitems::POINTER_DESTROY_TOKEN, "");
+		system(("cp -r " + ASKELETON_HOME +
+			"Generator/Templates/SupportedTypes.txt Generated/UT/" +
+			classTest + "/").c_str()
+		);
+	}
+	else {
+		ifstream tmp_output(outputPath);
+		fileContent = string((istreambuf_iterator<char>(tmp_output)),
+							  istreambuf_iterator<char>());
+	}
+
+	// Reading references
+    for (const InfoVariable &actualVariable : params) {
+        if (actualVariable.isReference())
+            testCase
+                << bt::generateReferenceAssign(ctorCfgName, actualVariable)
+                << "\n";
+        else if (actualVariable.isPointer())
+            testCase
+                << bt::generatePointerAssign(ctorCfgName, actualVariable)
+                << "\n";
+    }
+
+	testCase << "\tBOOST_CHECK(new " << ctorName << "(";
+
+	for(const InfoVariable &param: params) {
+		if(param.isContainer())
+			testCase << "Read_" << param.formatted << "(\""
+					 << ctorCfgName << "." << param.name << "\")";
+		else if (param.isPointer() || param.isReference())
+			testCase << ctorCfgName << "_" << param.name;
+		else
+			testCase << "Read_" << param.formatted << "(\""
+					 << ctorCfgName << "." << param.name << "\")";
+
+		if (&param != &params.back()) testCase << ", ";
+	}
+
+	testCase << "));\n//{assert}";
+	
+	string resultTestCase = cleanClassIdentifier(testCase.str());
+	replaceAll(resultTestCase, "::", "_");
+	replaceAll(fileContent, tplitems::ASSERT, resultTestCase);
+
+	ofstream outputFile(outputPath);
+	outputFile << fileContent;
+}
+
+void BoostGenerator::generateBoostConstructorAssert(
     string class_test, string constructor_name, string constructor_cfg_name,
     map<string, string> param_type, vector<string> insertion_order) {
     string templatePath = ASKELETON_HOME + "Generator/Templates/BoostTest.tpl";
@@ -688,7 +755,7 @@ void BoostGenerator::addOverloadToFixture(const std::string &overload) {
                overload + "\n" + tplitems::OVERLOAD_OPERATOR);
 
     ofstream outputFile(fixture_path);
-    outputFile << fileContent << "\n" << tplitems::OVERLOAD_OPERATOR;
+    outputFile << fileContent;
 }
 
 void BoostGenerator::addPointerReadToFixture(
@@ -792,7 +859,7 @@ void BoostGenerator::addRecordReadToFixture(const InfoType &type) {
                    << "values[" << pos++ << "];\n";
     }
 
-    readMethod << "\t\t}\n\n\t\treturn result;\n\t}\n\t//{readObject}";
+    readMethod << "\t\t}\n\n\t\treturn result;\n\t}\n\t";
 
     // TODO: Check if overload is needed
     // Overloading equality
