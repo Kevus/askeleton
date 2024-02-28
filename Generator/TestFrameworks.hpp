@@ -17,6 +17,10 @@ public:
                                         string constructor_cfg_name,
                                         map<string, string> param_type,
                                         vector<string> insertion_order);
+	void generateBoostConstructorAssert(const string &classTest, 
+										const string &ctorName, 
+										const string &ctorCfgName, 
+										const vector<InfoVariable> &params);
 
     //--
     void addStructReadToFixture(string type_name,
