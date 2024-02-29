@@ -20,7 +20,8 @@ string cleanClassIdentifier(string sToReplace) {
 BoostGenerator::BoostGenerator(string filePath, string cfgName,
                                bool isFromClass)
     : isFromClass(isFromClass),
-      supported_path{routes::generateSupportPath(cfgName)} {
+      supported_path{routes::generateSupportPath(cfgName)},
+      folderName{cfgName} {
     // Time utilities
     auto t = time(nullptr);
     auto tm = *localtime(&t);
@@ -229,9 +230,11 @@ void BoostGenerator::generateBoostAssert(const string &classTest,
 
     if (isReturnContainer)
         testCaseContent << (returnType.isPointer() ? "*" : "") << "Read_"
-                        << returnType.formatted << "(\"" << functionName << ".return_" 
-						<< extractSubstringUntilCharacter(returnType.formatted, '<') 
-						<< "\"))\n\t);";
+                        << returnType.formatted << "(\"" << functionName
+                        << ".return_"
+                        << extractSubstringUntilCharacter(returnType.formatted,
+                                                          '<')
+                        << "\"))\n\t);";
     else if (returnType.isPointer())
         testCaseContent << "*Read_" << returnType.formatted << "(\""
                         << functionName << ".return_" << returnType.formatted
@@ -276,70 +279,69 @@ void BoostGenerator::generateBoostAssert(const string &classTest,
 }
 
 void BoostGenerator::generateBoostConstructorAssert(
-		const string &classTest, const string &ctorName, const string &ctorCfgName, 
-		const vector<InfoVariable> &params) {
+    const string &classTest, const string &ctorName, const string &ctorCfgName,
+    const vector<InfoVariable> &params) {
     string templatePath = ASKELETON_HOME + "Generator/Templates/BoostTest.tpl",
-		outputPath = "Generated/UT/" + classTest + "/" + classTest + "_test.cpp",
-		fileContent, ptype;
-	stringstream testCase;
-	ifstream tplFile(templatePath);
+           outputPath =
+               "Generated/UT/" + classTest + "/" + classTest + "_test.cpp",
+           fileContent, ptype;
+    stringstream testCase;
+    ifstream tplFile(templatePath);
 
-	if(!tplFile.is_open())
-		return;
+    if (!tplFile.is_open())
+        return;
 
-	if(!fileExists(outputPath)) {
-		fileContent = string((istreambuf_iterator<char>(tplFile)),
-                                 istreambuf_iterator<char>());
+    if (!fileExists(outputPath)) {
+        fileContent = string((istreambuf_iterator<char>(tplFile)),
+                             istreambuf_iterator<char>());
 
-		replaceAll(fileContent, tplitems::CLASS_NAME, classTest);
-		replaceAll(fileContent, tplitems::POINTER_INIT_TOKEN, "");
+        replaceAll(fileContent, tplitems::CLASS_NAME, classTest);
+        replaceAll(fileContent, tplitems::POINTER_INIT_TOKEN, "");
         replaceAll(fileContent, tplitems::POINTER_DESTROY_TOKEN, "");
-		system(("cp -r " + ASKELETON_HOME +
-			"Generator/Templates/SupportedTypes.txt Generated/UT/" +
-			classTest + "/").c_str()
-		);
-	}
-	else {
-		ifstream tmp_output(outputPath);
-		fileContent = string((istreambuf_iterator<char>(tmp_output)),
-							  istreambuf_iterator<char>());
-	}
-
-	// Reading references
-    for (const InfoVariable &actualVariable : params) {
-        if (actualVariable.isReference())
-            testCase
-                << bt::generateReferenceAssign(ctorCfgName, actualVariable)
-                << "\n";
-        else if (actualVariable.isPointer())
-            testCase
-                << bt::generatePointerAssign(ctorCfgName, actualVariable)
-                << "\n";
+        system(("cp -r " + ASKELETON_HOME +
+                "Generator/Templates/SupportedTypes.txt Generated/UT/" +
+                classTest + "/")
+                   .c_str());
+    } else {
+        ifstream tmp_output(outputPath);
+        fileContent = string((istreambuf_iterator<char>(tmp_output)),
+                             istreambuf_iterator<char>());
     }
 
-	testCase << "\tBOOST_CHECK(new " << ctorName << "(";
+    // Reading references
+    for (const InfoVariable &actualVariable : params) {
+        if (actualVariable.isReference())
+            testCase << bt::generateReferenceAssign(ctorCfgName, actualVariable)
+                     << "\n";
+        else if (actualVariable.isPointer())
+            testCase << bt::generatePointerAssign(ctorCfgName, actualVariable)
+                     << "\n";
+    }
 
-	for(const InfoVariable &param: params) {
-		if(param.isContainer())
-			testCase << "Read_" << param.formatted << "(\""
-					 << ctorCfgName << "." << param.name << "\")";
-		else if (param.isPointer() || param.isReference())
-			testCase << ctorCfgName << "_" << param.name;
-		else
-			testCase << "Read_" << param.formatted << "(\""
-					 << ctorCfgName << "." << param.name << "\")";
+    testCase << "\tBOOST_CHECK(new " << ctorName << "(";
 
-		if (&param != &params.back()) testCase << ", ";
-	}
+    for (const InfoVariable &param : params) {
+        if (param.isContainer())
+            testCase << "Read_" << param.formatted << "(\"" << ctorCfgName
+                     << "." << param.name << "\")";
+        else if (param.isPointer() || param.isReference())
+            testCase << ctorCfgName << "_" << param.name;
+        else
+            testCase << "Read_" << param.formatted << "(\"" << ctorCfgName
+                     << "." << param.name << "\")";
 
-	testCase << "));\n//{assert}";
-	
-	string resultTestCase = cleanClassIdentifier(testCase.str());
-	replaceAll(resultTestCase, "::", "_");
-	replaceAll(fileContent, tplitems::ASSERT, resultTestCase);
+        if (&param != &params.back())
+            testCase << ", ";
+    }
 
-	ofstream outputFile(outputPath);
-	outputFile << fileContent;
+    testCase << "));\n//{assert}";
+
+    string resultTestCase = cleanClassIdentifier(testCase.str());
+    replaceAll(resultTestCase, "::", "_");
+    replaceAll(fileContent, tplitems::ASSERT, resultTestCase);
+
+    ofstream outputFile(outputPath);
+    outputFile << fileContent;
 }
 
 void BoostGenerator::generateBoostConstructorAssert(
@@ -902,8 +904,12 @@ void BoostGenerator::addRecordReadToFixture(const InfoType &type) {
     addOverloadToFixture(overloadedOperators.str());
 
     for (const InfoVariable &field : fields) {
-        generateCustomTypeFixture(fixture_path, field);
+        generateCustomTypeFixture(field);
     }
+}
+
+void BoostGenerator::generateCustomTypeFixture(const InfoType &type) {
+    generateCustomTypeFixture(folderName, type);
 }
 
 void BoostGenerator::generateCustomTypeFixture(const string &filename,
@@ -1151,6 +1157,10 @@ bool BoostGenerator::checkIfSupported(const pair<string, string> &type,
 #endif /* FULL_DEBUG */
 
     return found;
+}
+
+bool BoostGenerator::isTypeSupported(const InfoType &type) {
+    return isTypeSupported(type, folderName);
 }
 
 bool BoostGenerator::isTypeSupported(const InfoType &type,
