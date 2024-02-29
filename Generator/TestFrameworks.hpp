@@ -17,10 +17,10 @@ public:
                                         string constructor_cfg_name,
                                         map<string, string> param_type,
                                         vector<string> insertion_order);
-	void generateBoostConstructorAssert(const string &classTest, 
-										const string &ctorName, 
-										const string &ctorCfgName, 
-										const vector<InfoVariable> &params);
+    void generateBoostConstructorAssert(const string &classTest,
+                                        const string &ctorName,
+                                        const string &ctorCfgName,
+                                        const vector<InfoVariable> &params);
 
     //--
     void addStructReadToFixture(string type_name,
@@ -34,22 +34,23 @@ public:
     // Add the pointer defined in type to the Fixture
     void
     addPointerReadToFixture(const std::pair<std::string, std::string> &type);
+    void addPointerReadToFixture(const InfoType &type);
+    void addEnumReadToFixture(const InfoType &type);
+    void addRecordReadToFixture(const InfoType &type);
 
-	void addPointerReadToFixture(const InfoType &type);
-	void addEnumReadToFixture(const InfoType &type);
-	void addRecordReadToFixture(const InfoType &type);
-	void generateCustomTypeFixture(const string &filename, 
-								   const InfoType &type);
+    void generateCustomTypeFixture(const InfoType &type);
+    void generateCustomTypeFixture(const string &filename,
+                                   const InfoType &type);
 
-    // CHECK: por que se pide el fixture_path si ya esta como miembro?
     void addNewTypeToFixture(string type_name, string fixture_path);
     void addNewTypeToFixture(const std::pair<string, string> &type,
                              string fixture_path);
 
     //  Checks if a type was added to the supportedPath
+    bool isTypeSupported(const InfoType &type);
+    bool isTypeSupported(const InfoType &type, const string &className);
     bool checkIfSupported(const std::pair<string, string> &type,
                           const string &supportedPath);
-	bool isTypeSupported(const InfoType &type, const string &className);
 
     //  Add a type as supported in the supportedPath file
     void addTypeToSupported(const std::pair<string, string> &type,
@@ -63,14 +64,14 @@ private:
     // TODO: eliminar esta version mas adelante
     void checkTypes(string type, string support_path);
     void checkTypes(const std::pair<string, string> &type, string support_path);
-	void addReadObjectToFixture(const std::string &method);
-	void addOverloadToFixture(const std::string &overload);
+    void addReadObjectToFixture(const std::string &method);
+    void addOverloadToFixture(const std::string &overload);
 
     map<string, string> valuesToChange;
     // vector<string> defaultTypes;
     bool isFromClass;
 
-    // TODO: agregar el supported_path ?
     string fixture_path, makefile_path, supported_path;
     string ASKELETON_HOME;
+    string folderName;
 };

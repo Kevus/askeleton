@@ -149,7 +149,6 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
 
                 // TO-DO: MODIFICAR PARA AÑADIR MAS O MENOS FRAMEWORKS
                 BoostGenerator bGen(source_file, parentname, true);
-
                 generateFunctionTest(parentname, UT->getName().str(),
                                      UT->parameters(), UT->getReturnType(),
                                      bGen);
@@ -194,12 +193,13 @@ void ASKGen::apply_CT1(const MatchFinder::MatchResult &Result) {
             // TO-DO: MODIFICAR PARA AÑADIR MAS O MENOS FRAMEWORKS
             BoostGenerator bGen(source_file, filename, false);
 
-			InfoType record(QualType(UT->getTypeForDecl(), 0));
+            InfoType record(QualType(UT->getTypeForDecl(), 0));
 
-			if(!bGen.isTypeSupported(record, filename)) {
-				bGen.addRecordReadToFixture(record);
-				bGen.addTypeToSupported({record.original, record.formatted}, filename);
-			}
+            if (!bGen.isTypeSupported(record, filename)) {
+                bGen.addRecordReadToFixture(record);
+                bGen.addTypeToSupported({record.original, record.formatted},
+                                        filename);
+            }
 
             // We'll read the fields here
             // vector<FieldDecl *> field_decl;
