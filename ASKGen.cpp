@@ -470,7 +470,7 @@ void ASKGen::generateFunctionTest(string sourceFile,
 
 // Method for constructing constructor test
 void ASKGen::generateConstructorTest(string source, string constructor_name,
-                                     ArrayRef<ParmVarDecl *> parameters,
+                                     ArrayRef<ParmVarDecl *> originalParameters,
                                      BoostGenerator bGen) {
     ConfigGenerator cfg_gen(source);
 
@@ -481,29 +481,34 @@ void ASKGen::generateConstructorTest(string source, string constructor_name,
         constructor_cfg_name +=
             "_" + to_string(function_occurrences[constructor_name]);
 
+    // Getting the parameters
+    vector<InfoVariable> parameters;
+    transform(originalParameters.begin(), originalParameters.end(),
+              back_inserter(parameters),
+              [](const ParmVarDecl *param) { return param; });
+
     // Get the parameters
-    map<string, string> param_type;
-    vector<string> insert_order;
+    // map<string, string> param_type;
+    // vector<string> insert_order;
 
-    string tmp_type;
-    string tmp_name;
+    // string tmp_type;
+    // string tmp_name;
 
-    int noname_count = 0;
+    // int noname_count = 0;
+    // for (auto i : parameters) {
+    //     tmp_type = i->getOriginalType().getAsString();
+    //     tmp_type = cleanUnnecesaryChars(tmp_type);
 
-    for (auto i : parameters) {
-        tmp_type = i->getOriginalType().getAsString();
-        tmp_type = cleanUnnecesaryChars(tmp_type);
+    //     tmp_name = i->getQualifiedNameAsString();
 
-        tmp_name = i->getQualifiedNameAsString();
+    //     if (tmp_name == "") {
+    //         tmp_name = tmp_type + "_" + to_string(noname_count);
+    //         noname_count++;
+    //     }
 
-        if (tmp_name == "") {
-            tmp_name = tmp_type + "_" + to_string(noname_count);
-            noname_count++;
-        }
-
-        param_type.insert(pair<string, string>(tmp_name, tmp_type));
-        insert_order.push_back(tmp_name);
-    }
+    //     param_type.insert(pair<string, string>(tmp_name, tmp_type));
+    //     insert_order.push_back(tmp_name);
+    // }
 
     /**
     ** We will add custom generator lates
