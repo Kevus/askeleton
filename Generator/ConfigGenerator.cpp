@@ -68,54 +68,6 @@ ConfigGenerator::ConfigGenerator(string f_Name) : f_Name(f_Name) {
         cfg_file << comment_header;
 }
 
-void ConfigGenerator::generateTestCase(string funct_name,
-                                       map<string, string> param_type,
-                                       vector<string> insert_order,
-                                       string return_type) {
-    if (cfg_file.is_open()) {
-        cfg_file << funct_name << ":\n{\n";
-
-        for (auto i : insert_order) {
-            string param = param_type[i];
-            replaceAll(param, "struct_", "");
-            // cfg_file << "\t" << i << "=" <<
-            // defaultValues.find(param_type[i])->second << ";#" <<
-            // param_type[i] << "\n";
-            cfg_file << "\t" << i << "=" << rvg.getRandomValue(param_type[i])
-                     << ";#" << param << "\n";
-        } // for
-
-        replaceAll(return_type, "struct_", "");
-        cfg_file << "\treturn_" << return_type << "="
-                 << rvg.getRandomValue(return_type) << ";#" << return_type
-                 << "\n};\n\n";
-    } // if
-}
-
-void ConfigGenerator::generateTestCase(
-    string funct_name, const map<string, pair<string, string>> &param_type,
-    const vector<string> &insert_order,
-    const pair<string, string> &return_type) {
-
-    if (cfg_file.is_open()) {
-        string original, formatted;
-        cfg_file << funct_name << ":\n{\n";
-
-        for (auto i : insert_order) {
-            tie(original, formatted) = param_type.at(i);
-            replaceAll(formatted, "struct_", "");
-            cfg_file << "\t" << i << "=" << rvg.getRandomValue(formatted)
-                     << ";#" << original << "\n";
-        }
-
-        tie(original, formatted) = return_type;
-        replaceAll(formatted, "struct_", "");
-        cfg_file << "\treturn_" << formatted << "="
-                 << rvg.getRandomValue(formatted) << ";#" << original
-                 << "\n};\n\n";
-    }
-}
-
 void ConfigGenerator::generateTestCase(const string &functionName,
                                        const vector<InfoVariable> &params,
                                        const InfoType &returnType) {
@@ -142,17 +94,16 @@ void ConfigGenerator::generateTestCase(const string &functionName,
              << returnType.original << "\n};\n\n";
 }
 
-// void ConfigGenerator::generateTestCases(string function_name, map<string)
-
-void ConfigGenerator::generateConstructorTest(string constructor_name,
-                                              map<string, string> param_type,
-                                              vector<string> insert_order) {
+void ConfigGenerator::generateConstructorTest(const string &ctorName,
+                                              const vector<InfoVariable> &params) {
     if (cfg_file.is_open()) {
-        cfg_file << constructor_name << ":\n{\n";
+        cfg_file << ctorName << ":\n{\n";
 
-        for (auto i : insert_order)
-            cfg_file << "\t" << i << "=" << rvg.getRandomValue(param_type[i])
-                     << ";#" << param_type[i] << "\n";
+		for (const InfoVariable &param : params) {
+			const string &original = param.original, &name = param.name;
+			string value = rvg.getRandomValue(param.formatted);
+			cfg_file << "\t" << name << "=" << value << ";#" << original << "\n";
+		}
 
         cfg_file << "};\n\n";
     }

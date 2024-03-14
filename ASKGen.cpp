@@ -513,11 +513,14 @@ void ASKGen::generateConstructorTest(string source, string constructor_name,
     /**
     ** We will add custom generator lates
     **/
-    cfg_gen.generateConstructorTest(constructor_cfg_name, param_type,
-                                    insert_order);
-    bGen.generateBoostConstructorAssert(source, constructor_name,
-                                        constructor_cfg_name, param_type,
-                                        insert_order);
+    // cfg_gen.generateConstructorTest(constructor_cfg_name, param_type,
+    //                                 insert_order);
+    // bGen.generateBoostConstructorAssert(source, constructor_name,
+    //                                     constructor_cfg_name, param_type,
+    //                                     insert_order);
+	cfg_gen.generateConstructorTest(constructor_cfg_name, parameters);
+	bGen.generateBoostConstructorAssert(source, constructor_name,
+										constructor_cfg_name, parameters);
 }
 
 void ASKGen::generateEnumTypeFixture(string source,

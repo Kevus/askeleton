@@ -888,15 +888,15 @@ void BoostGenerator::addRecordReadToFixture(const InfoType &type) {
                         << "const " << type.original << "& a)\n{\n";
 
     if (size > 0) {
+		overloadedOperators << "\tstream << \"{\\n\";\n";
         for (const InfoVariable &field : fields) {
-            overloadedOperators << "\tstream << a." << field.name
-                                << " << endl;\n";
-            if (&field != &fields.back())
-                overloadedOperators << "\", \"";
-            else
-                overloadedOperators << "\\n\n";
+            overloadedOperators << "\tstream << \"\\t" << field.name << ": \" << a." << field.name
+                                << " << \"\\n\";\n";
         }
-    }
+		overloadedOperators << "\tstream << \"}\\n\";\n";
+    } else {
+		overloadedOperators << "\tstream << \"{}\";\n";
+	}
 
     overloadedOperators << "\n\treturn stream;\n}\n";
 
