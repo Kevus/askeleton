@@ -27,16 +27,9 @@ public:
     void generateTestCase(const string &functionName,
                           const vector<InfoVariable> &params,
                           const InfoType &returnType);
-    void generateTestCase(string funct_name, map<string, string> param_type,
-                          vector<string> insert_order, string return_type);
-    void generateTestCase(string funct_name,
-                          const map<string, pair<string, string>> &param_type,
-                          const vector<string> &insert_order,
-                          const pair<string, string> &return_type);
 
-    void generateConstructorTest(string constructor_name,
-                                 map<string, string> param_type,
-                                 vector<string> insert_order);
+	void generateConstructorTest(const string &ctorName,
+								const vector<InfoVariable> &params);
 
 private:
     string f_Name;
