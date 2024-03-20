@@ -3,7 +3,7 @@ using std::string;
 
 InfoType::InfoType(const clang::QualType &type)
     : original(type.getCanonicalType().getAsString()), formatted(),
-      isRecord_(false), isEnum_(false), recordFields() {
+      isRecord_(false), isEnum_(false), recordFields(), type(&type) {
     if (InfoType::isExcludedType(original)) {
         original = InfoType::excludedTypes.at(original);
     } else if (const CXXRecordDecl *record = type->getAsCXXRecordDecl()) {
@@ -11,11 +11,10 @@ InfoType::InfoType(const clang::QualType &type)
         string original = record->getQualifiedNameAsString();
         if (original.find("anonymous") != string::npos)
             original = record->getTypedefNameForAnonDecl()->getNameAsString();
-		copy_if(record->fields().begin(), record->fields().end(),
-                back_inserter(recordFields),
-                [](const FieldDecl *field) { 
-					return field->getAccess() == AS_public;
-				});
+        copy_if(record->fields().begin(), record->fields().end(),
+                back_inserter(recordFields), [](const FieldDecl *field) {
+                    return field->getAccess() == AS_public;
+                });
 
     } else if (const Type *unqualified =
                    type.getUnqualifiedType().getTypePtrOrNull()) {
@@ -37,8 +36,8 @@ InfoType::InfoType(const clang::QualType &type)
 }
 
 InfoType::InfoType(const string &original)
-    : original(original), formatted(original), isRecord_(false),
-      isEnum_(false) {
+    : original(original), formatted(original), isRecord_(false), isEnum_(false),
+      recordFields(), type(nullptr) {
     removeTypeQualifiers(this->original);
     this->formatted = cleanUnnecesaryChars(this->original);
     replaceTypeCharacters(this->formatted);
@@ -46,7 +45,7 @@ InfoType::InfoType(const string &original)
 
 InfoType::InfoType(const string &original, const string &formatted)
     : original(original), formatted(formatted), isRecord_(false),
-      isEnum_(false) {
+      isEnum_(false), recordFields(), type(nullptr) {
     removeTypeQualifiers(this->original);
 }
 

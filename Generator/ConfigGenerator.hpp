@@ -28,13 +28,16 @@ public:
                           const vector<InfoVariable> &params,
                           const InfoType &returnType);
 
-	void generateConstructorTest(const string &ctorName,
-								const vector<InfoVariable> &params);
+    void generateConstructorTest(const string &ctorName,
+                                 const vector<InfoVariable> &params);
 
 private:
     string f_Name;
-
     ofstream cfg_file;
+
+    void generateParams(const vector<InfoVariable> &params);
+    void generateReturn(const InfoType &returnType);
+    void generateParam(const InfoVariable &param);
 
     // Const default values. They will be deleted in future iterations, where
     // the default values will be calculated during execution.
