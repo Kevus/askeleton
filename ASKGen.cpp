@@ -1,76 +1,5 @@
 #include "ASKGen.hpp"
 
-string format_return_type(const QualType &type) {
-    string formatted = type.getCanonicalType().getAsString();
-    replaceAll(formatted, "*", "s");
-    return cleanUnnecesaryChars(formatted);
-}
-
-// TODO: revisar eficiencia
-void get_full_parameters(const ArrayRef<ParmVarDecl *> &original_parameters,
-                         map<string, pair<string, string>> &mapped_parameters,
-                         vector<string> &ordered_parameters,
-                         vector<const CXXRecordDecl *> &records,
-                         vector<const EnumDecl *> &enums,
-                         vector<pair<string, string>> &pointers) {
-
-    unsigned noname_count = 0;
-    for (ParmVarDecl *i : original_parameters) {
-        // QualType type = i->getType();
-        QualType originalType = i->getOriginalType();
-
-        // Heredia: usando el canonical type en vez de el original type para NEO
-        string tmp_type = originalType.getCanonicalType().getAsString();
-        string tmp_name = i->getQualifiedNameAsString();
-        replaceAll(tmp_type, "struct ", "");
-
-        if (tmp_name == "")
-            tmp_name = tmp_type + "_" + to_string(noname_count++);
-        string formatted_type = cleanUnnecesaryChars(tmp_type);
-
-        if (originalType->isPointerType()) {
-            replaceAll(formatted_type, "*", "s");
-            pointers.push_back({tmp_type, formatted_type});
-        } else if (const RecordType *recordType =
-                       originalType->getAs<RecordType>()) {
-            records.push_back(cast<CXXRecordDecl>(recordType->getDecl()));
-            // TODO: eliminar
-            // Por ahora, evitamos que se generen nuevos tipos con las
-            // estructuras
-            // formatted_type = "struct_" + formatted_type;
-        } else if (const Type *unqualifiedType =
-                       originalType.getUnqualifiedType().getTypePtrOrNull()) {
-            if (const EnumType *enumType = unqualifiedType->getAs<EnumType>())
-                enums.push_back(enumType->getDecl());
-        }
-
-        mapped_parameters.insert(
-            make_pair(tmp_name, make_pair(tmp_type, formatted_type)));
-        ordered_parameters.push_back(tmp_name);
-    }
-}
-
-void get_parameters(const ArrayRef<ParmVarDecl *> &parameters,
-                    std::map<string, string> &param_types,
-                    std::vector<string> &insert_order) {
-
-    unsigned noname_count = 0;
-    for (ParmVarDecl *i : parameters) {
-        // Heredia: usando el canonical type en vez de el original type para NEO
-        // tmp_type = i->getOriginalType().getAsString();
-        string tmp_type = i->getOriginalType().getCanonicalType().getAsString();
-        string tmp_name = i->getQualifiedNameAsString();
-
-        if (tmp_name == "")
-            tmp_name = tmp_type + "_" + to_string(noname_count++);
-
-        tmp_type = cleanUnnecesaryChars(tmp_type);
-
-        param_types.insert(make_pair(tmp_name, tmp_type));
-        insert_order.push_back(tmp_name);
-    }
-}
-
 void ASKGen::run(const MatchFinder::MatchResult &Result) {
     apply_FD1(Result);
     apply_MD1(Result);
@@ -518,9 +447,9 @@ void ASKGen::generateConstructorTest(string source, string constructor_name,
     // bGen.generateBoostConstructorAssert(source, constructor_name,
     //                                     constructor_cfg_name, param_type,
     //                                     insert_order);
-	cfg_gen.generateConstructorTest(constructor_cfg_name, parameters);
-	bGen.generateBoostConstructorAssert(source, constructor_name,
-										constructor_cfg_name, parameters);
+    cfg_gen.generateConstructorTest(constructor_cfg_name, parameters);
+    bGen.generateBoostConstructorAssert(source, constructor_name,
+                                        constructor_cfg_name, parameters);
 }
 
 void ASKGen::generateEnumTypeFixture(string source,
@@ -701,6 +630,58 @@ vector<string> ASKGen::obtainTestData(string type, string value) {
 
     return result;
 }
+
+// string format_return_type(const QualType &type) {
+//     string formatted = type.getCanonicalType().getAsString();
+//     replaceAll(formatted, "*", "s");
+//     return cleanUnnecesaryChars(formatted);
+// }
+
+// // TODO: revisar eficiencia
+// void get_full_parameters(const ArrayRef<ParmVarDecl *> &original_parameters,
+//                          map<string, pair<string, string>>
+//                          &mapped_parameters, vector<string>
+//                          &ordered_parameters, vector<const CXXRecordDecl *>
+//                          &records, vector<const EnumDecl *> &enums,
+//                          vector<pair<string, string>> &pointers) {
+
+//     unsigned noname_count = 0;
+//     for (ParmVarDecl *i : original_parameters) {
+//         // QualType type = i->getType();
+//         QualType originalType = i->getOriginalType();
+
+//         // Heredia: usando el canonical type en vez de el original type para
+//         NEO string tmp_type = originalType.getCanonicalType().getAsString();
+//         string tmp_name = i->getQualifiedNameAsString();
+//         replaceAll(tmp_type, "struct ", "");
+
+//         if (tmp_name == "")
+//             tmp_name = tmp_type + "_" + to_string(noname_count++);
+//         string formatted_type = cleanUnnecesaryChars(tmp_type);
+
+//         if (originalType->isPointerType()) {
+//             replaceAll(formatted_type, "*", "s");
+//             pointers.push_back({tmp_type, formatted_type});
+//         } else if (const RecordType *recordType =
+//                        originalType->getAs<RecordType>()) {
+//             records.push_back(cast<CXXRecordDecl>(recordType->getDecl()));
+//             // TODO: eliminar
+//             // Por ahora, evitamos que se generen nuevos tipos con las
+//             // estructuras
+//             // formatted_type = "struct_" + formatted_type;
+//         } else if (const Type *unqualifiedType =
+//                        originalType.getUnqualifiedType().getTypePtrOrNull())
+//                        {
+//             if (const EnumType *enumType =
+//             unqualifiedType->getAs<EnumType>())
+//                 enums.push_back(enumType->getDecl());
+//         }
+
+//         mapped_parameters.insert(
+//             make_pair(tmp_name, make_pair(tmp_type, formatted_type)));
+//         ordered_parameters.push_back(tmp_name);
+//     }
+// }
 
 // // General method for testing functions
 // void ASKGen::generateFunctionTest(string source_file, string function_name,

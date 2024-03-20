@@ -68,6 +68,38 @@ ConfigGenerator::ConfigGenerator(string f_Name) : f_Name(f_Name) {
         cfg_file << comment_header;
 }
 
+void ConfigGenerator::generateParams(const vector<InfoVariable> &params) {
+    for (const InfoVariable &param : params)
+        generateParam(param);
+}
+
+void ConfigGenerator::generateReturn(const InfoType &returnType) {
+    cfg_file << "\treturn_"
+             << (returnType.isContainer()
+                     ? extractSubstringUntilCharacter(returnType.formatted, '<')
+                     : returnType.formatted)
+             << "=" << rvg.getRandomValue(returnType.formatted) << ";#"
+             << returnType.original << "\n";
+}
+
+void ConfigGenerator::generateParam(const InfoVariable &param) {
+    const string &original = param.original, &name = param.name;
+    string value = rvg.getRandomValue(param.formatted);
+
+    cfg_file << "\t";
+    if (param.isRecord()) {
+        for (const InfoVariable &field : param.getRecordFields()) {
+            cfg_file << name << "." << field.name << "="
+                     << rvg.getRandomValue(field.formatted) << ";#"
+                     << field.original << "\n";
+        }
+    } else if (param.isPointer() || param.isReference()) {
+        cfg_file << name << "_input=" << value << ";#" << original << "\n\t"
+                 << name << "_output=" << value << ";#" << original << "\n";
+    } else
+        cfg_file << name << "=" << value << ";#" << original << "\n";
+}
+
 void ConfigGenerator::generateTestCase(const string &functionName,
                                        const vector<InfoVariable> &params,
                                        const InfoType &returnType) {
@@ -75,38 +107,19 @@ void ConfigGenerator::generateTestCase(const string &functionName,
         return;
 
     cfg_file << functionName << ":\n{\n";
-    for (const InfoVariable &param : params) {
-        const string &original = param.original, &name = param.name;
-        string value = rvg.getRandomValue(param.formatted);
-        cfg_file << "\t";
-        if (param.isPointer() || param.isReference()) {
-            cfg_file << name << "_input=" << value << ";#" << original << "\n\t"
-                     << name << "_output=" << value << ";#" << original << "\n";
-        } else
-            cfg_file << name << "=" << value << ";#" << original << "\n";
-    }
-
-    cfg_file << "\treturn_"
-			 << (returnType.isContainer() ? 
-				extractSubstringUntilCharacter(returnType.formatted, '<') : 
-				returnType.formatted)
-             << "=" << rvg.getRandomValue(returnType.formatted) << ";#"
-             << returnType.original << "\n};\n\n";
+    generateParams(params);
+    generateReturn(returnType);
+    cfg_file << "};\n\n";
 }
 
-void ConfigGenerator::generateConstructorTest(const string &ctorName,
-                                              const vector<InfoVariable> &params) {
-    if (cfg_file.is_open()) {
-        cfg_file << ctorName << ":\n{\n";
+void ConfigGenerator::generateConstructorTest(
+    const string &ctorName, const vector<InfoVariable> &params) {
+    if (!cfg_file.is_open())
+        return;
 
-		for (const InfoVariable &param : params) {
-			const string &original = param.original, &name = param.name;
-			string value = rvg.getRandomValue(param.formatted);
-			cfg_file << "\t" << name << "=" << value << ";#" << original << "\n";
-		}
-
-        cfg_file << "};\n\n";
-    }
+    cfg_file << ctorName << ":\n{\n";
+    generateParams(params);
+    cfg_file << "};\n\n";
 }
 
 // ##############################################################
