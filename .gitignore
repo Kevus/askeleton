@@ -1,4 +1,5 @@
-**/Examples
+**/Examples/klee*
+**/Examples/tinyxml2
 **/Generated
 *.o
 .vscode/
