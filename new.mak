@@ -1,5 +1,5 @@
 CXX := clang++-15
-CXXFLAGS := -g -I/usr/lib/llvm-15/include -fPIC -fvisibility-inlines-hidden -Werror=date-time -std=c++20 -Wall -W -Wno-unused-parameter -Wwrite-strings -Wcast-qual -Wno-missing-field-initializers -pedantic -Wno-long-long -Wno-uninitialized -Wdelete-non-virtual-dtor -Wno-comment -ffunction-sections -fdata-sections -O2 -DNDEBUG -fno-exceptions -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -Iinclude/ -I.
+CXXFLAGS := -g -I/usr/lib/llvm-15/include -fPIC -fvisibility-inlines-hidden -Werror=date-time -std=c++20 -Wall -W -Wno-unused-parameter -Wwrite-strings -Wcast-qual -Wno-missing-field-initializers -pedantic -Wno-long-long -Wno-uninitialized -Wdelete-non-virtual-dtor -Wno-comment -ffunction-sections -fdata-sections -O2 -DNDEBUG -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -Iinclude/ -I.
 LLVMLDFLAGS := $(shell llvm-config-15 --ldflags --system-libs --libs) $(LDFLAGS)
 
 SOURCES := $(wildcard *.cpp) $(wildcard src/*.cpp) $(wildcard Generator/*.cpp)

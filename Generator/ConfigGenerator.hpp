@@ -38,6 +38,10 @@ private:
     void generateParams(const vector<InfoVariable> &params);
     void generateReturn(const InfoType &returnType);
     void generateParam(const InfoVariable &param);
+    void generateParamRecord(const InfoVariable &record,
+                             const string &prefix = "");
+    void generateReturnRecord(const InfoType &record,
+                              const string &prefix = "return_");
 
     // Const default values. They will be deleted in future iterations, where
     // the default values will be calculated during execution.
