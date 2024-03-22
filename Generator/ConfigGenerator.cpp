@@ -74,12 +74,15 @@ void ConfigGenerator::generateParams(const vector<InfoVariable> &params) {
 }
 
 void ConfigGenerator::generateReturn(const InfoType &returnType) {
-    cfg_file << "\treturn_"
-             << (returnType.isContainer()
-                     ? extractSubstringUntilCharacter(returnType.formatted, '<')
-                     : returnType.formatted)
-             << "=" << rvg.getRandomValue(returnType.formatted) << ";#"
-             << returnType.original << "\n";
+    if (returnType.isRecord())
+        generateReturnRecord(returnType);
+    else
+        cfg_file << "\treturn_"
+                 << (returnType.isContainer() ? extractSubstringUntilCharacter(
+                                                    returnType.formatted, '<')
+                                              : returnType.formatted)
+                 << "=" << rvg.getRandomValue(returnType.formatted) << ";#"
+                 << returnType.original << "\n";
 }
 
 void ConfigGenerator::generateParam(const InfoVariable &param) {
@@ -98,6 +101,34 @@ void ConfigGenerator::generateParam(const InfoVariable &param) {
                  << name << "_output=" << value << ";#" << original << "\n";
     } else
         cfg_file << name << "=" << value << ";#" << original << "\n";
+}
+
+void ConfigGenerator::generateParamRecord(const InfoVariable &record,
+                                          const string &prefix) {
+    const string &name = prefix + record.name;
+
+    for (const InfoVariable &field : record.getRecordFields()) {
+        if (field.isRecord())
+            generateParamRecord(field, name + ".");
+        else
+            cfg_file << "\t" << name << "." << field.name << "="
+                     << rvg.getRandomValue(field.formatted) << ";#"
+                     << field.original << "\n";
+    }
+}
+
+void ConfigGenerator::generateReturnRecord(const InfoType &record,
+                                           const string &prefix) {
+    const string &name = prefix + record.formatted;
+
+    for (const InfoVariable &field : record.getRecordFields()) {
+        if (field.isRecord())
+            generateReturnRecord(field, name + ".");
+        else
+            cfg_file << "\t" << name << "." << field.name << "="
+                     << rvg.getRandomValue(field.formatted) << ";#"
+                     << field.original << "\n";
+    }
 }
 
 void ConfigGenerator::generateTestCase(const string &functionName,
