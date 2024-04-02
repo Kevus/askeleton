@@ -74,7 +74,7 @@ void ConfigGenerator::generateParams(const vector<InfoVariable> &params) {
 }
 
 void ConfigGenerator::generateReturn(const InfoType &returnType) {
-    if (returnType.isRecord())
+    if (returnType.isRecord() && !returnType.isContainer())
         generateReturnRecord(returnType);
     else
         cfg_file << "\treturn_"
@@ -90,7 +90,7 @@ void ConfigGenerator::generateParam(const InfoVariable &param) {
     string value = rvg.getRandomValue(param.formatted);
 
     cfg_file << "\t";
-    if (param.isRecord()) {
+    if (param.isRecord() && !param.isContainer()) {
         for (const InfoVariable &field : param.getRecordFields()) {
             cfg_file << name << "." << field.name << "="
                      << rvg.getRandomValue(field.formatted) << ";#"
@@ -99,8 +99,9 @@ void ConfigGenerator::generateParam(const InfoVariable &param) {
     } else if (param.isPointer() || param.isReference()) {
         cfg_file << name << "_input=" << value << ";#" << original << "\n\t"
                  << name << "_output=" << value << ";#" << original << "\n";
-    } else
+    } else {
         cfg_file << name << "=" << value << ";#" << original << "\n";
+    }
 }
 
 void ConfigGenerator::generateParamRecord(const InfoVariable &record,
