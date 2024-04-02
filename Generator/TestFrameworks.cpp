@@ -837,31 +837,39 @@ void BoostGenerator::addRecordReadToFixture(const InfoType &type) {
     stringstream overloadedOperators, readMethod;
 
     readMethod << type.original << " Read_" << type.formatted
-               << "(string objectKey)\n\t{\n"
-               << "\t\tstring object = readObject(objectKey);\n"
-               << "\t\tboost::replace_all(object, \";\", \"\");\n"
-               << "\t\tvector<string> values;\n\n"
-               << "\t\tauto delimiter = object.find(\",\");\n"
-               << "\t\twhile( delimiter != string::npos )\n\t\t{\n"
-               << "\t\t\tauto key = object.substr(0, delimiter);\n"
-               << "\t\t\tobject = object.substr(delimiter + 1);\n\n"
-               << "\t\t\tvalues.push_back(key);\n\n"
-               << "\t\t\tdelimiter = object.find(\",\");\n\t\t}\n"
-               << "\t\tvalues.push_back(object);\n\n";
+               << "(string objectKey)\n\t{\n\t\t" << type.original
+               << " result;\n\n";
 
-    readMethod << "\t\t" << type.original << " result;\n";
+    // readMethod << type.original << " Read_" << type.formatted
+    //            << "(string objectKey)\n\t{\n"
+    //            << "\t\tstring object = readObject(objectKey);\n"
+    //            << "\t\tboost::replace_all(object, \";\", \"\");\n"
+    //            << "\t\tvector<string> values;\n\n"
+    //            << "\t\tauto delimiter = object.find(\",\");\n"
+    //            << "\t\twhile( delimiter != string::npos )\n\t\t{\n"
+    //            << "\t\t\tauto key = object.substr(0, delimiter);\n"
+    //            << "\t\t\tobject = object.substr(delimiter + 1);\n\n"
+    //            << "\t\t\tvalues.push_back(key);\n\n"
+    //            << "\t\t\tdelimiter = object.find(\",\");\n\t\t}\n"
+    //            << "\t\tvalues.push_back(object);\n\n";
 
-    unsigned pos = 0;
-    unsigned size = fields.size();
+    // readMethod
+    //        << "\t\t" << type.original << " result;\n";
 
-    readMethod << "\t\tif( values.size() >= " << size << ")\n\t\t{\n";
+    // unsigned pos = 0;
+    // unsigned size = fields.size();
+
+    // readMethod << "\t\tif( values.size() >= " << size << ")\n\t\t{\n";
 
     for (const InfoVariable &field : fields) {
-        readMethod << "\t\t\tresult." << field.name << " = "
-                   << "values[" << pos++ << "];\n";
+        // readMethod << "\t\t\tresult." << field.name << " = "
+        //            << "values[" << pos++ << "];\n";
+        readMethod << "\t\tresult." << field.name << " = "
+                   << "Read_" << field.formatted << "(objectKey + \"."
+                   << field.name << "\");\n";
     }
 
-    readMethod << "\t\t}\n\n\t\treturn result;\n\t}\n\t";
+    readMethod << "\n\t\treturn result;\n\t}\n\t";
 
     // TODO: Check if overload is needed
     // Overloading equality
@@ -869,7 +877,7 @@ void BoostGenerator::addRecordReadToFixture(const InfoType &type) {
                         << "& a, const " << type.original << "& b)\n{\n"
                         << "\tbool result = true;\n";
 
-    if (size > 0) {
+    if (!fields.empty()) {
         overloadedOperators << "\tresult = (";
         for (const InfoVariable &field : fields) {
             overloadedOperators << "a." << field.name << " == b." << field.name;
@@ -887,16 +895,17 @@ void BoostGenerator::addRecordReadToFixture(const InfoType &type) {
     overloadedOperators << "ostream& operator<<(ostream& stream, "
                         << "const " << type.original << "& a)\n{\n";
 
-    if (size > 0) {
-		overloadedOperators << "\tstream << \"{\\n\";\n";
+    if (!fields.empty()) {
+        overloadedOperators << "\tstream << \"{\\n\";\n";
         for (const InfoVariable &field : fields) {
-            overloadedOperators << "\tstream << \"\\t" << field.name << ": \" << a." << field.name
+            overloadedOperators << "\tstream << \"\\t" << field.name
+                                << ": \" << a." << field.name
                                 << " << \"\\n\";\n";
         }
-		overloadedOperators << "\tstream << \"}\\n\";\n";
+        overloadedOperators << "\tstream << \"}\";\n";
     } else {
-		overloadedOperators << "\tstream << \"{}\";\n";
-	}
+        overloadedOperators << "\tstream << \"{}\";\n";
+    }
 
     overloadedOperators << "\n\treturn stream;\n}\n";
 
