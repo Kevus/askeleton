@@ -2,61 +2,66 @@
 #define CONFIGGENERATOR_HPP
 
 #include "../auxiliary_functions.hpp"
+#include "VariableInfo.hpp"
 
-#include <vector>
 #include <map>
+#include <vector>
 
-#include <stdio.h>
 #include <filesystem>
+#include <stdio.h>
 
 #include "RandomValuesGenerator.hpp"
 
 using namespace std;
 
-class ConfigGenerator
-{
+class ConfigGenerator {
 public:
+    ConfigGenerator(string f_Name = "ASKGeneratedTestsConfig");
+    ~ConfigGenerator() {
+        if (cfg_file.is_open())
+            cfg_file.close();
+    }
 
-	ConfigGenerator(string f_Name = "ASKGeneratedTestsConfig");
-	~ConfigGenerator(){
-		if(cfg_file.is_open()) 
-			cfg_file.close();
-	}
+    vector<string> getGenerated();
 
-	void generateTestCases();
-	vector<string> getGenerated();
+    void generateTestCase(const string &functionName,
+                          const vector<InfoVariable> &params,
+                          const InfoType &returnType);
 
-	void generateTestCase(string funct_name, map<string, string> param_type, 
-		vector<string> insert_order, string return_type);
-
-	void generateConstructorTest(string constructor_name, map<string, string> param_type,
-		vector<string> insert_order);
+    void generateConstructorTest(const string &ctorName,
+                                 const vector<InfoVariable> &params);
 
 private:
+    string f_Name;
+    ofstream cfg_file;
 
-	string f_Name;
+    void generateParams(const vector<InfoVariable> &params);
+    void generateReturn(const InfoType &returnType);
+    void generateParam(const InfoVariable &param);
+    void generateParamRecord(const InfoVariable &record,
+                             const string &prefix = "");
+    void generateReturnRecord(const InfoType &record,
+                              const string &prefix = "return_");
 
-	ofstream cfg_file;
+    // Const default values. They will be deleted in future iterations, where
+    // the default values will be calculated during execution.
+    static map<string, string> defaultValues;
 
-	//Const default values. They will be deleted in future iterations, where
-	//the default values will be calculated during execution.
-	static map<string, string> defaultValues;
-
-	//TEST
-	RandomValuesGenerator rvg;
+    // TEST
+    RandomValuesGenerator rvg;
 };
 
 /*class TestDataGenerator
 {
 public:
-	TestDataGenerator(string outputPath);
+    TestDataGenerator(string outputPath);
 
 
 
 private:
-	void createFile(string outputPath);
+    void createFile(string outputPath);
 
-	map<string, string> method_value; //map<"method.param.type", "value">
+    map<string, string> method_value; //map<"method.param.type", "value">
 };*/
 
 #endif
