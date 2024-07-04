@@ -1,6 +1,7 @@
 #pragma once
 
 #include "auxiliary_functions.hpp"
+#include "clang/AST/Type.h"
 
 #include <map>
 #include <string>
@@ -26,7 +27,7 @@ struct InfoType {
     std::vector<InfoVariable> getRecordFields() const;
 
     std::string original, formatted;
-    const clang::QualType *type;
+    const clang::QualType type;
 
 protected:
     static const std::map<std::string, std::string> excludedTypes;

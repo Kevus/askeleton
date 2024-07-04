@@ -389,6 +389,8 @@ void ASKGen::generateFunctionTest(string sourceFile,
     // Checking if the parameters are supported
     for (const InfoType &param : parameters)
         bGen.generateCustomTypeFixture(sourceFile, param);
+
+    // Checking if the return type is supported
     bGen.generateCustomTypeFixture(sourceFile, returnType);
 
     cfg_gen.generateTestCase(functionName, parameters, returnType);

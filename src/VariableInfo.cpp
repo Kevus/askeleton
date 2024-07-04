@@ -2,8 +2,8 @@
 using std::string;
 
 InfoType::InfoType(const clang::QualType &type)
-    : original(type.getCanonicalType().getAsString()), formatted(),
-      isRecord_(false), isEnum_(false), recordFields(), type(&type) {
+    : original(type.getCanonicalType().getAsString()), formatted(), type(type),
+      isRecord_(false), isEnum_(false), recordFields() {
     if (InfoType::isExcludedType(original)) {
         original = InfoType::excludedTypes.at(original);
     } else if (const CXXRecordDecl *record = type->getAsCXXRecordDecl()) {
@@ -36,16 +36,16 @@ InfoType::InfoType(const clang::QualType &type)
 }
 
 InfoType::InfoType(const string &original)
-    : original(original), formatted(original), isRecord_(false), isEnum_(false),
-      recordFields(), type(nullptr) {
+    : original(original), formatted(original), type(), isRecord_(false),
+      isEnum_(false), recordFields() {
     removeTypeQualifiers(this->original);
     this->formatted = cleanUnnecesaryChars(this->original);
     replaceTypeCharacters(this->formatted);
 }
 
 InfoType::InfoType(const string &original, const string &formatted)
-    : original(original), formatted(formatted), isRecord_(false),
-      isEnum_(false), recordFields(), type(nullptr) {
+    : original(original), formatted(formatted), type(), isRecord_(false),
+      isEnum_(false), recordFields() {
     removeTypeQualifiers(this->original);
 }
 
@@ -62,15 +62,86 @@ bool InfoType::isRecord() const { return isRecord_; }
 bool InfoType::isEnum() const { return isEnum_; }
 
 InfoType InfoType::getUnderlyingType() const {
-    if (!isReference() && !isPointer())
-        return *this;
+    if (type.isNull()) {
+        std::string original = this->original;
+        std::string formatted = this->formatted;
+        removeAll(original, {" *", "&"});
+        removeAll(formatted, {"_s", "_r"});
 
-    string original = this->original, formatted = this->formatted;
-    removeAll(original, {" *", "&"});
-    removeAll(formatted, {"_s", "_r"});
+        return {original, formatted};
+    }
 
-    return {original, formatted};
+    if (type->isPointerType() || type->isReferenceType())
+        return {type->getPointeeType()};
+
+    return *this;
+
+    // const clang::Type *rawType = type.getTypePtrOrNull();
+    // if (rawType == nullptr) {
+    //     std::cerr << "Error: rawType es nullptr" << std::endl;
+    //     return *this;
+    // }
+
+    // std::cout << "rawType no es nullptr" << std::endl;
+
+    // clang::QualType qualType = type.getUnqualifiedType();
+
+    // if (qualType.isNull()) {
+    //     std::cerr << "Error: qualType es nulo después de
+    //     getUnqualifiedType()"
+    //               << std::endl;
+    //     return *this;
+    // }
+
+    // std::cout << "Gola 3" << std::endl;
+
+    // // Depuración: imprimir el tipo canónico
+    // std::cout << "El tipo es: " << qualType.getAsString() << std::endl;
+    // std::cout << "Canonical type: " <<
+    // qualType.getCanonicalType().getAsString()
+    //           << std::endl;
+
+    // // Verifica si es un puntero
+    // bool isPointer = qualType->isPointerType();
+    // std::cout << "isPointerType: " << isPointer << std::endl;
+
+    // if (isPointer) {
+    //     clang::QualType pointeeType = qualType->getPointeeType();
+    //     std::cout << "Es puntero. Pointee type: " <<
+    //     pointeeType.getAsString()
+    //               << std::endl;
+    //     return InfoType(pointeeType);
+    // }
+
+    // // Verifica si es una referencia
+    // bool isReference = qualType->isReferenceType();
+    // std::cout << "isReferenceType: " << isReference << std::endl;
+
+    // if (isReference) {
+    //     clang::QualType pointeeType = qualType->getPointeeType();
+    //     std::cout << "Es referencia. Pointee type: "
+    //               << pointeeType.getAsString() << std::endl;
+    //     return InfoType(pointeeType);
+    // }
+
+    // // Retorna el objeto actual si no es un puntero ni una referencia
+    // return *this;
 }
+
+// clang::QualType underlying = *type;
+
+// if (isPointer() || isReference())
+//     underlying = underlying->getPointeeType();
+
+// return {underlying};
+// if (!isReference() && !isPointer())
+//     return *this;
+
+// string original = this->original, formatted = this->formatted;
+// removeAll(original, {" *", "&"});
+// removeAll(formatted, {"_s", "_r"});
+
+// return {original, formatted};
 
 string InfoType::formatType(const string &name) {
     string formatted = cleanUnnecesaryChars(name);
