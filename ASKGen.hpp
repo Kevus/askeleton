@@ -3,8 +3,10 @@
 
 #include "Generator/ConfigGenerator.hpp"
 #include "Generator/CustomGenerator.hpp"
-#include "Generator/Framework/Generator.hpp"
 #include "Generator/TestFrameworks.hpp"
+#include "framework/Generator.hpp"
+
+#include "framework/BoostGen.hpp"
 
 #include "auxiliary_functions.hpp"
 
@@ -40,6 +42,36 @@ private:
     void apply_DG1(const MatchFinder::MatchResult &Result);
     void apply_DG2(const MatchFinder::MatchResult &Result);
 
+    void generateReadMethod(Generator &testGen,
+                            const std::vector<InfoVariable> &variables);
+    void generateReadMethod(Generator &testGen,
+                            const std::vector<InfoType> &types);
+    void generateReadMethod(Generator &testGen, const InfoVariable &variable);
+    void generateReadMethod(Generator &testGen, const InfoType &type);
+
+    std::vector<InfoVariable>
+    getParameters(const std::vector<ParmVarDecl *> &params);
+
+    void generateTest(Generator &, ConfigGenerator &, const FunctionDecl *UT);
+    void generateTest(Generator &, ConfigGenerator &, const CXXMethodDecl *UT);
+    void generateTest(Generator &, ConfigGenerator &,
+                      const CXXConstructorDecl *UT);
+
+    std::shared_ptr<Generator> getGenerator(const std::string &target,
+                                            const std::string &filePath,
+                                            bool isFromClass = false);
+
+    void generateTestData(string source, string function_name, string param,
+                          string type, string value);
+    vector<string> obtainTestData(string type, string value);
+
+    map<string, int> function_occurrences;
+
+    std::map<std::string, std::shared_ptr<Generator>> generators;
+
+    /**
+     * TODO: eliminar todo lo que continua
+     */
     void generateFunctionTest(string source_file, string function_name,
                               ArrayRef<ParmVarDecl *> parameters,
                               QualType return_type, BoostGenerator bGen);
@@ -63,14 +95,6 @@ private:
     void generateEnumTypeFixture(string source,
                                  const pair<string, string> &type,
                                  BoostGenerator &bGen);
-
-    void generateTestData(string source, string function_name, string param,
-                          string type, string value);
-    vector<string> obtainTestData(string type, string value);
-
-    map<string, int> function_occurrences;
-
-    std::map<std::string, std::shared_ptr<Generator>> generators;
 
     // string convertExpressionToString(Expr *E, SourceManager &SM);
     // bool isInParameters(string name, ArrayRef<ParmVarDecl *> params, string&

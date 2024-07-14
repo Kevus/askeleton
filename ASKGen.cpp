@@ -1,5 +1,19 @@
 #include "ASKGen.hpp"
 
+void printDebugInfo(const vector<InfoVariable> &parameters,
+                    const InfoType &returnType) {
+    cout << "--------------\n";
+    unsigned i = 0;
+    cout << "Params list: (";
+    for (const auto &param : parameters) {
+        cout << i++ << " - " << param.original << " " << param.name;
+        if (&param != &parameters.back())
+            cout << ", ";
+    }
+
+    cout << ")\nReturn type: " << returnType.original << "\n";
+}
+
 void ASKGen::run(const MatchFinder::MatchResult &Result) {
     apply_FD1(Result);
     apply_MD1(Result);
@@ -28,19 +42,12 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
             if (!isa<CXXMethodDecl>(UT)) {
 
                 // Get the file name
-                string source_file = Context->getSourceManager()
-                                         .getFilename(UT->getBeginLoc())
-                                         .str();
-                unsigned first = source_file.find_last_of('/') + 1;
-                unsigned last = source_file.find_last_of('.');
+                string filePath = Context->getSourceManager()
+                                      .getFilename(UT->getBeginLoc())
+                                      .str();
+                string fileName = extractFileName(filePath);
+                string target = fileName;
 
-                string filename = source_file.substr(first, last - first);
-
-                // TO-DO: MODIFICAR PARA AÑADIR MAS O MENOS FRAMEWORKS
-                BoostGenerator bGen(source_file, filename, false);
-                generateFunctionTest(filename, UT->getName().str(),
-                                     UT->parameters(), UT->getReturnType(),
-                                     bGen);
                 // Print auxiliary
                 // ======================================================================
                 llvm::outs() << "Found FunctionDecl at "
@@ -48,9 +55,19 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
                              << FullLocation.getSpellingColumnNumber() << " - ";
 
                 llvm::outs() << UT->getNameInfo().getAsString() << " in file "
-                             << filename << "\n";
+                             << fileName << "\n";
                 // Print auxiliary
                 // ======================================================================
+
+                // TO-DO: MODIFICAR PARA AÑADIR MAS O MENOS FRAMEWORKS
+                // BoostGenerator bGen(source_file, filename, false);
+                // generateFunctionTest(filename, UT->getName().str(),
+                //                      UT->parameters(), UT->getReturnType(),
+                //                      bGen);
+
+                auto generator = getGenerator(target, filePath, false);
+                ConfigGenerator configGenerator(filePath);
+                generateTest(*generator, configGenerator, UT);
             }
         }
     }
@@ -77,10 +94,10 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
                 string parentname = UT->getParent()->getName().str();
 
                 // TO-DO: MODIFICAR PARA AÑADIR MAS O MENOS FRAMEWORKS
-                BoostGenerator bGen(source_file, parentname, true);
-                generateFunctionTest(parentname, UT->getName().str(),
-                                     UT->parameters(), UT->getReturnType(),
-                                     bGen);
+                // BoostGenerator bGen(source_file, parentname, true);
+                // generateFunctionTest(parentname, UT->getName().str(),
+                //                      UT->parameters(), UT->getReturnType(),
+                //                      bGen);
 
                 // Print auxiliary
                 // ======================================================================
@@ -92,6 +109,10 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
                              << " from class " << parentname << "\n";
                 // Print auxiliary
                 // ======================================================================
+
+                auto generator = getGenerator(parentname, source_file, true);
+                ConfigGenerator configGenerator(source_file);
+                generateTest(*generator, configGenerator, UT);
             }
         }
     }
@@ -192,10 +213,10 @@ void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
             string parentname = UT->getParent()->getName().str();
 
             // TO-DO: MODIFICAR PARA AÑADIR MAS O MENOS FRAMEWORKS
-            BoostGenerator bGen(source_file, parentname, true);
+            // BoostGenerator bGen(source_file, parentname, true);
 
-            generateConstructorTest(parentname, parentname, UT->parameters(),
-                                    bGen);
+            // generateConstructorTest(parentname, parentname, UT->parameters(),
+            //                         bGen);
 
             // Print auxiliary
             // ======================================================================
@@ -207,6 +228,10 @@ void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
                          << parentname << "\n";
             // Print auxiliary
             // ======================================================================
+
+            auto generator = getGenerator(parentname, source_file, true);
+            ConfigGenerator configGenerator(source_file);
+            generateTest(*generator, configGenerator, UT);
         }
     }
 }
@@ -344,6 +369,130 @@ void ASKGen::apply_DG2(const MatchFinder::MatchResult &Result) {
         }
     }
 }
+
+void ASKGen::generateReadMethod(Generator &testGen,
+                                const std::vector<InfoVariable> &variables) {
+    for (const auto &variable : variables) {
+        generateReadMethod(testGen, variable);
+    }
+}
+
+void ASKGen::generateReadMethod(Generator &testGen,
+                                const std::vector<InfoType> &types) {
+    for (const auto &type : types) {
+        generateReadMethod(testGen, type);
+    }
+}
+
+void ASKGen::generateReadMethod(Generator &testGen,
+                                const InfoVariable &variable) {
+    testGen.createTypeReadToFixture(variable);
+}
+
+void ASKGen::generateReadMethod(Generator &testGen, const InfoType &type) {
+    testGen.createTypeReadToFixture(type);
+}
+
+std::shared_ptr<Generator> ASKGen::getGenerator(const std::string &target,
+                                                const std::string &filePath,
+                                                bool isFromClass) {
+
+    auto pos = generators.find(target);
+
+    if (pos == generators.end()) {
+        auto generator =
+            std::make_shared<BoostGen>(target, filePath, isFromClass);
+        generators.insert({target, generator});
+        return generator;
+    }
+
+    return pos->second;
+}
+
+std::vector<InfoVariable>
+ASKGen::getParameters(const std::vector<ParmVarDecl *> &params) {
+    std::vector<InfoVariable> parameters;
+    std::transform(params.begin(), params.end(), std::back_inserter(parameters),
+                   [](const ParmVarDecl *param) { return param; });
+    return parameters;
+}
+
+void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
+                          const FunctionDecl *UT) {
+    InfoType returnType(UT->getReturnType());
+    std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
+
+    std::string functionName = UT->getName().str();
+    if (function_occurrences[functionName]++ > 1) {
+        functionName +=
+            "_" + std::to_string(function_occurrences[functionName]);
+    }
+
+#ifdef FULL_DEBUG
+    printDebugInfo(parameters, returnType);
+#endif /* FULL_DEBUG */
+
+    cout << "Generating read method for params " << functionName << "\n";
+    generateReadMethod(testGen, parameters);
+    cout << "Generating read method for return " << functionName << "\n";
+    generateReadMethod(testGen, returnType);
+
+    cout << "Generating config for method " << functionName << "\n";
+    configGenerator.generateTestCase(functionName, parameters, returnType);
+
+    cout << "Generating test case for method " << functionName << "\n";
+    testGen.generateFunctionAssert(functionName, parameters, returnType);
+}
+
+void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
+                          const CXXMethodDecl *UT) {
+    InfoType returnType(UT->getReturnType());
+    std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
+
+    std::string functionName = UT->getName().str();
+    if (function_occurrences[functionName]++ > 1) {
+        functionName +=
+            "_" + std::to_string(function_occurrences[functionName]);
+    }
+
+#ifdef FULL_DEBUG
+    printDebugInfo(parameters, returnType);
+#endif /* FULL_DEBUG */
+
+    generateReadMethod(testGen, parameters);
+    generateReadMethod(testGen, returnType);
+
+    configGenerator.generateTestCase(functionName, parameters, returnType);
+
+    testGen.generateMethodAssert(functionName, parameters, returnType);
+}
+
+void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
+                          const CXXConstructorDecl *UT) {
+    std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
+
+    std::string constructorName = UT->getName().str();
+    if (function_occurrences[constructorName]++ > 1) {
+        constructorName +=
+            "_" + std::to_string(function_occurrences[constructorName]);
+    }
+
+#ifdef FULL_DEBUG
+    printDebugInfo(parameters, {"no return"});
+#endif /* FULL_DEBUG */
+
+    generateReadMethod(testGen, parameters);
+
+    configGenerator.generateConstructorTest(constructorName, parameters);
+
+    testGen.generateConstructorAssert(parameters);
+}
+
+/////////////////////////////////////////////////////////////////////
+//
+//////////      ESTO VA A SER ELIMINADO PROXIMAMENTE    //////////
+//
+////////////////////////////////////////////////////////////////////
 
 // General method for testing functions
 void ASKGen::generateFunctionTest(string sourceFile,

@@ -178,9 +178,10 @@ bool containsAnySubstring(const string &original,
 }
 
 string extractFileName(const string &fileRoute) {
-    string fileName = fileRoute.substr(fileRoute.find_last_of("/\\") + 1);
-    fileName = fileName.substr(0, fileName.find_last_of("."));
-    return fileName;
+    unsigned first = fileRoute.find_last_of("/\\") + 1;
+    unsigned last = fileRoute.find_last_of(".");
+
+    return fileRoute.substr(first, last - first);
 }
 
 void removeTypeQualifiers(string &type) {
@@ -211,7 +212,9 @@ void rtrim(std::string &s) {
 }
 
 void exitWithError(const string &message) {
-    cerr << message << "\nFatal error. Exiting...\n";
+    cerr << message << "\n";
+    cerr << "Error code: " << errno << " - " << strerror(errno) << "\n";
+    cerr << "\nFatal error. Exiting...\n";
     exit(EXIT_FAILURE);
 }
 

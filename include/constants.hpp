@@ -10,13 +10,18 @@ const std::string MAKEFILE = "Makefile";
 const std::string TEST_FIXTURE = "_fixture.hpp";
 const std::string TEST_FILE = "_test.cpp";
 const std::string CFG = ".cfg";
-const std::string TEMPLATE_BOOST = "BoostTest.tpl";
+const std::string TEMPLATE_BOOST = "test.tpl";
 const std::string EQUIVALENT_TYPES = "data/equivalent_types.json";
 const std::string DEFAULT_VALUES = "data/default_values.json";
 
-const std::string READ_POINTER_METHOD = "methods/ReadPointer.tpl";
-const std::string READ_ENUM_METHOD = "methods/ReadEnum.tpl";
-const std::string READ_RECORD_METHOD = "methods/ReadRecord.tpl";
+const std::string FIXTURE_TPL = "fixture.tpl";
+const std::string TEST_TPL = "test.tpl";
+const std::string MAKEFILE_TPL = "makefile.tpl";
+const std::string SUPPORTED_TPL = "SupportedTypes.txt";
+
+const std::string READ_POINTER_METHOD = "methods/pointerRead.tpl";
+const std::string READ_ENUM_METHOD = "methods/enumRead.tpl";
+const std::string READ_RECORD_METHOD = "methods/recordRead.tpl";
 const std::string OVERLOAD_RECORD_METHOD = "methods/overloadOperators.tpl";
 
 const std::string RECORD_FIELD_ASSIGNMENT = "methods/fieldAssign.tpl";
@@ -45,6 +50,7 @@ namespace tplitems {
 const std::string CLASS_NAME = "{className}";
 const std::string FILE_NAME = "{fileName}";
 const std::string CPP_PATH = "{cppPath}";
+const std::string TARGET = "{target}";
 
 // BOOST_TEST TEMPLATE
 const std::string POINTER_INIT_TOKEN = "{pointerInitToken}";

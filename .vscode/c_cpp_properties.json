@@ -14,7 +14,8 @@
             "cStandard": "c17",
             "cppStandard": "c++20",
             "intelliSenseMode": "linux-clang-x64",
-            "compilerArgs": []
+            "compilerArgs": [],
+            "compilerPath": "/usr/bin/clang++-15"
         }
     ],
     "version": 4

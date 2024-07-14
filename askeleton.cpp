@@ -1,7 +1,7 @@
 #include "ASKGen.hpp"
 #include "ASKMatchers.hpp"
-#include "Generator.hpp"
 #include "auxiliary_functions.hpp"
+#include "framework/Generator.hpp"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/SourceManager.h"
@@ -47,12 +47,12 @@ int main(int argc, const char **argv) {
     if (getenv("ASKELETON_HOME") != NULL) {
         Generator::ASKELETON_HOME = getenv("ASKELETON_HOME");
     } else {
-        Generator::ASKELETON_HOME = "";
+        Generator::ASKELETON_HOME = ".";
         cerr
             << "WARNING: ASKELETON_HOME is not set. Templates will not be "
                "accesible unless runing ASKELETON in the compilation folder.\n";
     }
-
+    Generator::ASKELETON_HOME += "/";
     Generator::MAX_DEPTH = DeepLevel.getValue();
 
     // CommonOptionsParser OptionsParser(argc, argv, OptC);
