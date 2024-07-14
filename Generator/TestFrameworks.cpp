@@ -113,7 +113,7 @@ void BoostGenerator::generateFixture(string outputPath) const {
         } else
             cout << "ERROR: COULDN'T WRITE FIXTURE FILE. IT WILL NOT BE CREATED"
                  << endl; // if tpl
-    }                     // if fileExist
+    } // if fileExist
 }
 
 void BoostGenerator::generateMakefile(string outputPath) {
@@ -140,7 +140,7 @@ void BoostGenerator::generateMakefile(string outputPath) {
         } else
             cout << "ERROR: COULDN'T WRITE MAKEFILE. IT WILL NOT BE CREATED"
                  << endl; // if tpl
-    }                     // if fileExist
+    } // if fileExist
 }
 
 void BoostGenerator::generateSupported() const {
@@ -252,16 +252,14 @@ void BoostGenerator::generateBoostAssert(const string &classTest,
     for (const auto &param : params) {
         if (param.isPointer()) {
             testCaseContent << "\n\tBOOST_CHECK_EQUAL(*" << funcCfgName << "_"
-                            << param.name << ", "
-                            << "*Read_" << param.formatted << "(\""
-                            << funcCfgName << "." << param.name
-                            << "_output\"));";
-        } else if (param.isReference()) {
-            testCaseContent << "\n\tBOOST_CHECK_EQUAL(" << funcCfgName << "_"
-                            << param.name << ", "
-                            << "Read_" << param.getUnderlyingType().formatted
+                            << param.name << ", " << "*Read_" << param.formatted
                             << "(\"" << funcCfgName << "." << param.name
                             << "_output\"));";
+        } else if (param.isReference()) {
+            testCaseContent
+                << "\n\tBOOST_CHECK_EQUAL(" << funcCfgName << "_" << param.name
+                << ", " << "Read_" << param.getUnderlyingType().formatted
+                << "(\"" << funcCfgName << "." << param.name << "_output\"));";
         }
     }
 
@@ -832,7 +830,8 @@ void BoostGenerator::addPointerReadToFixture(
     outputFile.close();
 }
 
-void BoostGenerator::addRecordReadToFixture(const InfoType &type) {
+void BoostGenerator::addRecordReadToFixture(const InfoType &type,
+                                            unsigned level) {
     std::vector<InfoVariable> fields = type.getRecordFields();
     stringstream overloadedOperators, readMethod;
 
@@ -864,9 +863,9 @@ void BoostGenerator::addRecordReadToFixture(const InfoType &type) {
     for (const InfoVariable &field : fields) {
         // readMethod << "\t\t\tresult." << field.name << " = "
         //            << "values[" << pos++ << "];\n";
-        readMethod << "\t\tresult." << field.name << " = "
-                   << "Read_" << field.formatted << "(objectKey + \"."
-                   << field.name << "\");\n";
+        readMethod << "\t\tresult." << field.name << " = " << "Read_"
+                   << field.formatted << "(objectKey + \"." << field.name
+                   << "\");\n";
     }
 
     readMethod << "\n\t\treturn result;\n\t}\n\t";
@@ -892,8 +891,8 @@ void BoostGenerator::addRecordReadToFixture(const InfoType &type) {
     overloadedOperators << "\n\treturn result;\n}\n\n";
 
     // Overloading flux insertion
-    overloadedOperators << "ostream& operator<<(ostream& stream, "
-                        << "const " << type.original << "& a)\n{\n";
+    overloadedOperators << "ostream& operator<<(ostream& stream, " << "const "
+                        << type.original << "& a)\n{\n";
 
     if (!fields.empty()) {
         overloadedOperators << "\tstream << \"{\\n\";\n";
@@ -913,17 +912,19 @@ void BoostGenerator::addRecordReadToFixture(const InfoType &type) {
     addOverloadToFixture(overloadedOperators.str());
 
     for (const InfoVariable &field : fields) {
-        generateCustomTypeFixture(field);
+        generateCustomTypeFixture(field, level + 1);
     }
 }
 
-void BoostGenerator::generateCustomTypeFixture(const InfoType &type) {
-    generateCustomTypeFixture(folderName, type);
+void BoostGenerator::generateCustomTypeFixture(const InfoType &type,
+                                               unsigned level) {
+    generateCustomTypeFixture(folderName, type, level);
 }
 
 void BoostGenerator::generateCustomTypeFixture(const string &filename,
-                                               const InfoType &type) {
-    if (isTypeSupported(type, filename))
+                                               const InfoType &type,
+                                               unsigned level) {
+    if (level > 1 || isTypeSupported(type, filename))
         return;
 
     if (type.isPointer()) {

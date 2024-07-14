@@ -1,11 +1,15 @@
 #include "VariableInfo.hpp"
+#include "EquivalentTypesManager.hpp"
 using std::string;
 
 InfoType::InfoType(const clang::QualType &type)
     : original(type.getCanonicalType().getAsString()), formatted(), type(type),
       isRecord_(false), isEnum_(false), recordFields() {
-    if (InfoType::isExcludedType(original)) {
-        original = InfoType::excludedTypes.at(original);
+
+    EquivalentTypesManager &manager = EquivalentTypesManager::getInstance();
+    auto equivalent = manager.getEquivalentType(original);
+    if (equivalent.has_value()) {
+        original = equivalent.value();
     } else if (const CXXRecordDecl *record = type->getAsCXXRecordDecl()) {
         isRecord_ = true;
         string original = record->getQualifiedNameAsString();
@@ -75,73 +79,7 @@ InfoType InfoType::getUnderlyingType() const {
         return {type->getPointeeType()};
 
     return *this;
-
-    // const clang::Type *rawType = type.getTypePtrOrNull();
-    // if (rawType == nullptr) {
-    //     std::cerr << "Error: rawType es nullptr" << std::endl;
-    //     return *this;
-    // }
-
-    // std::cout << "rawType no es nullptr" << std::endl;
-
-    // clang::QualType qualType = type.getUnqualifiedType();
-
-    // if (qualType.isNull()) {
-    //     std::cerr << "Error: qualType es nulo después de
-    //     getUnqualifiedType()"
-    //               << std::endl;
-    //     return *this;
-    // }
-
-    // std::cout << "Gola 3" << std::endl;
-
-    // // Depuración: imprimir el tipo canónico
-    // std::cout << "El tipo es: " << qualType.getAsString() << std::endl;
-    // std::cout << "Canonical type: " <<
-    // qualType.getCanonicalType().getAsString()
-    //           << std::endl;
-
-    // // Verifica si es un puntero
-    // bool isPointer = qualType->isPointerType();
-    // std::cout << "isPointerType: " << isPointer << std::endl;
-
-    // if (isPointer) {
-    //     clang::QualType pointeeType = qualType->getPointeeType();
-    //     std::cout << "Es puntero. Pointee type: " <<
-    //     pointeeType.getAsString()
-    //               << std::endl;
-    //     return InfoType(pointeeType);
-    // }
-
-    // // Verifica si es una referencia
-    // bool isReference = qualType->isReferenceType();
-    // std::cout << "isReferenceType: " << isReference << std::endl;
-
-    // if (isReference) {
-    //     clang::QualType pointeeType = qualType->getPointeeType();
-    //     std::cout << "Es referencia. Pointee type: "
-    //               << pointeeType.getAsString() << std::endl;
-    //     return InfoType(pointeeType);
-    // }
-
-    // // Retorna el objeto actual si no es un puntero ni una referencia
-    // return *this;
 }
-
-// clang::QualType underlying = *type;
-
-// if (isPointer() || isReference())
-//     underlying = underlying->getPointeeType();
-
-// return {underlying};
-// if (!isReference() && !isPointer())
-//     return *this;
-
-// string original = this->original, formatted = this->formatted;
-// removeAll(original, {" *", "&"});
-// removeAll(formatted, {"_s", "_r"});
-
-// return {original, formatted};
 
 string InfoType::formatType(const string &name) {
     string formatted = cleanUnnecesaryChars(name);
@@ -150,15 +88,6 @@ string InfoType::formatType(const string &name) {
 }
 
 vector<InfoVariable> InfoType::getRecordFields() const { return recordFields; }
-
-const std::map<std::string, std::string> InfoType::excludedTypes = {
-    {"class std::basic_string<char>", "std::string"},
-    {"const char *", "const char *"},
-    {"char *", "char *"}};
-
-bool InfoType::isExcludedType(const std::string &type) {
-    return InfoType::excludedTypes.contains(type);
-}
 
 InfoVariable::InfoVariable(const clang::ParmVarDecl *param)
     : InfoType(param->getOriginalType()),

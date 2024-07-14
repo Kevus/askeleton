@@ -3,6 +3,7 @@
 
 #include "Generator/ConfigGenerator.hpp"
 #include "Generator/CustomGenerator.hpp"
+#include "Generator/Framework/Generator.hpp"
 #include "Generator/TestFrameworks.hpp"
 
 #include "auxiliary_functions.hpp"
@@ -68,6 +69,8 @@ private:
     vector<string> obtainTestData(string type, string value);
 
     map<string, int> function_occurrences;
+
+    std::map<std::string, std::shared_ptr<Generator>> generators;
 
     // string convertExpressionToString(Expr *E, SourceManager &SM);
     // bool isInParameters(string name, ArrayRef<ParmVarDecl *> params, string&

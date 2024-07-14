@@ -30,10 +30,7 @@ struct InfoType {
     const clang::QualType type;
 
 protected:
-    static const std::map<std::string, std::string> excludedTypes;
-
     static std::string formatType(const std::string &);
-    static bool isExcludedType(const std::string &);
 
     bool isRecord_, isEnum_;
     std::vector<InfoVariable> recordFields;

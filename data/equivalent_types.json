@@ -1,0 +1,5 @@
+{
+    "class std::basic_string<char>": "std::string",
+    "const char *": "const char *",
+    "char *": "char *"
+}

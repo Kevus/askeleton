@@ -62,12 +62,12 @@ void replaceAll(string &str, const string &from, const string &to);
 
 /**
  * @brief Extracts a substring until a specified character is encountered.
- * 
+ *
  * This function takes a string and a character as input. It finds the position
  * of the specified character in the string and returns the substring from the
  * beginning of the string up to (but not including) that character.
  * If the character is not found, the entire original string is returned.
- * 
+ *
  * @param str The input string.
  * @param c The character to search for.
  * @return The substring until the specified character.
@@ -144,8 +144,8 @@ string extractFileName(const string &fileRoute);
 /**
  * @brief Remove specified type qualifiers from the given C++ type.
  *
- * This function removes the specified type qualifiers, such as "const," "enum," "class," and "struct,"
- * from the provided C++ type string.
+ * This function removes the specified type qualifiers, such as "const," "enum,"
+ * "class," and "struct," from the provided C++ type string.
  *
  * @param type The C++ type string from which to remove qualifiers.
  */
@@ -154,7 +154,8 @@ void removeTypeQualifiers(string &type);
 /**
  * @brief Replace certain characters in the given C++ type.
  *
- * This function replaces '*' with 's' and '&' with 'r' in the provided C++ type string.
+ * This function replaces '*' with 's' and '&' with 'r' in the provided C++ type
+ * string.
  *
  * @param type The C++ type string in which to replace characters.
  */
@@ -163,8 +164,8 @@ void replaceTypeCharacters(string &type);
 /**
  * @brief Remove leading whitespaces from the given string.
  *
- * This function removes leading whitespaces from the provided string by erasing characters
- * until a non-whitespace character is encountered.
+ * This function removes leading whitespaces from the provided string by erasing
+ * characters until a non-whitespace character is encountered.
  *
  * @param s The string from which to remove leading whitespaces.
  */
@@ -173,12 +174,25 @@ void ltrim(std::string &s);
 /**
  * @brief Remove trailing whitespaces from the given string.
  *
- * This function removes trailing whitespaces from the provided string by erasing characters
- * starting from the end until a non-whitespace character is encountered.
+ * This function removes trailing whitespaces from the provided string by
+ * erasing characters starting from the end until a non-whitespace character is
+ * encountered.
  *
  * @param s The string from which to remove trailing whitespaces.
  */
 void rtrim(std::string &s);
+
+/**
+ * @brief Stop the program and display an error message.
+ *
+ * This function displays an error message and stops the program.
+ * It is used to handle critical errors that prevent the program from
+ * continuing.
+ *
+ * @param message The error message to display.
+ * @see exit
+ */
+void exitWithError(const string &message);
 
 bool endsWith(const string &str, const string &suffix);
 

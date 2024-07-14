@@ -153,9 +153,8 @@ void replaceAll(string &str, const string &from, const string &to) {
 
 std::string extractSubstringUntilCharacter(const string &str, char c) {
     size_t pos = str.find(c);
-	return pos != string::npos ? str.substr(0, pos) : str;
+    return pos != string::npos ? str.substr(0, pos) : str;
 }
-
 
 void removeAll(string &str, const string &substringToRemove) {
     replaceAll(str, substringToRemove, "");
@@ -209,6 +208,11 @@ void rtrim(std::string &s) {
                          [](unsigned char ch) { return !std::isspace(ch); })
                 .base(),
             s.end());
+}
+
+void exitWithError(const string &message) {
+    cerr << message << "\nFatal error. Exiting...\n";
+    exit(EXIT_FAILURE);
 }
 
 bool endsWith(std::string const &fullString, std::string const &ending) {

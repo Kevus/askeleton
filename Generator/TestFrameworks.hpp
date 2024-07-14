@@ -29,15 +29,15 @@ public:
     void addEnumReadToFixture(const InfoType &type);
     // Generates a struct/class method for the record given in type but also the
     // types of its fields.
-    void addRecordReadToFixture(const InfoType &type);
+    void addRecordReadToFixture(const InfoType &type, unsigned level = 0);
 
     // Generates a reading method for a given type in a secure way (checks if
     // supported before the addition). It also mark the type as supported.
-    void generateCustomTypeFixture(const InfoType &type);
+    void generateCustomTypeFixture(const InfoType &type, unsigned level = 0);
     // Generates a reading method for a given type in a secure way (checks if
     // supported before the addition). It also mark the type as supported.
-    void generateCustomTypeFixture(const string &filename,
-                                   const InfoType &type);
+    void generateCustomTypeFixture(const string &filename, const InfoType &type,
+                                   unsigned level = 0);
 
     // Checks if a type was added to the supportedPath
     bool isTypeSupported(const InfoType &type);

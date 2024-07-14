@@ -40,14 +40,15 @@ CLANGLIBS = \
 
 
 askeleton:	\
-	src/generators.o src/VariableInfo.o \
+	src/generators.o src/VariableInfo.o src/EquivalentTypesManager.o \
 	auxiliary_functions.o ASKGen.o ASKMatchers.o \
 	Generator/RandomValuesGenerator.o Generator/CustomGenerator.o \
 	Generator/ConfigGenerator.o Generator/TestFrameworks.o askeleton.o
 	$(CXX) -o $@ $^ $(CLANGLIBS) $(LLVMLDFLAGS)
 
-askeleton.o: auxiliary_functions.hpp ASKGen.hpp ASKMatchers.hpp Generator/RandomValuesGenerator.hpp Generator/CustomGenerator.hpp Generator/ConfigGenerator.hpp Generator/TestFrameworks.hpp	\
-	src/generators.cpp src/VariableInfo.cpp src/generators.o src/VariableInfo.o auxiliary_functions.o ASKGen.o ASKMatchers.o Generator/RandomValuesGenerator.o Generator/CustomGenerator.o Generator/ConfigGenerator.o Generator/TestFrameworks.o
+askeleton.o: auxiliary_functions.hpp ASKGen.hpp ASKMatchers.hpp Generator/RandomValuesGenerator.hpp Generator/CustomGenerator.hpp Generator/ConfigGenerator.hpp Generator/TestFrameworks.hpp  \
+	src/generators.cpp src/VariableInfo.cpp src/EquivalentTypesManager.cpp \
+	src/generators.o src/VariableInfo.o auxiliary_functions.o ASKGen.o ASKMatchers.o Generator/RandomValuesGenerator.o Generator/CustomGenerator.o Generator/ConfigGenerator.o Generator/TestFrameworks.o
 
 install: askeleton
 	cp askeleton /usr/local/bin

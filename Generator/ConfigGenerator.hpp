@@ -43,10 +43,6 @@ private:
     void generateReturnRecord(const InfoType &record,
                               const string &prefix = "return_");
 
-    // Const default values. They will be deleted in future iterations, where
-    // the default values will be calculated during execution.
-    static map<string, string> defaultValues;
-
     // TEST
     RandomValuesGenerator rvg;
 };

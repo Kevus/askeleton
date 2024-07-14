@@ -74,7 +74,12 @@
 		"typeindex": "cpp",
 		"typeinfo": "cpp",
 		"variant": "cpp",
-		"filesystem": "cpp"
+		"filesystem": "cpp",
+		"any": "cpp",
+		"forward_list": "cpp",
+		"ranges": "cpp",
+		"span": "cpp",
+		"valarray": "cpp"
 	},
 	"lldb.displayFormat": "auto",
 	"lldb.showDisassembly": "auto",
