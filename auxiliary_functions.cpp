@@ -218,6 +218,16 @@ void exitWithError(const string &message) {
     exit(EXIT_FAILURE);
 }
 
+string getTodayString() {
+    ostringstream oss;
+    auto t = time(nullptr);
+    auto tm = *localtime(&t);
+
+    oss << put_time(&tm, "%d-%m-%Y %H:%M:%S");
+
+    return oss.str();
+}
+
 bool endsWith(std::string const &fullString, std::string const &ending) {
     if (fullString.length() >= ending.length()) {
         return (0 == fullString.compare(fullString.length() - ending.length(),

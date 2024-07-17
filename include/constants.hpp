@@ -59,7 +59,6 @@ const std::string ASSERT = "//{assert}";
 
 // FIXTURE TEMPLATE
 const std::string FILE_PATH = "{filePath}";
-const std::string CFG_NAME = "{cfgName}";
 const std::string DATE_OF_GENERATION = "{dateOfGeneration}";
 const std::string INCLUDES = "{includes}";
 const std::string NAMESPACES = "{namespaces}";

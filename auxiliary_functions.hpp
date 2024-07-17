@@ -193,6 +193,14 @@ void rtrim(std::string &s);
  */
 void exitWithError(const string &message);
 
+/**
+ * Returns a string representation of the current date and time in the format
+ * "dd-mm-yyyy hh:mm:ss".
+ *
+ * @return A string representation of the current date and time.
+ */
+std::string getTodayString();
+
 bool endsWith(const string &str, const string &suffix);
 
 // TODO: eliminar

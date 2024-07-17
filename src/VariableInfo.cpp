@@ -75,8 +75,12 @@ InfoType InfoType::getUnderlyingType() const {
         return {original, formatted};
     }
 
-    if (type->isPointerType() || type->isReferenceType())
+    if (type->isPointerType() || type->isReferenceType()) {
+        if (type->getPointeeType().isNull()) {
+            return *this;
+        }
         return {type->getPointeeType()};
+    }
 
     return *this;
 }

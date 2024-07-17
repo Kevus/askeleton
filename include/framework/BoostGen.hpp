@@ -20,8 +20,9 @@ public:
         const std::vector<InfoVariable> &parameters) override;
 
 private:
-    std::string generatePointersAsserts(
-        const std::vector<InfoVariable> &parameters) const override;
+    std::string
+    generatePointersAsserts(const std::vector<InfoVariable> &parameters,
+                            const std::string &function) const override;
 
     const static std::string BOOST_ASSERT_POINTER;
 };

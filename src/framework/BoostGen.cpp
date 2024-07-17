@@ -1,4 +1,7 @@
 #include "framework/BoostGen.hpp"
+#include "constants.hpp"
+
+using namespace askeleton;
 
 BoostGen::BoostGen(const std::string &targetName, const std::string &filePath,
                    bool isFromClass)
@@ -15,22 +18,27 @@ void BoostGen::generateFunctionAssert(
     }
 
     invocationContent += function;
-    returnContent += generateReadType(returnType);
+    returnContent += generateReturnTypeInvocation(returnType, function);
 
-    appendTestCaseToTestFile(replaceTokensInFile(
-        getFrameworkTemplatePath("functionCase.tpl"),
-        {{"{target}", targetName},
-         {"{function}", function},
-         {"{number}", "1"},
+    map<string, string> tokensToReplace = {
+        {"{target}", targetName},
+        {"{function}", function},
+        {"{number}", "1"},
 
-         {"{inicializations}", generateParamsInitilizations(parameters)},
+        {"{initializations}",
+         generateParameterInitialization(parameters, function)},
 
-         {"{assertEnding}", returnType.isContainer() ? "" : "_EQUAL"},
-         {"{invocation}", invocationContent},
-         {"{parameters}", generateParamsInvocation(parameters)},
-         {"{return}", returnContent},
+        {"{assertEnding}", returnType.isContainer() ? "" : "_EQUAL"},
+        {"{invocation}", invocationContent},
+        {"{parameters}", generateParameterInvocation(parameters)},
+        {"{return}", returnContent},
 
-         {"{pointers}", generatePointersAsserts(parameters)}}));
+        {"{pointers}", generatePointersAsserts(parameters, function)}};
+
+    string testTemplate = getFrameworkTemplatePath("functionCase.tpl");
+    string testContent = replaceTokensInFile(testTemplate, tokensToReplace);
+
+    appendTestCaseToTestFile(testContent);
 }
 
 void BoostGen::generateMethodAssert(const std::string &method,
@@ -44,7 +52,7 @@ void BoostGen::generateMethodAssert(const std::string &method,
     }
 
     invocationContent += method;
-    returnContent += generateReadType(returnType);
+    returnContent += generateReturnTypeInvocation(returnType, method);
 
     string objectTest = targetName + "_test";
     objectTest[0] = toLower(objectTest[0]);
@@ -58,45 +66,61 @@ void BoostGen::generateMethodAssert(const std::string &method,
          {"{class}", targetName},
          {"{object}", objectTest},
 
-         {"{inicializations}", generateParamsInitilizations(parameters)},
+         {"{inicializations}",
+          generateParameterInitialization(parameters, method)},
 
          {"{assertEnding}", returnType.isContainer() ? "" : "_EQUAL"},
          {"{invocation}", invocationContent},
-         {"{parameters}", generateParamsInvocation(parameters)},
+         {"{parameters}", generateParameterInvocation(parameters)},
          {"{return}", returnContent},
 
-         {"{pointers}", generatePointersAsserts(parameters)}}));
+         {"{pointers}", generatePointersAsserts(parameters, method)}}));
 }
 
 void BoostGen::generateConstructorAssert(
     const std::vector<InfoVariable> &parameters) {
 
+    string invocationContent = targetName;
+    cout << "constructor\n";
+
+    map<string, string> tokensToReplace = {
+        {"{target}", targetName},
+        {"{function}", targetName},
+        {"{number}", "1"},
+
+        {"{initializations}",
+         generateParameterInitialization(parameters, targetName)},
+
+        {"{class}", targetName},
+        {"{parameters}", generateParameterInvocation(parameters)},
+
+        {"{pointers}", generatePointersAsserts(parameters, targetName)}};
+
     appendTestCaseToTestFile(replaceTokensInFile(
-        getFrameworkTemplatePath("constructorCase.tpl"),
-        {{"{target}", targetName},
-         {"{function}", targetName},
-         {"{number}", "1"},
-
-         {"{inicializations}", generateParamsInitilizations(parameters)},
-
-         {"{class}", targetName},
-         {"{parameters}", generateParamsInvocation(parameters)},
-
-         {"{pointers}", generatePointersAsserts(parameters)}}));
+        getFrameworkTemplatePath("constructorCase.tpl"), tokensToReplace));
 }
 
-std::string BoostGen::generatePointersAsserts(
-    const std::vector<InfoVariable> &parameters) const {
+std::string
+BoostGen::generatePointersAsserts(const std::vector<InfoVariable> &parameters,
+                                  const std::string &function) const {
 
     std::stringstream ss;
 
     for (const auto &param : parameters) {
         if (param.isPointer() || param.isReference()) {
+            InfoType underlyingType = param.getUnderlyingType();
+            InfoVariable underlyingVar{param.name + "_output",
+                                       underlyingType.original,
+                                       underlyingType.formatted};
             string pointerAssert = BOOST_ASSERT_POINTER;
             replaceTokensInText(pointerAssert,
                                 {{"{parameter}", param.name},
-                                 {"{expected}", generateReadType(param.type)}});
-            ss << pointerAssert << "\n";
+                                 {"{expected}", generateReadInvocation(
+                                                    underlyingVar, function)}});
+            ss << "\n\t" << pointerAssert;
+            if (&param == &parameters.back()) {
+                ss << "\n";
+            }
         }
     }
 

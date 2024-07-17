@@ -37,7 +37,7 @@ BoostGenerator::BoostGenerator(string filePath, string cfgName,
         ASKELETON_HOME = "";
 
     valuesToChange.insert({tplitems::FILE_PATH, filePath});
-    valuesToChange.insert({tplitems::CFG_NAME, cfgName});
+    valuesToChange.insert({tplitems::TARGET, cfgName});
     valuesToChange.insert({tplitems::FILE_NAME, extractFileName(filePath)});
 
     // Given the filePath to the .h or .hpp, it will look for the .c or .cpp in

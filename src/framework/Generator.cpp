@@ -4,14 +4,6 @@
 
 using namespace askeleton;
 
-string getTodayString() {
-    auto t = time(nullptr);
-    auto tm = *localtime(&t);
-    ostringstream oss;
-    oss << put_time(&tm, "%d-%m-%Y %H:%M:%S");
-    return oss.str();
-}
-
 std::optional<std::string>
 getFileWithExtensions(const std::string &filePath,
                       const std::vector<std::string> &extensions) {
@@ -40,9 +32,9 @@ Generator::Generator(const std::string &targetName, const std::string &filePath,
       templatePath(ASKELETON_HOME + routes::TEMPLATES_ROUTE + framework + "/"),
       isFromClass(isFromClass), fileName(extractFileName(filePath)),
       folderPath(routes::TEST_ROUTE + targetName + "/"),
-      fixturePath(folderPath + files::SUPPORTED_TYPES),
+      fixturePath(folderPath + targetName + files::TEST_FIXTURE),
       makefilePath(folderPath + files::MAKEFILE),
-      supportedPath(folderPath + files::SUPPORTED_TYPES),
+      supportedPath(folderPath + targetName + files::SUPPORTED_TYPES),
       configPath(folderPath + targetName + files::CFG),
       testPath(folderPath + targetName + files::TEST_FILE) {
 
@@ -58,7 +50,6 @@ Generator::Generator(const std::string &targetName, const std::string &filePath,
 }
 
 string Generator::readFromFile(const std::string &filePath) const {
-    cout << "Reading file: " << filePath << endl;
     std::ifstream file(filePath);
     if (!file.is_open())
         exitWithError(errors::openFileError(filePath));
@@ -69,7 +60,6 @@ string Generator::readFromFile(const std::string &filePath) const {
 
 void Generator::writeToFile(const std::string &filePath,
                             const std::string &content) const {
-    cout << "Writing file: " << filePath << endl;
     std::ofstream file(filePath);
     if (!file.is_open())
         exitWithError(errors::openFileError(filePath));
@@ -113,7 +103,7 @@ void Generator::appendToFile(const std::string &filePath,
 }
 
 void Generator::appendTestCaseToTestFile(const std::string &testCase) const {
-    appendToFile(testPath, testCase);
+    appendToFile(testPath, "\n\n" + testCase);
 }
 
 void Generator::initializeValuesToChange(
@@ -130,7 +120,7 @@ void Generator::initializeValuesToChange(
 
     valuesToChange = {
         {tplitems::FILE_PATH, filePath},
-        {tplitems::CFG_NAME, targetName},
+        {tplitems::TARGET, targetName},
         {tplitems::FILE_NAME, fileName},
 
         {tplitems::CPP_PATH, sourceFile.value_or(filePath)},
@@ -162,9 +152,6 @@ void Generator::createTestDirectory() const {
 }
 
 void Generator::generateTest() const {
-    // string content = readFromFile(templatePath + files::TEMPLATE_BOOST);
-    // writeToFile(testPath, content);
-
     replaceTokensInFile(templatePath + files::TEST_TPL, testPath,
                         {{tplitems::TARGET, targetName}});
 }
@@ -195,13 +182,13 @@ void Generator::generateSupported() const {
 void Generator::appendReadMethodToFixture(const std::string &method) const {
     replaceTokensInFile(
         fixturePath, fixturePath,
-        {{tplitems::READ_OBJECT, method + "\n\t" + tplitems::READ_OBJECT}});
+        {{tplitems::READ_OBJECT, "\n\n" + method + tplitems::READ_OBJECT}});
 }
 
 void Generator::appendOverloadMethodsToFixture(const std::string &op) const {
     replaceTokensInFile(fixturePath, fixturePath,
                         {{tplitems::OVERLOAD_OPERATOR,
-                          op + "\n" + tplitems::OVERLOAD_OPERATOR}});
+                          "\n\n" + op + tplitems::OVERLOAD_OPERATOR}});
 }
 
 void Generator::createPointerReadToFixture(const InfoType &type) const {
@@ -228,17 +215,14 @@ void Generator::createEnumReadToFixture(const InfoType &type) const {
 void Generator::createRecordReadToFixture(const InfoType &type) const {
     stringstream assigns;
     string method =
-               readFromFile(getMethodTemplatePath(files::READ_RECORD_METHOD)),
-           assign = readFromFile(
-               getMethodTemplatePath(files::RECORD_FIELD_ASSIGNMENT));
+        readFromFile(getMethodTemplatePath(files::READ_RECORD_METHOD));
 
     for (const auto &field : type.getRecordFields()) {
-        InfoType fieldType = field.type;
-        string assignField = assign;
+        string assignField = FIELD_ASSIGN_TPL;
         replaceTokensInText(assignField,
-                            {{tplitems::FIELD, fieldType.original},
-                             {tplitems::FIELD_FORMATTED, fieldType.formatted}});
-        assigns << assignField;
+                            {{tplitems::FIELD, field.name},
+                             {tplitems::FORMATTED, field.formatted}});
+        assigns << "\n\t\t" << assignField;
     }
 
     replaceTokensInText(method, {{tplitems::TYPE, type.original},
@@ -252,22 +236,24 @@ void Generator::createRecordOverloadToFixture(const InfoType &type) const {
     stringstream comparisons, insertions;
     string method = readFromFile(
                getMethodTemplatePath(files::OVERLOAD_RECORD_METHOD)),
-           comparison = readFromFile(
-               getMethodTemplatePath(files::RECORD_FIELD_COMPARISON)),
-           insertion = readFromFile(
-               getMethodTemplatePath(files::RECORD_FIELD_INSERTION));
+           comparison = FIELD_COMPARISON_TPL, insertion = FIELD_INSERTION_TPL;
+    bool first = true;
 
     for (const auto &field : type.getRecordFields()) {
-        InfoType fieldType = field.type;
         string comparisonField = comparison, insertionField = insertion;
         replaceTokensInText(comparisonField,
-                            {{tplitems::FIELD, fieldType.original},
-                             {tplitems::FIELD_FORMATTED, fieldType.formatted}});
+                            {{tplitems::FIELD, field.name},
+                             {tplitems::FIELD_FORMATTED, field.formatted}});
         replaceTokensInText(insertionField,
-                            {{tplitems::FIELD, fieldType.original},
-                             {tplitems::FIELD_FORMATTED, fieldType.formatted}});
-        comparisons << comparisonField;
-        insertions << insertionField;
+                            {{tplitems::FIELD, field.name},
+                             {tplitems::FIELD_FORMATTED, field.formatted}});
+        if (first) {
+            first = false;
+            comparisons << "result = (\n";
+        }
+
+        comparisons << "\n\t" << comparisonField;
+        insertions << "\t" << insertionField << "\n";
     }
 
     replaceTokensInText(method, {{tplitems::TYPE, type.original},
@@ -296,6 +282,7 @@ void Generator::createTypeReadToFixture(const InfoType &type, unsigned level) {
 
     } else if (type.isRecord()) {
         createRecordReadToFixture(type);
+        createRecordOverloadToFixture(type);
     }
 
     markTypeAsSupported(type);
@@ -315,45 +302,71 @@ std::string Generator::getFrameworkTemplatePath(const std::string &tpl) const {
     return templatePath + tpl;
 }
 
-std::string Generator::generateReadType(const InfoType &type) const {
-    std::stringstream ss;
-    const InfoType &actualType =
-        type.isPointer() ? type.getUnderlyingType() : type;
-
-    ss << "Read_" << actualType.original << "(\"" << targetName << "."
-       << actualType.original << "\")";
-
-    return ss.str();
-}
-
-std::string
-Generator::generateReadVariable(const InfoVariable &variable) const {
-    std::stringstream ss;
-    const InfoType &type =
-        variable.isPointer() ? variable.getUnderlyingType() : variable.type;
-
-    ss << "Read_" << type.original << "(\"" << targetName << "."
-       << variable.name << "\")";
-
-    return ss.str();
-}
-
-std::string Generator::generateParamsInitilizations(
-    const std::vector<InfoVariable> &parameters) const {
+std::string Generator::generateParameterInitialization(
+    const std::vector<InfoVariable> &parameters,
+    const std::string &function) const {
 
     std::stringstream ss;
     for (const auto &param : parameters) {
-        const InfoType &type =
-            type.isPointer() ? param.getUnderlyingType() : param.type;
-
-        ss << type.original << " " << param.name << " = "
-           << generateReadType(type) << ";\n";
+        ss << "\t" << generateParameterInitialization(param, function) << ";\n";
     }
 
     return ss.str();
 }
 
-std::string Generator::generateParamsInvocation(
+std::string
+Generator::generateParameterInitialization(const InfoVariable &variable,
+                                           const std::string &function) const {
+
+    std::string readInstructionContent = ASSIGN_INSTRUCTION_TEMPLATE;
+    InfoType underlying = variable.getUnderlyingType();
+    string variableName =
+        variable.name + (underlying.isPointer() ? "_input" : "");
+    InfoVariable variableForRead{variableName, underlying.original,
+                                 underlying.formatted};
+    std::string typeForReadMethod = underlying.formatted;
+    replaceTypeCharacters(typeForReadMethod);
+
+    generateReadInvocation(variable, function);
+
+    std::map<std::string, std::string> replacements = {
+        {"{underlying}", underlying.original},
+        {"{name}", variable.name},
+        {"{target}", function},
+        {tplitems::UNDERLYING_FORMATTED, typeForReadMethod}};
+
+    replaceTokensInText(readInstructionContent, replacements);
+
+    return readInstructionContent;
+}
+
+std::string
+Generator::generateParameterInitialization(const InfoType &type,
+                                           const std::string &function) const {
+    InfoVariable variable{type.original, type.formatted, function + "_return"};
+    return generateParameterInitialization(variable, function);
+}
+
+std::string Generator::generateReadInvocation(const InfoVariable &type,
+                                              const string &function) const {
+    string readInvocation = READ_INSTRUCTION_TEMPLATE;
+    replaceTokensInText(readInvocation,
+                        {{tplitems::UNDERLYING_FORMATTED, type.formatted},
+                         {"{target}", function},
+                         {"{name}", type.name}});
+
+    return readInvocation;
+}
+
+std::string
+Generator::generateReturnTypeInvocation(const InfoType &type,
+                                        const string &function) const {
+    InfoVariable variable{function + "_return", type.original, type.formatted};
+
+    return generateReadInvocation(variable, function);
+}
+
+std::string Generator::generateParameterInvocation(
     const std::vector<InfoVariable> &parameters) const {
 
     std::stringstream ss;
@@ -368,11 +381,26 @@ std::string Generator::generateParamsInvocation(
     return ss.str();
 }
 
+Generator::~Generator() {
+    map<string, string> valuesToDelete = {{tplitems::READ_OBJECT, ""},
+                                          {tplitems::OVERLOAD_OPERATOR, ""}};
+
+    replaceTokensInFile(fixturePath, fixturePath, valuesToDelete);
+}
+
 std::string
 Generator::getMethodTemplatePath(const std::string &methodTemplate) {
     return ASKELETON_HOME + routes::TEMPLATES_ROUTE + methodTemplate;
 }
 
 std::string Generator::ASKELETON_HOME;
-
 unsigned Generator::MAX_DEPTH;
+
+const std::string Generator::ASSIGN_INSTRUCTION_TEMPLATE =
+    "{underlying} {name} = Read_{underlyingFormatted}(\"{target}.{name}\")";
+const std::string Generator::READ_INSTRUCTION_TEMPLATE =
+    "Read_{underlyingFormatted}(\"{target}.{name}\")";
+const std::string Generator::FIELD_ASSIGN_TPL =
+    "result.{field} = Read_{formatted}(objectKey + \".{field}\");";
+const std::string Generator::FIELD_COMPARISON_TPL = "a.{field} == b.{field}";
+const std::string Generator::FIELD_INSERTION_TPL = "os << object.{field};";

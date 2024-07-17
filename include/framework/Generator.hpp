@@ -9,18 +9,7 @@
 class Generator {
 public:
     Generator() = delete;
-    virtual ~Generator() = default;
 
-    /**
-     * @brief Construct a new Generator object
-     *
-     * @param targetName The unit software under test
-     * @param filePath The SUT file path
-     * @param templatePath Path of the directory where the templates are located
-     * @param isFromClass Indicates if the target is a class
-     *
-     * @note This class is an abstract class and cannot be instantiated.
-     */
     Generator(const std::string &targetName, const std::string &filePath,
               const std::string &framework, bool isFromClass = false);
 
@@ -39,6 +28,8 @@ public:
                          const InfoType &returnType) = 0;
     virtual void
     generateConstructorAssert(const std::vector<InfoVariable> &parameters) = 0;
+
+    virtual ~Generator();
 
     static std::string ASKELETON_HOME;
     static unsigned MAX_DEPTH;
@@ -60,14 +51,27 @@ protected:
         const std::string &inputFilePath,
         const std::map<std::string, std::string> &replacements) const;
 
-    std::string generateParamsInitilizations(
-        const std::vector<InfoVariable> &parameters) const;
     std::string
-    generateParamsInvocation(const std::vector<InfoVariable> &parameters) const;
-    std::string generateReadType(const InfoType &type) const;
-    std::string generateReadVariable(const InfoVariable &variable) const;
-    virtual std::string generatePointersAsserts(
-        const std::vector<InfoVariable> &parameters) const = 0;
+    generateParameterInitialization(const std::vector<InfoVariable> &parameters,
+                                    const std::string &function) const;
+    std::string
+    generateParameterInitialization(const InfoType &type,
+                                    const std::string &function) const;
+    std::string
+    generateParameterInitialization(const InfoVariable &variable,
+                                    const std::string &function) const;
+
+    std::string generateReadInvocation(const InfoVariable &type,
+                                       const std::string &function) const;
+    std::string generateReturnTypeInvocation(const InfoType &type,
+                                             const std::string &function) const;
+
+    std::string
+    generateParameterInvocation(const std::vector<InfoVariable> &) const;
+
+    virtual std::string
+    generatePointersAsserts(const std::vector<InfoVariable> &parameters,
+                            const std::string &function) const = 0;
 
     std::string getFrameworkTemplatePath(const std::string &tpl = "") const;
 
@@ -100,4 +104,9 @@ private:
 
     static std::string
     getMethodTemplatePath(const std::string &methodTemplate = "");
+
+    const static std::string ASSIGN_INSTRUCTION_TEMPLATE,
+        READ_INSTRUCTION_TEMPLATE;
+    const static std::string FIELD_ASSIGN_TPL, FIELD_COMPARISON_TPL,
+        FIELD_INSERTION_TPL;
 };
