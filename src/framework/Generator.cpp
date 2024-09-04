@@ -237,23 +237,33 @@ void Generator::createRecordOverloadToFixture(const InfoType &type) const {
     string method = readFromFile(
                getMethodTemplatePath(files::OVERLOAD_RECORD_METHOD)),
            comparison = FIELD_COMPARISON_TPL, insertion = FIELD_INSERTION_TPL;
-    bool first = true;
+
+    unsigned n_fields = type.getRecordFields().size();
+    if (n_fields == 0) {
+        comparisons << "\t\ttrue";
+    }
 
     for (const auto &field : type.getRecordFields()) {
+        --n_fields;
         string comparisonField = comparison, insertionField = insertion;
+
         replaceTokensInText(comparisonField,
                             {{tplitems::FIELD, field.name},
                              {tplitems::FIELD_FORMATTED, field.formatted}});
         replaceTokensInText(insertionField,
                             {{tplitems::FIELD, field.name},
                              {tplitems::FIELD_FORMATTED, field.formatted}});
-        if (first) {
-            first = false;
-            comparisons << "result = (\n";
-        }
 
-        comparisons << "\n\t" << comparisonField;
-        insertions << "\t" << insertionField << "\n";
+        if (n_fields > 0)
+            comparisonField += " &&";
+
+        comparisons << "\t\t" << comparisonField;
+        insertions << "\t" << insertionField;
+
+        if (n_fields > 0) {
+            comparisons << "\n";
+            insertions << "\n";
+        }
     }
 
     replaceTokensInText(method, {{tplitems::TYPE, type.original},
@@ -403,4 +413,5 @@ const std::string Generator::READ_INSTRUCTION_TEMPLATE =
 const std::string Generator::FIELD_ASSIGN_TPL =
     "result.{field} = Read_{formatted}(objectKey + \".{field}\");";
 const std::string Generator::FIELD_COMPARISON_TPL = "a.{field} == b.{field}";
-const std::string Generator::FIELD_INSERTION_TPL = "os << object.{field};";
+const std::string Generator::FIELD_INSERTION_TPL =
+    "os << \"{field}:\" << object.{field};";
