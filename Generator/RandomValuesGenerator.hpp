@@ -3,57 +3,55 @@
 
 #include "../auxiliary_functions.hpp"
 
-#include <random>
 #include <map>
+#include <random>
 
-enum Options
-{
-	Invalid_Type,
-	Char,
-	Short,
-	UnsignedShort,
-	Int,
-	Unsigned,
-	Long,
-	UnsignedLong,
-	LongLong,
-	UnsignedLongLong,
-	Double,
-	Float,
-	Bool,
-	String
+enum Options {
+    Invalid_Type,
+    Char,
+    Short,
+    UnsignedShort,
+    Int,
+    Unsigned,
+    Long,
+    UnsignedLong,
+    LongLong,
+    UnsignedLongLong,
+    Double,
+    Float,
+    Bool,
+    String
 };
 
-
-class RandomValuesGenerator
-{
+class RandomValuesGenerator {
 public:
-	RandomValuesGenerator(){}
+    RandomValuesGenerator() {}
 
-	string getRandomValue(string type, int nparams = 5);
+    string getRandomValue(string type, int nparams = 5);
+
 private:
-	random_device rd;
+    random_device rd;
 
-	Options resolveOption(string type);
+    Options resolveOption(string type);
 
-	static const map<string, Options> optionString;
+    static const map<string, Options> optionString;
 
-	string getRandomList(string inner_type);
-	string getRandomMap(string key_type, string value_type);
+    string getRandomList(string inner_type);
+    string getRandomMap(string key_type, string value_type);
 
-	string getRandomChar();
-	string getRandomShort();
-	string getRandomUnsignedShort();
-	string getRandomInt();
-	string getRandomUnsigned();
-	string getRandomLong();
-	string getRandomUnsignedLong();
-	string getRandomLongLong();
-	string getRandomUnsignedLongLong();
-	string getRandomDouble();
-	string getRandomFloat();
-	string getRandomBool();
-	string getRandomString();
+    string getRandomChar();
+    string getRandomShort();
+    string getRandomUnsignedShort();
+    string getRandomInt();
+    string getRandomUnsigned();
+    string getRandomLong();
+    string getRandomUnsignedLong();
+    string getRandomLongLong();
+    string getRandomUnsignedLongLong();
+    string getRandomDouble();
+    string getRandomFloat();
+    string getRandomBool();
+    string getRandomString();
 };
 
 #endif

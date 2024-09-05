@@ -16,23 +16,22 @@ using namespace std;
 
 class ConfigGenerator {
 public:
-    ConfigGenerator(string f_Name = "ASKGeneratedTestsConfig");
+    explicit ConfigGenerator(const string &target);
+    ConfigGenerator(const ConfigGenerator &) = default;
+
     ~ConfigGenerator() {
         if (cfg_file.is_open())
             cfg_file.close();
     }
 
-    vector<string> getGenerated();
-
     void generateTestCase(const string &functionName,
                           const vector<InfoVariable> &params,
                           const InfoType &returnType);
-
     void generateConstructorTest(const string &ctorName,
                                  const vector<InfoVariable> &params);
 
 private:
-    string f_Name;
+    const string target, testFolder, configFilePath;
     ofstream cfg_file;
 
     void generateParams(const vector<InfoVariable> &params);
@@ -42,6 +41,8 @@ private:
                              const string &prefix = "");
     void generateReturnRecord(const InfoType &record,
                               const string &prefix = "return_");
+
+    void appendToConfigFile(const string &content) const;
 
     // TEST
     RandomValuesGenerator rvg;

@@ -1,37 +1,22 @@
 #include "ConfigGenerator.hpp"
+#include "constants.hpp"
 
-/**
-** Default values for generating config file.
-** It can be seen that every value is a string,
-** however, C++11 provide us with methods for
-** transforming them.
-**
-** int: std::stoi( str )
-** float: std::stof( str )
-**
-** more info: http://en.cppreference.com/w/cpp/string/basic_string/stol
-**
-**/
+ConfigGenerator::ConfigGenerator(const string &target)
+    : target(target), testFolder(askeleton::routes::TEST_ROUTE + target + "/"),
+      configFilePath(testFolder + target + ".cfg") {
 
-ConfigGenerator::ConfigGenerator(string f_Name) : f_Name(f_Name) {
-    string comment_header = "";
+    try {
+        std::filesystem::create_directory(testFolder);
+    } catch (const std::filesystem::filesystem_error &e) {
+        exitWithError("Error creating directory: " + string(e.what()));
+    }
 
-    // We will create the file if it doesn't exist
-    string sys_command = "mkdir -p Generated/UT/" + f_Name;
-    system(sys_command.c_str());
-
-    sys_command = "Generated/UT/" + f_Name + "/" + f_Name + ".cfg";
-    bool file_exists = fileExists(sys_command);
-
-    if (!file_exists)
-        comment_header = getCommentHeader(f_Name);
-
-    // cfg_file.open(sys_command, (fileExists(sys_command) ? ios_base::app :
-    // ios_base::out));
-    cfg_file.open(sys_command, ios_base::app);
-
-    if (cfg_file.is_open())
-        cfg_file << comment_header;
+    std::ofstream configfileStream(configFilePath, ios_base::app);
+    if (configfileStream.is_open()) {
+        configfileStream << getCommentHeader(target);
+    } else {
+        exitWithError("Error opening file: " + configFilePath);
+    }
 }
 
 void ConfigGenerator::generateParams(const vector<InfoVariable> &params) {
@@ -42,13 +27,16 @@ void ConfigGenerator::generateParams(const vector<InfoVariable> &params) {
 void ConfigGenerator::generateReturn(const InfoType &returnType) {
     if (returnType.isRecord() && !returnType.isContainer())
         generateReturnRecord(returnType);
-    else
-        cfg_file << "\treturn_"
-                 << (returnType.isContainer() ? extractSubstringUntilCharacter(
-                                                    returnType.formatted, '<')
-                                              : returnType.formatted)
-                 << "=" << rvg.getRandomValue(returnType.formatted) << ";#"
-                 << returnType.original << "\n";
+    else {
+        std::string content =
+            "\treturn_" +
+            (returnType.isContainer()
+                 ? extractSubstringUntilCharacter(returnType.formatted, '<')
+                 : returnType.formatted) +
+            "=" + rvg.getRandomValue(returnType.formatted) + ";#" +
+            returnType.original + "\n";
+        appendToConfigFile(content);
+    }
 }
 
 void ConfigGenerator::generateParam(const InfoVariable &param) {
@@ -118,6 +106,15 @@ void ConfigGenerator::generateConstructorTest(
     cfg_file << ctorName << ":\n{\n";
     generateParams(params);
     cfg_file << "};\n\n";
+}
+
+void ConfigGenerator::appendToConfigFile(const string &content) const {
+    std::ofstream configfileStream(configFilePath, ios_base::app);
+    if (configfileStream.is_open()) {
+        configfileStream << content;
+    } else {
+        exitWithError("Error opening file: " + configFilePath);
+    }
 }
 
 // ##############################################################
