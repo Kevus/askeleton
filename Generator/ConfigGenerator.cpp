@@ -1,6 +1,8 @@
 #include "ConfigGenerator.hpp"
 #include "constants.hpp"
 
+RandomValuesGenerator ConfigGenerator::rvg;
+
 ConfigGenerator::ConfigGenerator(const string &target)
     : target(target), testFolder(askeleton::routes::TEST_ROUTE + target + "/"),
       configFilePath(testFolder + target + ".cfg") {
@@ -19,93 +21,112 @@ ConfigGenerator::ConfigGenerator(const string &target)
     }
 }
 
-void ConfigGenerator::generateParams(const vector<InfoVariable> &params) {
-    for (const InfoVariable &param : params)
-        generateParam(param);
-}
-
-void ConfigGenerator::generateReturn(const InfoType &returnType) {
-    if (returnType.isRecord() && !returnType.isContainer())
-        generateReturnRecord(returnType);
-    else {
-        std::string content =
-            "\treturn_" +
-            (returnType.isContainer()
-                 ? extractSubstringUntilCharacter(returnType.formatted, '<')
-                 : returnType.formatted) +
-            "=" + rvg.getRandomValue(returnType.formatted) + ";#" +
-            returnType.original + "\n";
-        appendToConfigFile(content);
-    }
-}
-
-void ConfigGenerator::generateParam(const InfoVariable &param) {
-    const string &original = param.original, &name = param.name;
-    string value = rvg.getRandomValue(param.formatted);
-
-    cfg_file << "\t";
-    if (param.isRecord() && !param.isContainer()) {
-        for (const InfoVariable &field : param.getRecordFields()) {
-            cfg_file << name << "." << field.name << "="
-                     << rvg.getRandomValue(field.formatted) << ";#"
-                     << field.original << "\n";
-        }
-    } else if (param.isPointer() || param.isReference()) {
-        cfg_file << name << "_input=" << value << ";#" << original << "\n\t"
-                 << name << "_output=" << value << ";#" << original << "\n";
-    } else {
-        cfg_file << name << "=" << value << ";#" << original << "\n";
-    }
-}
-
-void ConfigGenerator::generateParamRecord(const InfoVariable &record,
-                                          const string &prefix) {
-    const string &name = prefix + record.name;
-
-    for (const InfoVariable &field : record.getRecordFields()) {
-        if (field.isRecord())
-            generateParamRecord(field, name + ".");
-        else
-            cfg_file << "\t" << name << "." << field.name << "="
-                     << rvg.getRandomValue(field.formatted) << ";#"
-                     << field.original << "\n";
-    }
-}
-
-void ConfigGenerator::generateReturnRecord(const InfoType &record,
-                                           const string &prefix) {
-    const string &name = prefix + record.formatted;
-
-    for (const InfoVariable &field : record.getRecordFields()) {
-        if (field.isRecord())
-            generateReturnRecord(field, name + ".");
-        else
-            cfg_file << "\t" << name << "." << field.name << "="
-                     << rvg.getRandomValue(field.formatted) << ";#"
-                     << field.original << "\n";
-    }
-}
-
 void ConfigGenerator::generateTestCase(const string &functionName,
                                        const vector<InfoVariable> &params,
-                                       const InfoType &returnType) {
-    if (!cfg_file.is_open())
-        return;
+                                       const InfoType &returnType) const {
 
-    cfg_file << functionName << ":\n{\n";
-    generateParams(params);
-    generateReturn(returnType);
-    cfg_file << "};\n\n";
+    stringstream ss;
+
+    ss << functionName << ":\n{\n";
+    ss << generateParams(params);
+    ss << generateReturn(returnType);
+    ss << "};\n\n";
+
+    appendToConfigFile(ss.str());
 }
 
 void ConfigGenerator::generateConstructorTest(
-    const string &ctorName, const vector<InfoVariable> &params) {
-    if (!cfg_file.is_open())
-        return;
+    const string &ctorName, const vector<InfoVariable> &params) const {
+    stringstream ss;
 
-    cfg_file << ctorName << ":\n{\n";
-    generateParams(params);
-    cfg_file << "};\n\n";
+    ss << ctorName << ":\n{\n";
+    ss << generateParams(params);
+    ss << "};\n\n";
+
+    appendToConfigFile(ss.str());
+}
+
+std::string
+ConfigGenerator::generateParams(const vector<InfoVariable> &params) const {
+    stringstream ss;
+
+    for (const InfoVariable &param : params)
+        ss << generateParam(param);
+
+    return ss.str();
+}
+
+std::string ConfigGenerator::generateReturn(const InfoType &returnType) const {
+    stringstream ss;
+
+    if (returnType.isRecord() && !returnType.isContainer())
+        ss << generateReturnRecord(returnType);
+    else {
+        ss << "\treturn_"
+           << (returnType.isContainer()
+                   ? extractSubstringUntilCharacter(returnType.formatted, '<')
+                   : returnType.formatted)
+           << "=" << rvg.getRandomValue(returnType.formatted) << ";#"
+           << returnType.original << "\n";
+    }
+
+    return ss.str();
+}
+
+std::string ConfigGenerator::generateParam(const InfoVariable &param) const {
+    const string &original = param.original, &name = param.name;
+    string value = rvg.getRandomValue(param.formatted);
+    stringstream ss;
+
+    ss << "\t";
+    if (param.isRecord() && !param.isContainer()) {
+        for (const InfoVariable &field : param.getRecordFields()) {
+            ss << name << "." << field.name << "="
+               << rvg.getRandomValue(field.formatted) << ";#" << field.original
+               << "\n";
+        }
+    } else if (param.isPointer() || param.isReference()) {
+        ss << name << "_input=" << value << ";#" << original << "\n\t" << name
+           << "_output=" << value << ";#" << original << "\n";
+    } else {
+        ss << name << "=" << value << ";#" << original << "\n";
+    }
+
+    return ss.str();
+}
+
+std::string ConfigGenerator::generateParamRecord(const InfoVariable &record,
+                                                 const string &prefix) const {
+    const string &name = prefix + record.name;
+    stringstream ss;
+
+    for (const InfoVariable &field : record.getRecordFields()) {
+        if (field.isRecord())
+            ss << generateParamRecord(field, name + ".");
+        else
+            ss << "\t" << name << "." << field.name << "="
+               << rvg.getRandomValue(field.formatted) << ";#" << field.original
+               << "\n";
+    }
+
+    return ss.str();
+}
+
+std::string ConfigGenerator::generateReturnRecord(const InfoType &record,
+                                                  const string &prefix) const {
+    const string &name = prefix + record.formatted;
+    stringstream ss;
+
+    for (const InfoVariable &field : record.getRecordFields()) {
+        if (field.isRecord())
+            ss << generateReturnRecord(field, name + ".");
+        else
+            ss << "\t" << name << "." << field.name << "="
+               << rvg.getRandomValue(field.formatted) << ";#" << field.original
+               << "\n";
+    }
+
+    return ss.str();
 }
 
 void ConfigGenerator::appendToConfigFile(const string &content) const {
@@ -113,8 +134,6 @@ void ConfigGenerator::appendToConfigFile(const string &content) const {
     if (configfileStream.is_open()) {
         configfileStream << content;
     } else {
-        exitWithError("Error opening file: " + configFilePath);
+        cerr << askeleton::errors::openFileError(configFilePath) << endl;
     }
 }
-
-// ##############################################################

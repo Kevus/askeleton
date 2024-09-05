@@ -18,34 +18,29 @@ class ConfigGenerator {
 public:
     explicit ConfigGenerator(const string &target);
     ConfigGenerator(const ConfigGenerator &) = default;
-
-    ~ConfigGenerator() {
-        if (cfg_file.is_open())
-            cfg_file.close();
-    }
+    ConfigGenerator &operator=(const ConfigGenerator &) = default;
 
     void generateTestCase(const string &functionName,
                           const vector<InfoVariable> &params,
-                          const InfoType &returnType);
+                          const InfoType &returnType) const;
     void generateConstructorTest(const string &ctorName,
-                                 const vector<InfoVariable> &params);
+                                 const vector<InfoVariable> &params) const;
 
 private:
     const string target, testFolder, configFilePath;
-    ofstream cfg_file;
 
-    void generateParams(const vector<InfoVariable> &params);
-    void generateReturn(const InfoType &returnType);
-    void generateParam(const InfoVariable &param);
-    void generateParamRecord(const InfoVariable &record,
-                             const string &prefix = "");
-    void generateReturnRecord(const InfoType &record,
-                              const string &prefix = "return_");
+    std::string generateParams(const vector<InfoVariable> &params) const;
+    std::string generateReturn(const InfoType &returnType) const;
+    std::string generateParam(const InfoVariable &param) const;
+    std::string generateParamRecord(const InfoVariable &record,
+                                    const string &prefix = "") const;
+    std::string generateReturnRecord(const InfoType &record,
+                                     const string &prefix = "return_") const;
 
     void appendToConfigFile(const string &content) const;
 
     // TEST
-    RandomValuesGenerator rvg;
+    static RandomValuesGenerator rvg;
 };
 
 /*class TestDataGenerator
