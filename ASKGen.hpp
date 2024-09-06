@@ -25,7 +25,7 @@ using namespace std;
 
 class ASKGen : public MatchFinder::MatchCallback {
 public:
-    ASKGen() {}
+    ASKGen() = default;
 
     virtual void run(const MatchFinder::MatchResult &Result);
 
@@ -60,14 +60,18 @@ private:
     std::shared_ptr<Generator> getGenerator(const std::string &target,
                                             const std::string &filePath,
                                             bool isFromClass = false);
+    std::shared_ptr<ConfigGenerator>
+    getConfigGenerator(const std::string &target);
 
-    void generateTestData(string source, string function_name, string param,
-                          string type, string value);
-    vector<string> obtainTestData(string type, string value);
+    void generateTestData(std::string source, std::string function_name,
+                          std::string param, std::string type,
+                          std::string value);
+    vector<std::string> obtainTestData(std::string type, string value);
 
-    map<string, int> function_occurrences;
+    std::map<std::string, int> function_occurrences;
 
     std::map<std::string, std::shared_ptr<Generator>> generators;
+    std::map<std::string, std::shared_ptr<ConfigGenerator>> configGenerators;
 
     /**
      * TODO: eliminar todo lo que continua

@@ -18,7 +18,6 @@ class ConfigGenerator {
 public:
     explicit ConfigGenerator(const string &target);
     ConfigGenerator(const ConfigGenerator &) = default;
-    ConfigGenerator &operator=(const ConfigGenerator &) = default;
 
     void generateTestCase(const string &functionName,
                           const vector<InfoVariable> &params,
