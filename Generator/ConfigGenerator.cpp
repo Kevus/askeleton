@@ -78,18 +78,17 @@ std::string ConfigGenerator::generateParam(const InfoVariable &param) const {
     string value = rvg.getRandomValue(param.formatted);
     stringstream ss;
 
-    ss << "\t";
     if (param.isRecord() && !param.isContainer()) {
         for (const InfoVariable &field : param.getRecordFields()) {
-            ss << name << "." << field.name << "="
+            ss << "\t" << name << "." << field.name << "="
                << rvg.getRandomValue(field.formatted) << ";#" << field.original
                << "\n";
         }
     } else if (param.isPointer() || param.isReference()) {
-        ss << name << "_input=" << value << ";#" << original << "\n\t" << name
-           << "_output=" << value << ";#" << original << "\n";
+        ss << "\t" << name << "_input=" << value << ";#" << original << "\n\t"
+           << name << "_output=" << value << ";#" << original << "\n";
     } else {
-        ss << name << "=" << value << ";#" << original << "\n";
+        ss << "\t" << name << "=" << value << ";#" << original << "\n";
     }
 
     return ss.str();

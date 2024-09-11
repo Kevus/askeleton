@@ -1,6 +1,6 @@
 CXX=clang++ --std=c++14
-OBJS = {cfgName}.o tests.o # Please add your own .o files here
-TARGET = {cfgName}_test
+OBJS = {target}.o tests.o # Please add your own .o files here
+TARGET = {target}_test
 
 test: $(TARGET)
 $(TARGET): $(OBJS)
@@ -9,11 +9,11 @@ $(TARGET): $(OBJS)
 clean:
 	rm -rf $(TARGET) $(OBJS) *~
 
-{cfgName}.o: 
-	$(CXX) {cppPath} -c $< -o {cfgName}.o
+{target}.o: 
+	$(CXX) {cppPath} -c $< -o {target}.o
 
 tests.o:
 	$(CXX) $(TARGET).cpp -c $< -o tests.o
 
-compilation: {cfgName}.o
+compilation: {target}.o
 

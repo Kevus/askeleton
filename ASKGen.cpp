@@ -31,9 +31,7 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
     if (const FunctionDecl *UT =
             Result.Nodes.getNodeAs<clang::FunctionDecl>("FD1")) {
 
-        FullSourceLoc FullLocation;
-
-        FullLocation = Context->getFullLoc(UT->getBeginLoc());
+        FullSourceLoc FullLocation = Context->getFullLoc(UT->getBeginLoc());
 
         if (FullLocation.isValid() &&
             !Context->getSourceManager().isInSystemHeader(FullLocation)) {
@@ -59,12 +57,6 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
                 // Print auxiliary
                 // ======================================================================
 
-                // TO-DO: MODIFICAR PARA AÑADIR MAS O MENOS FRAMEWORKS
-                // BoostGenerator bGen(source_file, filename, false);
-                // generateFunctionTest(filename, UT->getName().str(),
-                //                      UT->parameters(), UT->getReturnType(),
-                //                      bGen);
-
                 auto generator = getGenerator(target, filePath, false);
                 auto configGenerator = getConfigGenerator(target);
                 generateTest(*generator, *configGenerator, UT);
@@ -79,9 +71,7 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
     if (const CXXMethodDecl *UT =
             Result.Nodes.getNodeAs<clang::CXXMethodDecl>("MD1")) {
 
-        FullSourceLoc FullLocation;
-
-        FullLocation = Context->getFullLoc(UT->getBeginLoc());
+        FullSourceLoc FullLocation = Context->getFullLoc(UT->getBeginLoc());
 
         if (FullLocation.isValid() &&
             !Context->getSourceManager().isInSystemHeader(FullLocation)) {
@@ -92,12 +82,6 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
                                          .getFilename(UT->getBeginLoc())
                                          .str();
                 string parentname = UT->getParent()->getName().str();
-
-                // TO-DO: MODIFICAR PARA AÑADIR MAS O MENOS FRAMEWORKS
-                // BoostGenerator bGen(source_file, parentname, true);
-                // generateFunctionTest(parentname, UT->getName().str(),
-                //                      UT->parameters(), UT->getReturnType(),
-                //                      bGen);
 
                 // Print auxiliary
                 // ======================================================================
@@ -111,8 +95,8 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
                 // ======================================================================
 
                 auto generator = getGenerator(parentname, source_file, true);
-                ConfigGenerator configGenerator(source_file);
-                generateTest(*generator, configGenerator, UT);
+                auto configGenerator = getConfigGenerator(parentname);
+                generateTest(*generator, *configGenerator, UT);
             }
         }
     }
@@ -140,9 +124,7 @@ void ASKGen::apply_CT1(const MatchFinder::MatchResult &Result) {
 
             string filename = source_file.substr(first, last - first);
 
-            // TO-DO: MODIFICAR PARA AÑADIR MAS O MENOS FRAMEWORKS
             BoostGenerator bGen(source_file, filename, false);
-
             InfoType record(QualType(UT->getTypeForDecl(), 0));
 
             if (!bGen.isTypeSupported(record, filename)) {
@@ -151,42 +133,12 @@ void ASKGen::apply_CT1(const MatchFinder::MatchResult &Result) {
                                         filename);
             }
 
-            // We'll read the fields here
-            // vector<FieldDecl *> field_decl;
-
-            // for (auto i : UT->fields())
-            //     field_decl.push_back(i);
-
-            // bool overloadedEq = false;
-            // bool overloadedFlux = false;
-            // for (auto i : UT->methods()) {
-            //     // llvm::outs() << i->getNameAsString() << "\n";
-            //     if (i->getNameAsString().find("operator==") != string::npos)
-            //         overloadedEq = true;
-            //     else if (i->getNameAsString().find("operator<<") !=
-            //              string::npos)
-            //         overloadedFlux = true;
-            // }
-            // // TODO: extraer en función
-            // string record_name = UT->getQualifiedNameAsString();
-            // if (record_name.find("anonymous") != string::npos)
-            //     record_name =
-            //         UT->getTypedefNameForAnonDecl()->getNameAsString();
-
-            // // TODO: esto tiene que cambiarse por
-            // // bGen.generateCustomTypeFixture(...)
-            // generateCustomTypeFixture(filename, record_name, field_decl,
-            //                           overloadedEq, overloadedFlux, bGen);
-
-            // addReadTypeToFixture(type_name, pram_type, insertion_order)
-
             // Print auxiliary
             // ======================================================================
             llvm::outs() << "Found CXXRecordDecl (struct-customtype) at "
                          << FullLocation.getSpellingLineNumber() << ":"
                          << FullLocation.getSpellingColumnNumber() << " - ";
 
-            // llvm::outs() << record_name << " in file " << filename << "\n";
             llvm::outs() << record.original << " in file " << filename << "\n";
             // Print auxiliary
             // ======================================================================

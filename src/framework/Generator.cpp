@@ -371,7 +371,8 @@ std::string Generator::generateReadInvocation(const InfoVariable &type,
 std::string
 Generator::generateReturnTypeInvocation(const InfoType &type,
                                         const string &function) const {
-    InfoVariable variable{function + "_return", type.original, type.formatted};
+    InfoVariable variable{"return_" + type.formatted, type.original,
+                          type.formatted};
 
     return generateReadInvocation(variable, function);
 }
@@ -414,4 +415,4 @@ const std::string Generator::FIELD_ASSIGN_TPL =
     "result.{field} = Read_{formatted}(objectKey + \".{field}\");";
 const std::string Generator::FIELD_COMPARISON_TPL = "a.{field} == b.{field}";
 const std::string Generator::FIELD_INSERTION_TPL =
-    "os << \"{field}:\" << object.{field};";
+    "os << \"{field}:\" << object.{field} << \"\\n\";";
