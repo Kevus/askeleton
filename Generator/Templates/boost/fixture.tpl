@@ -52,11 +52,6 @@ struct Fixture {
 		getConfigParameters("{target}.cfg");
 	}
 
-	~Fixture() {
-		for (auto *pointer : pointers)
-            free(pointer);
-	}
-
 	bool getConfigParameters(string cfgPath) {
 		ifstream configFile (cfgPath);
 		string line;

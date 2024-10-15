@@ -4,7 +4,6 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/snap/klee/6/usr/local/include",
                 "/home/heredia/assenter_src/NEO_UT/include",
                 "/lib/llvm-15/include",
                 "/home/heredia/astutmatcher/**",

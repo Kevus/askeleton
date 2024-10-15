@@ -144,7 +144,7 @@ void Generator::initializeValuesToChange(
 
 void Generator::createTestDirectory() const {
     try {
-        std::filesystem::create_directory(folderPath);
+        std::filesystem::create_directories(folderPath);
     } catch (const std::filesystem::filesystem_error &e) {
         std::cerr << "ERROR: directory " << folderPath
                   << " couldn't be created: " << e.what() << "\n";
