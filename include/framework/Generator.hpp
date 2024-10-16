@@ -96,7 +96,6 @@ private:
     void generateTest() const;
     void generateFixture(const std::map<std::string, std::string> &) const;
     void generateMakefile(const std::map<std::string, std::string> &) const;
-    void generateSupported() const;
 
     void createPointerReadToFixture(const InfoType &type) const;
     void createEnumReadToFixture(const InfoType &type) const;

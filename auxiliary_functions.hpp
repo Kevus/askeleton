@@ -201,6 +201,19 @@ void exitWithError(const string &message);
  */
 std::string getTodayString();
 
+/**
+ * @brief Split a string into a vector of substrings using a delimiter.
+ *
+ * This function splits a string into a vector of substrings using the specified
+ * delimiter character. The delimiter character is not included in the resulting
+ * substrings.
+ *
+ * @param s The string to split.
+ * @param delimiter The character used to split the string.
+ * @return A vector of substrings.
+ */
+std::vector<std::string> split(const std::string &s, char delimiter);
+
 bool endsWith(const string &str, const string &suffix);
 
 // TODO: eliminar

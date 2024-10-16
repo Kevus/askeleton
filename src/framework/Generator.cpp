@@ -48,7 +48,6 @@ Generator::Generator(const std::string &targetName, const std::string &filePath,
     generateTest();
     generateFixture(valuesToChange);
     generateMakefile(valuesToChange);
-    // generateSupported();
 }
 
 string Generator::readFromFile(const std::string &filePath) const {
@@ -184,17 +183,6 @@ void Generator::generateMakefile(
     const std::map<std::string, std::string> &valuesToChange) const {
     replaceTokensInFile(templatePath + files::MAKEFILE_TPL, makefilePath,
                         valuesToChange);
-}
-
-void Generator::generateSupported() const {
-    try {
-        std::filesystem::copy_file(
-            templatePath + files::SUPPORTED_TYPES, supportedPath,
-            std::filesystem::copy_options::overwrite_existing);
-    } catch (const std::filesystem::filesystem_error &e) {
-        exitWithError("ERROR: file " + supportedPath +
-                      " couldn't be copied: " + e.what());
-    }
 }
 
 void Generator::appendReadMethodToFixture(const std::string &method) const {
