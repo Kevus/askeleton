@@ -1,0 +1,62 @@
+{
+    "askeleton_varname": "ASKELETON_HOME",
+    "files": {
+      "supported_types": "SupportedTypes.txt",
+      "makefile": "Makefile",
+      "test_fixture": "_fixture.hpp",
+      "test_file": "_test.cpp",
+      "cfg": ".cfg",
+      "template_boost": "test.tpl",
+      "equivalent_types": "data/equivalent_types.json",
+      "default_values": "data/default_values.json",
+      "supported_types_json": "data/supported_types.json",
+      "fixture_tpl": "fixture.tpl",
+      "test_tpl": "test.tpl",
+      "makefile_tpl": "makefile.tpl",
+      "supported_tpl": "SupportedTypes.txt",
+      "read_pointer_method": "methods/pointerRead.tpl",
+      "read_enum_method": "methods/enumRead.tpl",
+      "read_record_method": "methods/recordRead.tpl",
+      "overload_record_method": "methods/overloadOperators.tpl",
+      "record_field_assignment": "methods/fieldAssign.tpl",
+      "record_field_comparison": "methods/fieldComparison.tpl",
+      "record_field_insertion": "methods/fieldInsertion.tpl"
+    },
+    "routes": {
+      "templates_route": "Generator/Templates/",
+      "test_route": "Generated/UT/",
+      "bt_templates_route": "Generator/Templates/test.tpl",
+      "test_file_ending": "_test.cpp"
+    },
+    "tplitems": {
+      "class_name": "{className}",
+      "file_name": "{fileName}",
+      "cpp_path": "{cppPath}",
+      "target": "{target}",
+      "pointer_init_token": "{pointerInitToken}",
+      "pointer_destroy_token": "{pointerDestroyToken}",
+      "assert": "//{assert}",
+      "file_path": "{filePath}",
+      "date_of_generation": "{dateOfGeneration}",
+      "includes": "{includes}",
+      "namespaces": "{namespaces}",
+      "read_object": "//{readObject}",
+      "new_methods": "{newMethods}",
+      "class_name_test": "{classNameTest}",
+      "overload_operator": "//{overloadOperator}",
+      "header_path": "{headerPath}",
+      "type": "{type}",
+      "formatted": "{formatted}",
+      "underlying": "{underlying}",
+      "underlying_formatted": "{underlyingFormatted}",
+      "fields": "//{fields}",
+      "insertions": "//{insertions}",
+      "comparisons": "//{comparisons}",
+      "field": "{field}",
+      "field_formatted": "{fieldFormatted}"
+    },
+    "errors": {
+      "open_file_error": "File {filename} couldn't be opened. Check permissions and the route."
+    }
+  }
+  

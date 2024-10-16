@@ -1,9 +1,9 @@
-BOOST_FIXTURE_TEST_CASE({target}_{function}_{number}, Fixture) {
+TEST_F(Fixture, {target}_{function}_{number}) {
     Date("Start");
 
-{initializations}
+    {initializations}
 
-    BOOST_CHECK(
+    EXPECT_TRUE(
         {class}({parameters})
     );
 

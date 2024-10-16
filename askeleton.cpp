@@ -33,9 +33,9 @@ static llvm::cl::OptionCategory
 
 cl::opt<bool> BoostFramework("boost", cl::desc("Enable boost"), cl::init(true));
 cl::opt<bool> CatchFramework("catch2", cl::desc("Enable catch"),
-                             cl::init(true));
+                             cl::init(false));
 cl::opt<bool> GtestFramework("gtest", cl::desc("Enable google test"),
-                             cl::init(true));
+                             cl::init(false));
 cl::opt<int> DeepLevel("deep_level",
                        cl::desc("Specify the maximum depth level"),
                        cl::value_desc("level"), cl::init(1), cl::cat(OptC));
@@ -54,6 +54,13 @@ int main(int argc, const char **argv) {
     }
     Generator::ASKELETON_HOME += "/";
     Generator::MAX_DEPTH = DeepLevel.getValue();
+
+    if (CatchFramework)
+        Generator::FRAMEWORK = CATCH;
+    else if (GtestFramework)
+        Generator::FRAMEWORK = GTEST;
+    else
+        Generator::FRAMEWORK = BOOST;
 
     // CommonOptionsParser OptionsParser(argc, argv, OptC);
     //  Esto se ha quedado 'deprecated', usando esta solucion temporal

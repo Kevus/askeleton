@@ -1,6 +1,7 @@
 #include "framework/Generator.hpp"
 #include "constants.hpp"
 #include <filesystem>
+#include <nlohmann/json.hpp>
 
 using namespace askeleton;
 
@@ -34,19 +35,20 @@ Generator::Generator(const std::string &targetName, const std::string &filePath,
       folderPath(routes::TEST_ROUTE + targetName + "/"),
       fixturePath(folderPath + targetName + files::TEST_FIXTURE),
       makefilePath(folderPath + files::MAKEFILE),
-      supportedPath(folderPath + targetName + files::SUPPORTED_TYPES),
+      supportedPath(folderPath + targetName + "_" + files::SUPPORTED_TYPES),
       configPath(folderPath + targetName + files::CFG),
       testPath(folderPath + targetName + files::TEST_FILE) {
 
     std::map<std::string, std::string> valuesToChange;
     initializeValuesToChange(valuesToChange);
+    initializeSupportedTypes();
 
     createTestDirectory();
 
     generateTest();
     generateFixture(valuesToChange);
     generateMakefile(valuesToChange);
-    generateSupported();
+    // generateSupported();
 }
 
 string Generator::readFromFile(const std::string &filePath) const {
@@ -148,6 +150,22 @@ void Generator::createTestDirectory() const {
     } catch (const std::filesystem::filesystem_error &e) {
         std::cerr << "ERROR: directory " << folderPath
                   << " couldn't be created: " << e.what() << "\n";
+    }
+}
+
+void Generator::initializeSupportedTypes() {
+    std::string supportedTypesPath =
+        ASKELETON_HOME + askeleton::files::SUPPORTED_TYPES_JSON;
+    std::ifstream file(supportedTypesPath);
+    if (!file.is_open())
+        exitWithError(errors::openFileError(supportedTypesPath));
+
+    nlohmann::json supportedTypesJson;
+    file >> supportedTypesJson;
+
+    supportedTypes.clear();
+    for (const auto &type : supportedTypesJson) {
+        supportedTypes.insert(type.get<std::string>());
     }
 }
 
@@ -300,8 +318,8 @@ void Generator::createTypeReadToFixture(const InfoType &type, unsigned level) {
 
 void Generator::markTypeAsSupported(const InfoType &type) {
     supportedTypes.insert(type.original);
-    writeToFile(supportedPath,
-                readFromFile(supportedPath) + type.formatted + "\n");
+    // writeToFile(supportedPath,
+    //             readFromFile(supportedPath) + type.formatted + "\n");
 }
 
 bool Generator::isTypeSupported(const InfoType &type) const {
@@ -396,6 +414,11 @@ Generator::~Generator() {
     map<string, string> valuesToDelete = {{tplitems::READ_OBJECT, ""},
                                           {tplitems::OVERLOAD_OPERATOR, ""}};
 
+    std::ostringstream supportedTypesContent;
+    for (const auto &type : supportedTypes)
+        supportedTypesContent << type << "\n";
+    writeToFile(supportedPath, supportedTypesContent.str());
+
     replaceTokensInFile(fixturePath, fixturePath, valuesToDelete);
 }
 
@@ -405,6 +428,7 @@ Generator::getMethodTemplatePath(const std::string &methodTemplate) {
 }
 
 std::string Generator::ASKELETON_HOME;
+Framework Generator::FRAMEWORK = BOOST;
 unsigned Generator::MAX_DEPTH;
 
 const std::string Generator::ASSIGN_INSTRUCTION_TEMPLATE =

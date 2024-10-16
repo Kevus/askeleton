@@ -13,6 +13,7 @@ const std::string CFG = ".cfg";
 const std::string TEMPLATE_BOOST = "test.tpl";
 const std::string EQUIVALENT_TYPES = "data/equivalent_types.json";
 const std::string DEFAULT_VALUES = "data/default_values.json";
+const std::string SUPPORTED_TYPES_JSON = "data/supported_types.json";
 
 const std::string FIXTURE_TPL = "fixture.tpl";
 const std::string TEST_TPL = "test.tpl";

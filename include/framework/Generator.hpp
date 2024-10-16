@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+enum Framework { BOOST, CATCH, GTEST };
+
 class Generator {
 public:
     Generator() = delete;
@@ -32,6 +34,7 @@ public:
     virtual ~Generator();
 
     static std::string ASKELETON_HOME;
+    static Framework FRAMEWORK;
     static unsigned MAX_DEPTH;
 
 protected:
@@ -88,6 +91,7 @@ private:
     void initializeValuesToChange(
         std::map<std::string, std::string> &valuesToChange) const;
     void createTestDirectory() const;
+    void initializeSupportedTypes();
 
     void generateTest() const;
     void generateFixture(const std::map<std::string, std::string> &) const;
