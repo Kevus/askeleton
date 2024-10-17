@@ -1,7 +1,8 @@
 #include "EquivalentTypesManager.hpp"
-#include "constants.hpp"
+
 #include <fstream>
 #include <iostream>
+#include "constants.hpp"
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;

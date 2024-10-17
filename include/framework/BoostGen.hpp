@@ -1,6 +1,10 @@
 #pragma once
 
 #include "Generator.hpp"
+#include "VariableInfo.hpp"
+
+#include <string>
+#include <vector>
 
 class BoostGen : public Generator {
 public:

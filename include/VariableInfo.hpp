@@ -1,14 +1,10 @@
 #pragma once
 
-#include "auxiliary_functions.hpp"
+#include "clang/AST/Decl.h"
 #include "clang/AST/Type.h"
 
 #include <map>
 #include <string>
-
-// A pair which represents the type and the name of a parameter
-typedef std::pair<std::string, std::string> Parameter;
-
 struct InfoVariable;
 
 struct InfoType {

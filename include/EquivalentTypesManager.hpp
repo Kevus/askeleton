@@ -1,11 +1,8 @@
 #pragma once
+
 #include <map>
 #include <optional>
 #include <string>
-
-/** This is a singleton class which manages the types that should be excluded,
- * the data is ridden from a file called "excluded_types.txt"
- **/
 
 class EquivalentTypesManager {
 public:

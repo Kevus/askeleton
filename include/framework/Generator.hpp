@@ -51,7 +51,7 @@ protected:
     void replaceTokensInFile(
         const std::string &inputFilePath, const std::string &outputFilePath,
         const std::map<std::string, std::string> &replacements) const;
-    string replaceTokensInFile(
+    std::string replaceTokensInFile(
         const std::string &inputFilePath,
         const std::map<std::string, std::string> &replacements) const;
 

@@ -1,5 +1,9 @@
 #include "generators.hpp"
 
+#include "auxiliary_functions.hpp"
+
+using namespace std;
+
 string askeleton::bt::generateVariableAssign(const string &funcCfgName,
                                              const InfoVariable &variable) {
     return ("\n\t" + variable.original + " " + funcCfgName + "_" +

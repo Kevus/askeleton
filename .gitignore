@@ -1,6 +1,7 @@
 **/Generated
 *.o
+*.d
 .vscode/
 Generated*/
 askeleton
-Examples/
+examples/

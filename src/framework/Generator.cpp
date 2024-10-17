@@ -1,10 +1,21 @@
 #include "framework/Generator.hpp"
-#include "auxiliary_functions.hpp"
-#include "constants.hpp"
+
 #include <filesystem>
+#include <fstream>
+#include <iostream>
+
 #include <nlohmann/json.hpp>
 
+#include "auxiliary_functions.hpp"
+#include "constants.hpp"
+
 using namespace askeleton;
+
+using std::cerr;
+using std::cout;
+using std::string;
+using std::stringstream;
+using std::vector;
 
 std::optional<std::string>
 getFileWithExtensions(const std::string &filePath,
@@ -427,8 +438,8 @@ std::string Generator::generateParameterInvocation(
 }
 
 Generator::~Generator() {
-    map<string, string> valuesToDelete = {{tplitems::READ_OBJECT, ""},
-                                          {tplitems::OVERLOAD_OPERATOR, ""}};
+    std::map<string, string> valuesToDelete = {
+        {tplitems::READ_OBJECT, ""}, {tplitems::OVERLOAD_OPERATOR, ""}};
 
     std::ostringstream supportedTypesContent;
     for (const auto &type : supportedTypes)

@@ -1,5 +1,14 @@
 #include "VariableInfo.hpp"
+
 #include "EquivalentTypesManager.hpp"
+#include "auxiliary_functions.hpp"
+
+#include "clang/AST/DeclCXX.h"
+
+#include <string>
+#include <vector>
+
+using namespace clang;
 using std::string;
 
 InfoType::InfoType(const clang::QualType &type)
@@ -91,13 +100,15 @@ string InfoType::formatType(const string &name) {
     return formatted;
 }
 
-vector<InfoVariable> InfoType::getRecordFields() const { return recordFields; }
+std::vector<InfoVariable> InfoType::getRecordFields() const {
+    return recordFields;
+}
 
 InfoVariable::InfoVariable(const clang::ParmVarDecl *param)
     : InfoType(param->getOriginalType()),
       name(param->getQualifiedNameAsString()) {
     if (name == "")
-        name = formatted + "_" + to_string(NO_NAME_COUNT++);
+        name = formatted + "_" + std::to_string(NO_NAME_COUNT++);
 }
 
 InfoVariable::InfoVariable(const clang::FieldDecl *field)

@@ -31,7 +31,7 @@ const std::string RECORD_FIELD_INSERTION = "methods/fieldInsertion.tpl";
 }; // namespace files
 
 namespace routes {
-const std::string TEMPLATES_ROUTE = "Generator/Templates/";
+const std::string TEMPLATES_ROUTE = "data/templates/";
 const std::string TEST_ROUTE = "Generated/UT/";
 
 const std::string BT_TEMPLATES_ROUTE = TEMPLATES_ROUTE + files::TEMPLATE_BOOST;

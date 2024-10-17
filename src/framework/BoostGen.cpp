@@ -1,7 +1,11 @@
 #include "framework/BoostGen.hpp"
 #include "constants.hpp"
 
+#include <cctype>
+#include <iostream>
+
 using namespace askeleton;
+using namespace std;
 
 BoostGen::BoostGen(const std::string &targetName, const std::string &filePath,
                    bool isFromClass)
@@ -55,7 +59,7 @@ void BoostGen::generateMethodAssert(const std::string &method,
     returnContent += generateReturnTypeInvocation(returnType, method);
 
     string objectTest = targetName + "_test";
-    objectTest[0] = toLower(objectTest[0]);
+    objectTest[0] = tolower(objectTest[0]);
 
     appendTestCaseToTestFile(replaceTokensInFile(
         getFrameworkTemplatePath("methodCase.tpl"),

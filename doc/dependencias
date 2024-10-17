@@ -1,0 +1,7 @@
+g++-12 y gcc-12 (NO FUNCIONA CON 11)
+libboost-dev
+libclang-6.0-dev
+clang-6.0
+llvm-config-6.0
+
+(puede que no necesitemos instalar todos)
