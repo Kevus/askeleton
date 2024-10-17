@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Config.hpp"
 #include "VariableInfo.hpp"
 #include <map>
 #include <set>
@@ -88,6 +89,9 @@ protected:
     std::set<std::string> supportedTypes;
 
 private:
+    void replaceTargetOnPaths();
+    void generateTemplatePath();
+
     void initializeValuesToChange(
         std::map<std::string, std::string> &valuesToChange) const;
     void createTestDirectory() const;
@@ -112,4 +116,5 @@ private:
         READ_INSTRUCTION_TEMPLATE;
     const static std::string FIELD_ASSIGN_TPL, FIELD_COMPARISON_TPL,
         FIELD_INSERTION_TPL;
+    const static Config &config;
 };

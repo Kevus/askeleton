@@ -3,7 +3,6 @@
 
 #include "Generator/ConfigGenerator.hpp"
 #include "Generator/CustomGenerator.hpp"
-#include "Generator/TestFrameworks.hpp"
 #include "framework/Generator.hpp"
 
 #include "framework/BoostGen.hpp"
@@ -39,8 +38,8 @@ private:
     void apply_PD1(const MatchFinder::MatchResult &Result);
 
     // Generaing test data
-    void apply_DG1(const MatchFinder::MatchResult &Result);
-    void apply_DG2(const MatchFinder::MatchResult &Result);
+    // void apply_DG1(const MatchFinder::MatchResult &Result);
+    // void apply_DG2(const MatchFinder::MatchResult &Result);
 
     void generateReadMethod(Generator &testGen,
                             const std::vector<InfoVariable> &variables);
@@ -72,37 +71,6 @@ private:
 
     std::map<std::string, std::shared_ptr<Generator>> generators;
     std::map<std::string, std::shared_ptr<ConfigGenerator>> configGenerators;
-
-    /**
-     * TODO: eliminar todo lo que continua
-     */
-    void generateFunctionTest(string source_file, string function_name,
-                              ArrayRef<ParmVarDecl *> parameters,
-                              QualType return_type, BoostGenerator bGen);
-    void generateConstructorTest(string source, string constructor_name,
-                                 ArrayRef<ParmVarDecl *> parameters,
-                                 BoostGenerator bgen);
-    // This generates a struct read
-    void generateCustomTypeFixture(string source, string type_name,
-                                   vector<FieldDecl *> parameters,
-                                   bool overloadedEq, bool overloadedFlux,
-                                   BoostGenerator bGen);
-
-    // Receives a list of every type and generates a read for each one
-    void generateCustomTypeFixture(string filename,
-                                   const vector<const CXXRecordDecl *> &records,
-                                   const vector<const EnumDecl *> &enums,
-                                   const vector<pair<string, string>> &pointers,
-                                   BoostGenerator &);
-
-    //   This generates a enum read
-    void generateEnumTypeFixture(string source,
-                                 const pair<string, string> &type,
-                                 BoostGenerator &bGen);
-
-    // string convertExpressionToString(Expr *E, SourceManager &SM);
-    // bool isInParameters(string name, ArrayRef<ParmVarDecl *> params, string&
-    // type);
 };
 
 #endif

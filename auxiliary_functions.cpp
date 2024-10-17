@@ -229,15 +229,31 @@ string getTodayString() {
 }
 
 std::vector<std::string> split(const std::string &s, char delimiter) {
-	std::vector<std::string> tokens;
-	std::string token;
-	std::istringstream tokenStream(s);
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(s);
 
-	while (std::getline(tokenStream, token, delimiter)) {
-		tokens.push_back(token);
-	}
+    while (std::getline(tokenStream, token, delimiter)) {
+        tokens.push_back(token);
+    }
 
-	return tokens;
+    return tokens;
+}
+
+std::string createPath(const std::vector<std::string> &parts, bool isFile) {
+    std::string path;
+
+    if (!parts.empty() && parts[0][0] == '/')
+        path = "/";
+
+    for (const std::string &part : parts) {
+        path += part + "/";
+    }
+
+    replaceAll(path, "//", "/");
+    if (isFile)
+        path.pop_back();
+    return path;
 }
 
 bool endsWith(std::string const &fullString, std::string const &ending) {

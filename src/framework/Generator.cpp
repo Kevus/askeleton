@@ -1,4 +1,5 @@
 #include "framework/Generator.hpp"
+#include "auxiliary_functions.hpp"
 #include "constants.hpp"
 #include <filesystem>
 #include <nlohmann/json.hpp>
@@ -29,16 +30,20 @@ std::optional<string> getHeaderFile(const string &filePath) {
 
 Generator::Generator(const std::string &targetName, const std::string &filePath,
                      const std::string &framework, bool isFromClass)
-    : targetName(targetName), filePath(filePath),
-      templatePath(ASKELETON_HOME + routes::TEMPLATES_ROUTE + framework + "/"),
+    : targetName(targetName), filePath(filePath), templatePath(ASKELETON_HOME),
       isFromClass(isFromClass), fileName(extractFileName(filePath)),
-      folderPath(routes::TEST_ROUTE + targetName + "/"),
-      fixturePath(folderPath + targetName + files::TEST_FIXTURE),
-      makefilePath(folderPath + files::MAKEFILE),
-      supportedPath(folderPath + targetName + "_" + files::SUPPORTED_TYPES),
-      configPath(folderPath + targetName + files::CFG),
-      testPath(folderPath + targetName + files::TEST_FILE) {
-
+      folderPath(createPath({routes::TEST_ROUTE, targetName})),
+      fixturePath(createPath(
+          {folderPath, config.get("file.output.test_fixture")}, true)),
+      makefilePath(
+          createPath({folderPath, config.get("file.output.makefile")}, true)),
+      supportedPath(createPath(
+          {folderPath, config.get("file.output.supported_types")}, true)),
+      configPath(createPath({folderPath, config.get("file.output.cfg")}, true)),
+      testPath(
+          createPath({folderPath, config.get("file.output.test_file")}, true)) {
+    generateTemplatePath();
+    replaceTargetOnPaths();
     std::map<std::string, std::string> valuesToChange;
     initializeValuesToChange(valuesToChange);
     initializeSupportedTypes();
@@ -105,6 +110,29 @@ void Generator::appendToFile(const std::string &filePath,
 
 void Generator::appendTestCaseToTestFile(const std::string &testCase) const {
     appendToFile(testPath, "\n\n" + testCase);
+}
+
+void Generator::replaceTargetOnPaths() {
+    std::map<std::string, std::string> replacements = {
+        {tplitems::TARGET, targetName}};
+    replaceTokensInText(supportedPath, replacements);
+    replaceTokensInText(makefilePath, replacements);
+    replaceTokensInText(testPath, replacements);
+    replaceTokensInText(fixturePath, replacements);
+}
+
+void Generator::generateTemplatePath() {
+    switch (FRAMEWORK) {
+    case Framework::BOOST:
+        templatePath += config.get("route.boost_templates");
+        break;
+    case Framework::CATCH:
+        templatePath += config.get("route.catch_templates");
+        break;
+    case Framework::GTEST:
+        templatePath += config.get("route.gtest_templates");
+        break;
+    }
 }
 
 void Generator::initializeValuesToChange(
@@ -418,6 +446,7 @@ Generator::getMethodTemplatePath(const std::string &methodTemplate) {
 std::string Generator::ASKELETON_HOME;
 Framework Generator::FRAMEWORK = BOOST;
 unsigned Generator::MAX_DEPTH;
+const Config &Generator::config = Config::getInstance();
 
 const std::string Generator::ASSIGN_INSTRUCTION_TEMPLATE =
     "{underlying} {name} = Read_{underlyingFormatted}(\"{target}.{name}\")";

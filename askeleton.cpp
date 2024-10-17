@@ -54,6 +54,8 @@ int main(int argc, const char **argv) {
     }
     Generator::ASKELETON_HOME += "/";
     Generator::MAX_DEPTH = DeepLevel.getValue();
+    Config::getInstance().loadConfig(createPath(
+        {Generator::ASKELETON_HOME, "data/configuration.json"}, true));
 
     if (CatchFramework)
         Generator::FRAMEWORK = CATCH;

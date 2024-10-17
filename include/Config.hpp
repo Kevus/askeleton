@@ -1,22 +1,22 @@
 #pragma once
+#include "auxiliary_functions.hpp"
 #include <nlohmann/json.hpp>
 
-class Config
-{
+class Config {
 public:
-    Config(const Config&) = delete;
-    Config& operator=(const Config&) = delete;
-    Config(Config&&) = delete;
-    Config& operator=(Config&&) = delete;
-	
-	void loadConfig(const std::string& path);
-	template <typename T> T get(const std::string& key) const;
+    Config(const Config &) = delete;
+    Config &operator=(const Config &) = delete;
+    Config(Config &&) = delete;
+    Config &operator=(Config &&) = delete;
 
-	static Config& getInstance();
+    void loadConfig(const std::string &path);
+    std::string get(const std::string &key) const;
+
+    static Config &getInstance();
 
 private:
-	Config() = default;
-	template <typename T> T getNestedValue(const std::vector<std::string>& keys) const;
+    Config() = default;
+    std::string getNestedValue(const std::vector<std::string> &keys) const;
 
-	nlohmann::json configData;
+    nlohmann::json configData;
 };

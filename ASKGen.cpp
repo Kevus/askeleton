@@ -17,7 +17,7 @@ void printDebugInfo(const vector<InfoVariable> &parameters,
 void ASKGen::run(const MatchFinder::MatchResult &Result) {
     apply_FD1(Result);
     apply_MD1(Result);
-    apply_CT1(Result); // Necessary for structs and classes
+    // apply_CT1(Result); // Necessary for structs and classes
     apply_CC1(Result);
 
     // Kevin: dejamos estos fuera, nos interesa ahora solo las funciones, los
@@ -124,14 +124,9 @@ void ASKGen::apply_CT1(const MatchFinder::MatchResult &Result) {
 
             string filename = source_file.substr(first, last - first);
 
-            BoostGenerator bGen(source_file, filename, false);
             InfoType record(QualType(UT->getTypeForDecl(), 0));
-
-            if (!bGen.isTypeSupported(record, filename)) {
-                bGen.addRecordReadToFixture(record);
-                bGen.addTypeToSupported({record.original, record.formatted},
-                                        filename);
-            }
+            auto generator = getGenerator(filename, source_file, true);
+            generateReadMethod(*generator, record);
 
             // Print auxiliary
             // ======================================================================
@@ -159,16 +154,11 @@ void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
         if (FullLocation.isValid() &&
             !Context->getSourceManager().isInSystemHeader(FullLocation)) {
 
-            string source_file = Context->getSourceManager()
-                                     .getFilename(UT->getBeginLoc())
-                                     .str();
-            string parentname = UT->getParent()->getName().str();
-
-            // TO-DO: MODIFICAR PARA AÑADIR MAS O MENOS FRAMEWORKS
-            // BoostGenerator bGen(source_file, parentname, true);
-
-            // generateConstructorTest(parentname, parentname, UT->parameters(),
-            //                         bGen);
+            string filePath = Context->getSourceManager()
+                                  .getFilename(UT->getBeginLoc())
+                                  .str();
+            string fileName = extractFileName(filePath);
+            string target = UT->getParent()->getName().str();
 
             // Print auxiliary
             // ======================================================================
@@ -177,12 +167,12 @@ void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
                          << FullLocation.getSpellingColumnNumber() << " - ";
 
             llvm::outs() << UT->getNameInfo().getAsString() << " from class "
-                         << parentname << "\n";
+                         << target << "\n";
             // Print auxiliary
             // ======================================================================
 
-            auto generator = getGenerator(parentname, source_file, true);
-            ConfigGenerator configGenerator(source_file);
+            auto generator = getGenerator(target, filePath, true);
+            ConfigGenerator configGenerator(filePath);
             generateTest(*generator, configGenerator, UT);
         }
     }
@@ -192,135 +182,141 @@ void ASKGen::apply_PD1(const MatchFinder::MatchResult &Result) {
     // TO-DO: make this SHOW when a private member is called
 }
 
-void ASKGen::apply_DG1(const MatchFinder::MatchResult &Result) {
-    ASTContext *Context = Result.Context;
+// void ASKGen::apply_DG1(const MatchFinder::MatchResult &Result) {
+//     ASTContext *Context = Result.Context;
 
-    if (const BinaryOperator *UT =
-            Result.Nodes.getNodeAs<clang::BinaryOperator>("DG1")) {
+//     if (const BinaryOperator *UT =
+//             Result.Nodes.getNodeAs<clang::BinaryOperator>("DG1")) {
 
-        const FunctionDecl *FD =
-            Result.Nodes.getNodeAs<clang::FunctionDecl>("DG1b");
-        FullSourceLoc FullLocation;
+//         const FunctionDecl *FD =
+//             Result.Nodes.getNodeAs<clang::FunctionDecl>("DG1b");
+//         FullSourceLoc FullLocation;
 
-        FullLocation = Context->getFullLoc(UT->getBeginLoc());
+//         FullLocation = Context->getFullLoc(UT->getBeginLoc());
 
-        if (FullLocation.isValid() &&
-            !Context->getSourceManager().isInSystemHeader(FullLocation)) {
+//         if (FullLocation.isValid() &&
+//             !Context->getSourceManager().isInSystemHeader(FullLocation)) {
 
-            string LHS_string = convertExpressionToString(
-                UT->getLHS(), Context->getSourceManager());
-            string RHS_string = convertExpressionToString(
-                UT->getRHS(), Context->getSourceManager());
-            string LHS_type = UT->getLHS()->getType().getAsString();
-            string RHS_type = UT->getRHS()->getType().getAsString();
+//             string LHS_string = convertExpressionToString(
+//                 UT->getLHS(), Context->getSourceManager());
+//             string RHS_string = convertExpressionToString(
+//                 UT->getRHS(), Context->getSourceManager());
+//             string LHS_type = UT->getLHS()->getType().getAsString();
+//             string RHS_type = UT->getRHS()->getType().getAsString();
 
-            string source_file = Context->getSourceManager()
-                                     .getFilename(UT->getBeginLoc())
-                                     .str();
-            unsigned first = source_file.find_last_of('/') + 1;
-            unsigned last = source_file.find_last_of('.');
-            string filename = source_file.substr(first, last - first);
+//             string source_file = Context->getSourceManager()
+//                                      .getFilename(UT->getBeginLoc())
+//                                      .str();
+//             unsigned first = source_file.find_last_of('/') + 1;
+//             unsigned last = source_file.find_last_of('.');
+//             string filename = source_file.substr(first, last - first);
 
-            string type;
+//             string type;
 
-            if (!isNumeric(LHS_string) && isNumeric(RHS_string) &&
-                isInParameters(LHS_string, FD->parameters(), type)) {
-                generateTestData(filename, FD->getName().str(), LHS_string,
-                                 type, RHS_string);
-            } else if (isNumeric(LHS_string) && !isNumeric(RHS_string) &&
-                       isInParameters(RHS_string, FD->parameters(), type)) {
-                generateTestData(filename, FD->getName().str(), RHS_string,
-                                 type, LHS_string);
-            } else {
-                llvm::outs() << "non-numeric condition\n";
-            }
+//             if (!isNumeric(LHS_string) && isNumeric(RHS_string) &&
+//                 isInParameters(LHS_string, FD->parameters(), type)) {
+//                 generateTestData(filename, FD->getName().str(), LHS_string,
+//                                  type, RHS_string);
+//             } else if (isNumeric(LHS_string) && !isNumeric(RHS_string) &&
+//                        isInParameters(RHS_string, FD->parameters(), type)) {
+//                 generateTestData(filename, FD->getName().str(), RHS_string,
+//                                  type, LHS_string);
+//             } else {
+//                 llvm::outs() << "non-numeric condition\n";
+//             }
 
-            // Print auxiliary
-            // ======================================================================
-            /*llvm::outs() << "Found BinaryOperator at "
-                         << FullLocation.getSpellingLineNumber() << ":"
-                         << FullLocation.getSpellingColumnNumber() << " - ";
+//             // Print auxiliary
+//             //
+//             ======================================================================
+//             /*llvm::outs() << "Found BinaryOperator at "
+//                          << FullLocation.getSpellingLineNumber() << ":"
+//                          << FullLocation.getSpellingColumnNumber() << " - ";
 
-            llvm::outs() << " from function " << FD->getName().str() <<  "\n";*/
-            // Print auxiliary
-            // ======================================================================
-        }
-    }
-}
+//             llvm::outs() << " from function " << FD->getName().str() <<
+//             "\n";*/
+//             // Print auxiliary
+//             //
+//             ======================================================================
+//         }
+//     }
+// }
 
-void ASKGen::apply_DG2(const MatchFinder::MatchResult &Result) {
-    ASTContext *Context = Result.Context;
+// void ASKGen::apply_DG2(const MatchFinder::MatchResult &Result) {
+//     ASTContext *Context = Result.Context;
 
-    if (const SwitchStmt *UT =
-            Result.Nodes.getNodeAs<clang::SwitchStmt>("DG2")) {
+//     if (const SwitchStmt *UT =
+//             Result.Nodes.getNodeAs<clang::SwitchStmt>("DG2")) {
 
-        const FunctionDecl *FD =
-            Result.Nodes.getNodeAs<clang::FunctionDecl>("DG2b");
-        FullSourceLoc FullLocation;
+//         const FunctionDecl *FD =
+//             Result.Nodes.getNodeAs<clang::FunctionDecl>("DG2b");
+//         FullSourceLoc FullLocation;
 
-        FullLocation = Context->getFullLoc(UT->getBeginLoc());
+//         FullLocation = Context->getFullLoc(UT->getBeginLoc());
 
-        if (FullLocation.isValid() &&
-            !Context->getSourceManager().isInSystemHeader(FullLocation)) {
+//         if (FullLocation.isValid() &&
+//             !Context->getSourceManager().isInSystemHeader(FullLocation)) {
 
-            string source_file = Context->getSourceManager()
-                                     .getFilename(UT->getBeginLoc())
-                                     .str();
-            unsigned first = source_file.find_last_of('/') + 1;
-            unsigned last = source_file.find_last_of('.');
-            string filename = source_file.substr(first, last - first);
+//             string source_file = Context->getSourceManager()
+//                                      .getFilename(UT->getBeginLoc())
+//                                      .str();
+//             unsigned first = source_file.find_last_of('/') + 1;
+//             unsigned last = source_file.find_last_of('.');
+//             string filename = source_file.substr(first, last - first);
 
-            // string test = UT->getCond()->getAsString();
-            // llvm::outs() << "test: " << test << "\n";
-            // string cname = UT->getCond()->getName().str();
-            // string ctype = UT->getCond()->getType().getAsString();
+//             // string test = UT->getCond()->getAsString();
+//             // llvm::outs() << "test: " << test << "\n";
+//             // string cname = UT->getCond()->getName().str();
+//             // string ctype = UT->getCond()->getType().getAsString();
 
-            // llvm::outs() << /*"Cname: " << cname << */" Ctype: " << ctype <<
-            // "\n";
+//             // llvm::outs() << /*"Cname: " << cname << */" Ctype: " << ctype
+//             <<
+//             // "\n";
 
-            /*string LHS_string = convertExpressionToString(UT->getLHS(),
-            Context->getSourceManager()); string RHS_string =
-            convertExpressionToString(UT->getRHS(),
-            Context->getSourceManager()); string LHS_type =
-            UT->getLHS()->getType().getAsString(); string RHS_type =
-            UT->getRHS()->getType().getAsString();
+//             /*string LHS_string = convertExpressionToString(UT->getLHS(),
+//             Context->getSourceManager()); string RHS_string =
+//             convertExpressionToString(UT->getRHS(),
+//             Context->getSourceManager()); string LHS_type =
+//             UT->getLHS()->getType().getAsString(); string RHS_type =
+//             UT->getRHS()->getType().getAsString();
 
-            //llvm::outs() << "LHS: " << LHS_string << " " << LHS_type << " -
-            RHS: " << RHS_string << " " << RHS_type << "\n";
+//             //llvm::outs() << "LHS: " << LHS_string << " " << LHS_type << " -
+//             RHS: " << RHS_string << " " << RHS_type << "\n";
 
-            string source_file =
-            Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
-            unsigned first = source_file.find_last_of('/') + 1;
-            unsigned last = source_file.find_last_of('.');
-            string filename = source_file.substr(first, last-first);
+//             string source_file =
+//             Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
+//             unsigned first = source_file.find_last_of('/') + 1;
+//             unsigned last = source_file.find_last_of('.');
+//             string filename = source_file.substr(first, last-first);
 
-            string type;
-            if(!isNumeric(LHS_string) && isNumeric(RHS_string) &&
-            isInParameters(LHS_string, FD->parameters(), type))
-            {
-                generateTestData(filename, FD->getName().str(), LHS_string,
-            type, RHS_string); } else if (isNumeric(LHS_string) &&
-            !isNumeric(RHS_string) && isInParameters(RHS_string,
-            FD->parameters(), type))
-            {
-                generateTestData(filename, FD->getName().str(), RHS_string,
-            type, LHS_string); } else
-            {
-                llvm::outs() << "non-numeric condition\n";
-            }*/
+//             string type;
+//             if(!isNumeric(LHS_string) && isNumeric(RHS_string) &&
+//             isInParameters(LHS_string, FD->parameters(), type))
+//             {
+//                 generateTestData(filename, FD->getName().str(), LHS_string,
+//             type, RHS_string); } else if (isNumeric(LHS_string) &&
+//             !isNumeric(RHS_string) && isInParameters(RHS_string,
+//             FD->parameters(), type))
+//             {
+//                 generateTestData(filename, FD->getName().str(), RHS_string,
+//             type, LHS_string); } else
+//             {
+//                 llvm::outs() << "non-numeric condition\n";
+//             }*/
 
-            // Print auxiliary
-            // ======================================================================
-            llvm::outs() << "Found SwitchStmt at "
-                         << FullLocation.getSpellingLineNumber() << ":"
-                         << FullLocation.getSpellingColumnNumber() << " - ";
+//             // Print auxiliary
+//             //
+//             ======================================================================
+//             llvm::outs() << "Found SwitchStmt at "
+//                          << FullLocation.getSpellingLineNumber() << ":"
+//                          << FullLocation.getSpellingColumnNumber() << " - ";
 
-            llvm::outs() << " from function " << FD->getName().str() << "\n";
-            // Print auxiliary
-            // ======================================================================
-        }
-    }
-}
+//             llvm::outs() << " from function " << FD->getName().str() << "\n";
+//             // Print auxiliary
+//             //
+//             ======================================================================
+//         }
+//     }
+// }
 
 void ASKGen::generateReadMethod(Generator &testGen,
                                 const std::vector<InfoVariable> &variables) {
@@ -450,207 +446,6 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
     configGenerator.generateConstructorTest(constructorName, parameters);
 
     testGen.generateConstructorAssert(parameters);
-}
-
-/////////////////////////////////////////////////////////////////////
-//
-//////////      ESTO VA A SER ELIMINADO PROXIMAMENTE    //////////
-//
-////////////////////////////////////////////////////////////////////
-
-// General method for testing functions
-void ASKGen::generateFunctionTest(string sourceFile,
-                                  string originalFunctionName,
-                                  ArrayRef<ParmVarDecl *> originalParameters,
-                                  QualType originalReturnType,
-                                  BoostGenerator bGen) {
-    ConfigGenerator cfg_gen(sourceFile);
-    string functionName =
-        function_occurrences[originalFunctionName]++ > 1
-            ? originalFunctionName + "_" +
-                  to_string(function_occurrences[originalFunctionName])
-            : originalFunctionName;
-
-    // Getting the parameters
-    vector<InfoVariable> parameters;
-    transform(originalParameters.begin(), originalParameters.end(),
-              back_inserter(parameters),
-              [](const ParmVarDecl *param) { return param; });
-
-    // Getting the return type
-    InfoType returnType(originalReturnType);
-
-#ifdef FULL_DEBUG
-    // ---------------------------------------
-    // DISPLAY AUXILIARY INFORMATION
-    // ---------------------------------------
-    cout << "--------------\n";
-    unsigned i = 0;
-    cout << "Params list: (";
-    for (auto &param : parameters) {
-        cout << i++ << " - " << param.original << " " << param.name;
-        if (&param != &parameters.back())
-            cout << ", ";
-    }
-
-    cout << ")\nReturn type: " << returnType.original << "\n";
-    // ---------------------------------------
-    // END OF DISPLAY
-    // ---------------------------------------
-#endif /* FULL_DEBUG */
-
-    // Checking if the parameters are supported
-    for (const InfoType &param : parameters)
-        bGen.generateCustomTypeFixture(sourceFile, param);
-
-    // Checking if the return type is supported
-    bGen.generateCustomTypeFixture(sourceFile, returnType);
-
-    cfg_gen.generateTestCase(functionName, parameters, returnType);
-
-    bGen.generateBoostAssert(sourceFile, originalFunctionName, functionName,
-                             parameters, returnType);
-}
-
-// Method for constructing constructor test
-void ASKGen::generateConstructorTest(string source, string constructor_name,
-                                     ArrayRef<ParmVarDecl *> originalParameters,
-                                     BoostGenerator bGen) {
-    ConfigGenerator cfg_gen(source);
-
-    string constructor_cfg_name = constructor_name;
-    function_occurrences[constructor_name]++;
-
-    if (function_occurrences[constructor_name] > 1)
-        constructor_cfg_name +=
-            "_" + to_string(function_occurrences[constructor_name]);
-
-    // Getting the parameters
-    vector<InfoVariable> parameters;
-    transform(originalParameters.begin(), originalParameters.end(),
-              back_inserter(parameters),
-              [](const ParmVarDecl *param) { return param; });
-
-    // Get the parameters
-    // map<string, string> param_type;
-    // vector<string> insert_order;
-
-    // string tmp_type;
-    // string tmp_name;
-
-    // int noname_count = 0;
-    // for (auto i : parameters) {
-    //     tmp_type = i->getOriginalType().getAsString();
-    //     tmp_type = cleanUnnecesaryChars(tmp_type);
-
-    //     tmp_name = i->getQualifiedNameAsString();
-
-    //     if (tmp_name == "") {
-    //         tmp_name = tmp_type + "_" + to_string(noname_count);
-    //         noname_count++;
-    //     }
-
-    //     param_type.insert(pair<string, string>(tmp_name, tmp_type));
-    //     insert_order.push_back(tmp_name);
-    // }
-
-    /**
-    ** We will add custom generator lates
-    **/
-    // cfg_gen.generateConstructorTest(constructor_cfg_name, param_type,
-    //                                 insert_order);
-    // bGen.generateBoostConstructorAssert(source, constructor_name,
-    //                                     constructor_cfg_name, param_type,
-    //                                     insert_order);
-    cfg_gen.generateConstructorTest(constructor_cfg_name, parameters);
-    bGen.generateBoostConstructorAssert(source, constructor_name,
-                                        constructor_cfg_name, parameters);
-}
-
-void ASKGen::generateEnumTypeFixture(string source,
-                                     const pair<string, string> &type,
-                                     BoostGenerator &bGen) {
-
-    if (bGen.checkIfSupported(type, source))
-        return;
-
-    bGen.addEnumReadToFixture(type);
-
-    bGen.addTypeToSupported(type, source);
-}
-
-void ASKGen::generateCustomTypeFixture(string source, string type_name,
-                                       vector<FieldDecl *> parameters,
-                                       bool overloadedEq, bool overloadedFlux,
-                                       BoostGenerator bGen) {
-
-    if (bGen.checkIfSupported({type_name, ""}, source))
-        return;
-
-    // CHECK: se utiliza?
-    // ConfigGenerator cfg_gen(source);
-
-    // Get the parameters
-    map<string, string> param_type;
-    vector<string> insert_order;
-
-    int noname_count = 0;
-    for (auto i : parameters) {
-        string tmp_type = i->getType().getAsString();
-        tmp_type = cleanUnnecesaryChars(tmp_type);
-
-        // CHECK: se utiliza?
-        string tmp_name = i->getNameAsString();
-
-        if (tmp_name == "") {
-            tmp_name = tmp_type + "_" + to_string(noname_count);
-            noname_count++;
-        }
-
-        param_type.insert(pair<string, string>(i->getNameAsString(), tmp_type));
-        insert_order.push_back(i->getNameAsString());
-    }
-
-    bGen.addStructReadToFixture(type_name, param_type, insert_order,
-                                overloadedEq, overloadedFlux);
-
-    bGen.addTypeToSupported({type_name, ""}, source);
-}
-
-void ASKGen::generateCustomTypeFixture(
-    string filename, const vector<const CXXRecordDecl *> &records,
-    const vector<const EnumDecl *> &enums,
-    const vector<pair<string, string>> &pointers, BoostGenerator &boostGen) {
-
-    for (const CXXRecordDecl *record : records) {
-        vector<FieldDecl *> field_decl;
-        string record_name = record->getQualifiedNameAsString();
-        if (record_name.find("anonymous") != string::npos)
-            record_name =
-                record->getTypedefNameForAnonDecl()->getNameAsString();
-
-        for (FieldDecl *field : record->fields())
-            field_decl.push_back(field);
-        generateCustomTypeFixture(filename, record_name, field_decl, false,
-                                  false, boostGen);
-    }
-
-    for (const EnumDecl *enumDecl : enums) {
-        // string original = enumDecl->getNameAsString();
-        string original = enumDecl->getQualifiedNameAsString();
-        if (original.find("anonymous") != string::npos)
-            original = enumDecl->getTypedefNameForAnonDecl()->getNameAsString();
-        string formatted = cleanUnnecesaryChars(original);
-
-        generateEnumTypeFixture(filename, {original, formatted}, boostGen);
-    }
-
-    for (const pair<string, string> &pointer : pointers) {
-        if (!boostGen.checkIfSupported(pointer, filename)) {
-            boostGen.addPointerReadToFixture(pointer);
-            boostGen.addTypeToSupported(pointer, filename);
-        }
-    }
 }
 
 void ASKGen::generateTestData(string source, string function_name, string param,

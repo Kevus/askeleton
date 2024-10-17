@@ -1,45 +1,39 @@
 #include "Config.hpp"
+#include "auxiliary_functions.hpp"
 #include <fstream>
 
-Config& Config::getInstance()
-{
-	static Config instance;
-	return instance;
+Config &Config::getInstance() {
+    static Config instance;
+    return instance;
 }
 
-void Config::loadConfig(const std::string& path)
-{
-	std::ifstream file(path);
-	if (!file.is_open())
-	{
-		throw std::runtime_error("Failed to open config file");
-	}
+void Config::loadConfig(const std::string &path) {
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open config file");
+    }
 
-	file >> configData;
+    file >> configData;
 }
 
-template <typename T>
-T Config::get(const std::string& key) const
-{
-	std::vector<std::string> keys = key.find('.') != std::string::npos 
-		? split(key, '.') 
-		: {key};
-	
-	return getNestedValue<T>(keys);
+std::string Config::get(const std::string &key) const {
+    std::vector<std::string> keys = key.find('.') == std::string::npos
+                                        ? std::vector<std::string>{key}
+                                        : split(key, '.');
+
+    return getNestedValue(keys);
 }
 
-template <typename T>
-T Config::getNestedValue(const std::vector<std::string>& keys) const
-{
-        const nlohmann::json* currentLevel = &configData;
+std::string Config::getNestedValue(const std::vector<std::string> &keys) const {
+    const nlohmann::json *currentLevel = &configData;
 
-        for (const auto& key : keys) {
-            if (currentLevel->contains(key)) {
-                currentLevel = &(*currentLevel)[key];
-            } else {
-                return {};
-            }
+    for (const auto &key : keys) {
+        if (currentLevel->contains(key)) {
+            currentLevel = &(*currentLevel)[key];
+        } else {
+            return {};
         }
+    }
 
-        return currentLevel->get<T>();
+    return currentLevel->get<std::string>();
 }
