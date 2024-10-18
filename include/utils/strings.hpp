@@ -1,21 +1,85 @@
 #pragma once
 
+#include "clang/AST/Decl.h"
 #include <string>
 
-#include "clang/AST/Decl.h"
-
-bool fileExists(const std::string &filename);
-bool folderExists(const std::string &folder);
-
-bool isNumeric(std::string query);
-bool isInParameters(std::string name,
-                    llvm::ArrayRef<clang::ParmVarDecl *> params,
-                    std::string &type);
-
+/**
+ * @brief Check if a string is numeric.
+ *
+ * This function checks if a string is numeric. It does so by attempting to
+ * convert the string to a double. If the conversion is successful, the function
+ * returns true. Otherwise, it checks if the string contains a character that
+ * indicates a non-numeric value, such as a single quote ('), double quote ("),
+ * or the strings "true" or "false". If any of these conditions are met, the
+ * function returns true. Otherwise, it returns false.
+ *
+ * @param query The string to check.
+ * @return true if the string is numeric, false otherwise.
+ */
 std::string getCommentHeader(std::string filename);
+
+/**
+ * @brief Check if a parameter is in a list of parameters.
+ *
+ * This function checks if a parameter with the specified name is present in a
+ * list of parameters. If the parameter is found, the function saves the type of
+ * the parameter in the provided string reference and returns true. Otherwise,
+ * it returns false.
+ *
+ * @param name The name of the parameter to search for.
+ * @param params The list of parameters to search in.
+ * @param type A reference to a string where the type of the parameter will be
+ * saved.
+ * @return true if the parameter is found, false otherwise.
+ */
 std::string deleteAllBeforeChar(std::string sToReplace, char cToFind);
+
+/**
+ * @brief Check if a parameter is in a list of parameters.
+ *
+ * This function checks if a parameter with the specified name is present in a
+ * list of parameters. If the parameter is found, the function saves the type of
+ * the parameter in the provided string reference and returns true. Otherwise,
+ * it returns false.
+ *
+ * @param name The name of the parameter to search for.
+ * @param params The list of parameters to search in.
+ * @param type A reference to a string where the type of the parameter will be
+ * saved.
+ * @return true if the parameter is found, false otherwise.
+ */
 std::string cleanUnnecesaryChars(std::string sToReplace);
+
+/**
+ * @brief Check if a parameter is in a list of parameters.
+ *
+ * This function checks if a parameter with the specified name is present in a
+ * list of parameters. If the parameter is found, the function saves the type of
+ * the parameter in the provided string reference and returns true. Otherwise,
+ * it returns false.
+ *
+ * @param name The name of the parameter to search for.
+ * @param params The list of parameters to search in.
+ * @param type A reference to a string where the type of the parameter will be
+ * saved.
+ * @return true if the parameter is found, false otherwise.
+ */
 std::string convertExpressionToString(clang::Expr *E, clang::SourceManager &SM);
+
+/**
+ * @brief Check if a parameter is in a list of parameters.
+ *
+ * This function checks if a parameter with the specified name is present in a
+ * list of parameters. If the parameter is found, the function saves the type of
+ * the parameter in the provided string reference and returns true. Otherwise,
+ * it returns false.
+ *
+ * @param name The name of the parameter to search for.
+ * @param params The list of parameters to search in.
+ * @param type A reference to a string where the type of the parameter will be
+ * saved.
+ * @return true if the parameter is found, false otherwise.
+ */
 void replaceAll(std::string &str, const std::string &from,
                 const std::string &to);
 
@@ -143,26 +207,6 @@ void ltrim(std::string &s);
 void rtrim(std::string &s);
 
 /**
- * @brief Stop the program and display an error message.
- *
- * This function displays an error message and stops the program.
- * It is used to handle critical errors that prevent the program from
- * continuing.
- *
- * @param message The error message to display.
- * @see exit
- */
-void exitWithError(const std::string &message);
-
-/**
- * Returns a string representation of the current date and time in the format
- * "dd-mm-yyyy hh:mm:ss".
- *
- * @return A string representation of the current date and time.
- */
-std::string getTodayString();
-
-/**
  * @brief Split a string into a vector of substrings using a delimiter.
  *
  * This function splits a string into a vector of substrings using the specified
@@ -190,24 +234,15 @@ std::vector<std::string> split(const std::string &s, char delimiter);
 std::string createPath(const std::vector<std::string> &parts,
                        bool isFile = false);
 
+/**
+ * @brief Checks if a given string ends with the specified suffix.
+ *
+ * This function compares the end of the input string with the provided suffix
+ * and returns true if the string ends with the suffix, otherwise false.
+ *
+ * @param str The input string to be checked.
+ * @param suffix The suffix to be checked against the end of the input string.
+ * @return true if the input string ends with the specified suffix, false
+ * otherwise.
+ */
 bool endsWith(const std::string &str, const std::string &suffix);
-
-// TODO: eliminar
-// Returns true if str2 is included in str1
-bool includes(const std::string &str1, const std::string &str2);
-
-// TODO: eliminar
-// Returns true if str2 is included in str1
-bool includes(const char *str1, const char *str2);
-
-// TODO: eliminar
-// Returns true if type is a struct
-bool isStruct(const clang::QualType &type);
-
-// TODO: eliminar
-// Returns the name of the type, which must be a struct
-std::string getStructName(const clang::QualType &type);
-
-// TODO: eliminar
-// Returns true if type is a enum
-bool isEnum(const clang::QualType &);

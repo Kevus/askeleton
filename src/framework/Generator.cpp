@@ -6,8 +6,9 @@
 
 #include <nlohmann/json.hpp>
 
-#include "auxiliary_functions.hpp"
+// #include "auxiliary_functions.hpp"
 #include "constants.hpp"
+#include "utils/strings.hpp"
 
 using namespace askeleton;
 

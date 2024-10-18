@@ -1,4 +1,7 @@
-#include "auxiliary_functions.hpp"
+// #include "auxiliary_functions.hpp"
+#include "utils/checks.hpp"
+#include "utils/strings.hpp"
+#include "utils/system.hpp"
 
 #include <algorithm>
 #include <ctime>
@@ -20,27 +23,20 @@
 using namespace clang;
 using namespace std;
 
-// Method to check if a file exists given a path
 bool fileExists(const string &filename) {
     struct stat buffer;
     return (stat(filename.c_str(), &buffer) == 0);
 }
 
-// Method to check if a file exists given a folder
 bool folderExists(const string &folder) {
     struct stat info;
 
     if (stat(folder.c_str(), &info) != 0)
         return false;
     else
-        return (info.st_mode &
-                S_IFDIR); // S_ISDIR() doesn't exist on my windows
-    /*      printf( "%s is a directory\n", pathname );
-      else
-          printf( "%s is no directory\n", pathname );*/
+        return (info.st_mode & S_IFDIR);
 }
 
-// Aux. method to generate the header for the files
 string getCommentHeader(string filename) {
     /**
     ** Comment header, for visibility purposes
