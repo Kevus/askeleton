@@ -3,7 +3,6 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**",
                 "/home/heredia/assenter_src/NEO_UT/include",
                 "/lib/llvm-15/include",
                 "/home/heredia/astutmatcher/**",

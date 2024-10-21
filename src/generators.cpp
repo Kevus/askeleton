@@ -1,6 +1,6 @@
 #include "generators.hpp"
 
-#include "auxiliary_functions.hpp"
+#include "utils/strings.hpp"
 
 using namespace std;
 

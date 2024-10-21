@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 /**
  * @brief Check if a file exists.
@@ -23,6 +24,19 @@ bool fileExists(const std::string &filename);
 bool folderExists(const std::string &folder);
 
 /**
+ * @brief Extracts the file name (without extension or path) from a given file
+ * route.
+ *
+ * The `extractFileName` function takes a full file path and returns the name of
+ * the file, excluding the extension and path. The function is platform-agnostic
+ * and can be used on operating systems with different path conventions.
+ *
+ * @param fileRoute Full path of the file to be processed.
+ * @return std::string The file name without the extension or path.
+ */
+std::string extractFileName(const std::string &fileRoute);
+
+/**
  * @brief Stop the program and display an error message.
  *
  * This function displays an error message and stops the program.
@@ -41,3 +55,18 @@ void exitWithError(const std::string &message);
  * @return A string representation of the current date and time.
  */
 std::string getTodayString();
+
+/**
+ * @brief Create a path from a list of parts.
+ *
+ * This function concatenates a list of strings to create a path. The parts are
+ * joined with a forward slash ('/') character. If the first part of the path
+ * starts with a forward slash, the resulting path will also start with a
+ * forward slash.
+ *
+ * @param parts A vector of strings representing the parts of the path.
+ * @param isFile A boolean value indicating whether the path represents a file.
+ * @return The concatenated path.
+ */
+std::string createPath(const std::vector<std::string> &parts,
+                       bool isFile = false);

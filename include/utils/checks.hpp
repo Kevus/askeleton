@@ -1,7 +1,8 @@
 #pragma once
 
-#include "clang/AST/Decl.h"
 #include <string>
+
+#include "clang/AST/Decl.h"
 
 /**
  * @brief Check if a string is numeric.

@@ -1,5 +1,6 @@
 #include "Config.hpp"
-#include "auxiliary_functions.hpp"
+
+#include "utils/strings.hpp"
 #include <fstream>
 
 Config &Config::getInstance() {

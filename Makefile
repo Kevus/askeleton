@@ -10,7 +10,7 @@ CLANGLIBS = $(shell llvm-config-15 --ldflags --system-libs --libs) \
 DEBUG_FLAGS = -DFULL_DEBUG # -g ON DEBUG
 OPTIMIZATION_FLAGS = -O0 # -O2 ON RELEASE
 
-SRCS = $(wildcard src/*.cpp) $(wildcard src/framework/*.cpp)
+SRCS = $(wildcard src/*.cpp) $(wildcard src/framework/*.cpp) $(wildcard src/utils/*.cpp)
 OBJS = $(SRCS:.cpp=.o)
 
 TARGET = askeleton

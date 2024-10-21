@@ -1,8 +1,8 @@
 #include "VariableInfo.hpp"
 
 #include "EquivalentTypesManager.hpp"
-#include "auxiliary_functions.hpp"
-
+#include "utils/strings.hpp"
+#include "utils/templating.hpp"
 #include "clang/AST/DeclCXX.h"
 
 #include <string>

@@ -4,8 +4,10 @@
 #include <fstream>
 #include <iostream>
 
-#include "auxiliary_functions.hpp"
 #include "constants.hpp"
+#include "utils/strings.hpp"
+#include "utils/system.hpp"
+#include "utils/templating.hpp"
 
 using namespace std;
 

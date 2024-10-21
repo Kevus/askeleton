@@ -1,8 +1,9 @@
 #include "TestFrameworks.hpp"
 
-#include "auxiliary_functions.hpp"
 #include "constants.hpp"
 #include "generators.hpp"
+#include "utils/strings.hpp"
+#include "utils/system.hpp"
 #include <fstream>
 #include <iomanip> // put_time
 #include <iostream>

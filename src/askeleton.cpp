@@ -1,7 +1,7 @@
 #include "ASKGen.hpp"
 #include "ASKMatchers.hpp"
-#include "auxiliary_functions.hpp"
 #include "framework/Generator.hpp"
+#include "utils/system.hpp"
 
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"

@@ -5,8 +5,9 @@
 #include <iostream>
 #include <sstream>
 
-#include "auxiliary_functions.hpp"
 #include "framework/BoostGen.hpp"
+#include "utils/strings.hpp"
+#include "utils/system.hpp"
 #include "clang/AST/ASTContext.h"
 
 using namespace clang::ast_matchers;

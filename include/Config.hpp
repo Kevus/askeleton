@@ -1,5 +1,5 @@
 #pragma once
-#include "auxiliary_functions.hpp"
+
 #include <nlohmann/json.hpp>
 
 class Config {

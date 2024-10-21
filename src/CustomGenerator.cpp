@@ -1,6 +1,7 @@
 #include "CustomGenerator.hpp"
 
-#include "auxiliary_functions.hpp"
+#include "utils/system.hpp"
+#include "utils/templating.hpp"
 #include <filesystem>
 
 using namespace std;
