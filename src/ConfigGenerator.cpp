@@ -11,6 +11,8 @@
 
 using namespace std;
 
+const Config &ConfigGenerator::config = Config::getInstance();
+
 RandomValuesGenerator ConfigGenerator::rvg;
 
 ConfigGenerator::ConfigGenerator(const string &target)
@@ -23,6 +25,12 @@ ConfigGenerator::ConfigGenerator(const string &target)
         exitWithError("Error creating directory: " + string(e.what()));
     }
 
+    // string configFileTemplate = createPath({
+    //     getAskeletonHome(),
+    //     config.get("route.templates"),
+    //     config.get("file.template.cfg_tpl"),
+    // });
+
     std::ofstream configfileStream(configFilePath, ios_base::app);
     if (configfileStream.is_open()) {
         configfileStream << getCommentHeader(target);
@@ -34,7 +42,6 @@ ConfigGenerator::ConfigGenerator(const string &target)
 void ConfigGenerator::generateTestCase(const string &functionName,
                                        const vector<InfoVariable> &params,
                                        const InfoType &returnType) const {
-
     stringstream ss;
 
     ss << functionName << ":\n{\n";

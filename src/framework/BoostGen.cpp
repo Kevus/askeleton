@@ -1,6 +1,7 @@
 #include "framework/BoostGen.hpp"
-#include "constants.hpp"
 
+#include "constants.hpp"
+#include "utils/templating.hpp"
 #include <cctype>
 #include <iostream>
 

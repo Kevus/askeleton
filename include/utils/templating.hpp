@@ -40,33 +40,76 @@ void removeTypeQualifiers(std::string &type);
 void replaceTypeCharacters(std::string &type);
 
 /**
- * @brief Check if a parameter is in a list of parameters.
+ * @brief Cleans unnecessary characters from a given string.
  *
- * This function checks if a parameter with the specified name is present in a
- * list of parameters. If the parameter is found, the function saves the type of
- * the parameter in the provided string reference and returns true. Otherwise,
- * it returns false.
+ * This function performs the following operations on the input string:
+ * - Removes occurrences of "std::".
+ * - Removes occurrences of "__cxx11::".
+ * - Replaces all spaces with underscores, but only if the string does not
+ * contain the character '<'.
  *
- * @param name The name of the parameter to search for.
- * @param params The list of parameters to search in.
- * @param type A reference to a string where the type of the parameter will be
- * saved.
- * @return true if the parameter is found, false otherwise.
+ * @param sToReplace The string to be cleaned.
+ * @return A new string with the unnecessary characters removed or replaced.
  */
 std::string cleanUnnecesaryChars(std::string sToReplace);
 
 /**
- * @brief Check if a parameter is in a list of parameters.
+ * @brief Convert a clang expression to a string.
  *
- * This function checks if a parameter with the specified name is present in a
- * list of parameters. If the parameter is found, the function saves the type of
- * the parameter in the provided string reference and returns true. Otherwise,
- * it returns false.
+ * This function converts a clang expression to a string. It uses the provided
+ * source manager to get the character data of the expression and return it as a
+ * string.
  *
- * @param name The name of the parameter to search for.
- * @param params The list of parameters to search in.
- * @param type A reference to a string where the type of the parameter will be
- * saved.
- * @return true if the parameter is found, false otherwise.
+ * @param E The clang expression to convert.
+ * @param SM The source manager to use to get the character data.
+ * @return std::string The expression as a string.
  */
 std::string convertExpressionToString(clang::Expr *E, clang::SourceManager &SM);
+
+/**
+ * @brief Replace all occurrences of a substring in a string.
+ *
+ * This function replaces all occurrences of a substring in a string with a
+ * specified replacement.
+ *
+ * @param str The string in which to replace substrings.
+ * @param from The substring to replace.
+ * @param to The replacement for the substring.
+ */
+void replaceTokensInText(
+    std::string &text, const std::map<std::string, std::string> &replacements);
+
+/**
+ * @brief Replaces tokens in a file with specified replacements.
+ *
+ * This function reads the content of the input file, replaces all occurrences
+ * of the tokens specified in the replacements map with their corresponding
+ * values, and writes the modified content to the output file.
+ *
+ * @param inputFilePath The path to the input file containing the original
+ * content.
+ * @param outputFilePath The path to the output file where the modified content
+ * will be written.
+ * @param replacements A map where the keys are the tokens to be replaced and
+ * the values are the replacements.
+ */
+void replaceTokensInFile(
+    const std::string &inputFilePath, const std::string &outputFilePath,
+    const std::map<std::string, std::string> &replacements);
+
+/**
+ * @brief Replaces tokens in a file with specified replacements.
+ *
+ * This function reads the content of the input file, replaces all occurrences
+ * of the tokens specified in the replacements map with their corresponding
+ * values, and returns the modified content.
+ *
+ * @param inputFilePath The path to the input file containing the original
+ * content.
+ * @param replacements A map where the keys are the tokens to be replaced and
+ * the values are the replacements.
+ * @return std::string The modified content.
+ */
+std::string
+replaceTokensInFile(const std::string &inputFilePath,
+                    const std::map<std::string, std::string> &replacements);

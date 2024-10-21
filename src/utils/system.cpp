@@ -2,6 +2,7 @@
 #include "utils/strings.hpp"
 
 #include <ctime>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -9,6 +10,8 @@
 #include <vector>
 
 using namespace std;
+
+string ASKELETON_HOME;
 
 bool fileExists(const string &filename) {
     struct stat buffer;
@@ -62,4 +65,59 @@ std::string createPath(const std::vector<std::string> &parts, bool isFile) {
     if (isFile)
         path.pop_back();
     return path;
+}
+
+string readFromFile(const std::string &filePath) {
+    std::ifstream file(filePath);
+    if (!file.is_open())
+        showOpenFileError(filePath);
+
+    return {std::istreambuf_iterator<char>(file),
+            std::istreambuf_iterator<char>()};
+}
+
+void writeToFile(const std::string &filePath, const std::string &content) {
+    std::ofstream file(filePath);
+    if (!file.is_open())
+        showOpenFileError(filePath);
+
+    file << content;
+}
+
+void appendToFile(const std::string &filePath, const std::string &content) {
+    std::ofstream file(filePath, std::ios_base::app);
+    if (!file.is_open())
+        showOpenFileError(filePath);
+
+    file << content;
+}
+
+void showOpenFileError(const string &filePath) {
+    cerr << "Error opening file: " << filePath << "\n";
+    cerr << "Error: " << strerror(errno) << "\n";
+}
+
+void setAskeletonHome(const string &path) { ASKELETON_HOME = path; }
+
+string getAskeletonHome() { return ASKELETON_HOME; }
+
+optional<string> getFileWithExtensions(const string &filePath,
+                                       const vector<string> &extensions) {
+    string basePath = filePath.substr(0, filePath.find_last_of("."));
+
+    for (const auto &ext : extensions) {
+        string fullPath = basePath + ext;
+        if (fileExists(fullPath)) {
+            return fullPath;
+        }
+    }
+    return nullopt;
+}
+
+optional<string> getSourceFile(const string &filePath) {
+    return getFileWithExtensions(filePath, {".cpp", ".c"});
+}
+
+optional<string> getHeaderFile(const string &filePath) {
+    return getFileWithExtensions(filePath, {".hpp", ".h"});
 }

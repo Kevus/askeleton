@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "Config.hpp"
 #include "RandomValuesGenerator.hpp"
 #include "VariableInfo.hpp"
 
@@ -31,6 +32,8 @@ private:
                          const std::string &prefix = "return_") const;
 
     void appendToConfigFile(const std::string &content) const;
+
+    static const Config &config;
 
     // TEST
     static RandomValuesGenerator rvg;

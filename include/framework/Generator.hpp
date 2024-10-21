@@ -39,22 +39,6 @@ public:
     static unsigned MAX_DEPTH;
 
 protected:
-    std::string readFromFile(const std::string &filePath) const;
-    void writeToFile(const std::string &filePath,
-                     const std::string &content) const;
-    void appendToFile(const std::string &filePath,
-                      const std::string &content) const;
-
-    void replaceTokensInText(
-        std::string &text,
-        const std::map<std::string, std::string> &replacements) const;
-    void replaceTokensInFile(
-        const std::string &inputFilePath, const std::string &outputFilePath,
-        const std::map<std::string, std::string> &replacements) const;
-    std::string replaceTokensInFile(
-        const std::string &inputFilePath,
-        const std::map<std::string, std::string> &replacements) const;
-
     std::string
     generateParameterInitialization(const std::vector<InfoVariable> &parameters,
                                     const std::string &function) const;

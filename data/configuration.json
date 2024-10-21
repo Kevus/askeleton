@@ -6,6 +6,7 @@
             "fixture_tpl": "fixture.tpl",
             "test_tpl": "test.tpl",
             "makefile_tpl": "makefile.tpl",
+            "cfg_tpl": "cfgFile.tpl",
             "method": {
                 "pointer_read": "methods/pointerRead.tpl",
                 "enum_read": "methods/enumRead.tpl",

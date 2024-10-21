@@ -19,28 +19,6 @@ using std::string;
 using std::stringstream;
 using std::vector;
 
-std::optional<std::string>
-getFileWithExtensions(const std::string &filePath,
-                      const std::vector<std::string> &extensions) {
-    std::string basePath = filePath.substr(0, filePath.find_last_of("."));
-
-    for (const auto &ext : extensions) {
-        std::string fullPath = basePath + ext;
-        if (fileExists(fullPath)) {
-            return fullPath;
-        }
-    }
-    return std::nullopt;
-}
-
-std::optional<string> getSourceFile(const string &filePath) {
-    return getFileWithExtensions(filePath, {".cpp", ".c"});
-}
-
-std::optional<string> getHeaderFile(const string &filePath) {
-    return getFileWithExtensions(filePath, {".hpp", ".h"});
-}
-
 Generator::Generator(const std::string &targetName, const std::string &filePath,
                      const std::string &framework, bool isFromClass)
     : targetName(targetName), filePath(filePath), templatePath(ASKELETON_HOME),
@@ -66,59 +44,6 @@ Generator::Generator(const std::string &targetName, const std::string &filePath,
     generateTest();
     generateFixture(valuesToChange);
     generateMakefile(valuesToChange);
-}
-
-string Generator::readFromFile(const std::string &filePath) const {
-    std::ifstream file(filePath);
-    if (!file.is_open())
-        exitWithError(errors::openFileError(filePath));
-
-    return {std::istreambuf_iterator<char>(file),
-            std::istreambuf_iterator<char>()};
-}
-
-void Generator::writeToFile(const std::string &filePath,
-                            const std::string &content) const {
-    std::ofstream file(filePath);
-    if (!file.is_open())
-        exitWithError(errors::openFileError(filePath));
-
-    file << content;
-}
-
-void Generator::replaceTokensInText(
-    string &text,
-    const std::map<std::string, std::string> &replacements) const {
-
-    for (const auto &[key, value] : replacements)
-        replaceAll(text, key, value);
-}
-
-void Generator::replaceTokensInFile(
-    const std::string &templateFilePath, const std::string &outputFilePath,
-    const std::map<std::string, std::string> &replacements) const {
-
-    string fileContent = readFromFile(templateFilePath);
-    replaceTokensInText(fileContent, replacements);
-    writeToFile(outputFilePath, fileContent);
-}
-
-std::string Generator::replaceTokensInFile(
-    const std::string &inputFilePath,
-    const std::map<std::string, std::string> &replacements) const {
-
-    string fileContent = readFromFile(inputFilePath);
-    replaceTokensInText(fileContent, replacements);
-    return fileContent;
-}
-
-void Generator::appendToFile(const std::string &filePath,
-                             const std::string &content) const {
-    std::ofstream file(filePath, std::ios_base::app);
-    if (!file.is_open())
-        exitWithError(errors::openFileError(filePath));
-
-    file << content;
 }
 
 void Generator::appendTestCaseToTestFile(const std::string &testCase) const {
@@ -325,7 +250,7 @@ void Generator::createTypeReadToFixture(const InfoType &type, unsigned level) {
         return;
 
     if (type.isPointer()) {
-        createPointerReadToFixture(type);
+        // createPointerReadToFixture(type);
         createTypeReadToFixture(type.getUnderlyingType());
 
     } else if (type.isReference()) {

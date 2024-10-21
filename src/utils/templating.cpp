@@ -1,14 +1,17 @@
 #include "utils/templating.hpp"
-#include "utils/strings.hpp"
 
 #include <algorithm>
 #include <ctime>
+#include <fstream>
 #include <initializer_list>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
+#include "utils/strings.hpp"
+#include "utils/system.hpp"
 #include "clang/AST/Expr.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/SourceManager.h"
@@ -109,4 +112,29 @@ string convertExpressionToString(Expr *E, SourceManager &SM) {
     } catch (std::bad_alloc &ba) {
         return "";
     }
+}
+
+void replaceTokensInText(
+    string &text, const std::map<std::string, std::string> &replacements) {
+
+    for (const auto &[key, value] : replacements)
+        replaceAll(text, key, value);
+}
+
+void replaceTokensInFile(
+    const std::string &templateFilePath, const std::string &outputFilePath,
+    const std::map<std::string, std::string> &replacements) {
+
+    string fileContent = readFromFile(templateFilePath);
+    replaceTokensInText(fileContent, replacements);
+    writeToFile(outputFilePath, fileContent);
+}
+
+std::string
+replaceTokensInFile(const std::string &inputFilePath,
+                    const std::map<std::string, std::string> &replacements) {
+
+    string fileContent = readFromFile(inputFilePath);
+    replaceTokensInText(fileContent, replacements);
+    return fileContent;
 }
