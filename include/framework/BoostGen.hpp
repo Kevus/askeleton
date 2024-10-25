@@ -3,6 +3,7 @@
 #include "Generator.hpp"
 #include "VariableInfo.hpp"
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -28,5 +29,7 @@ private:
     generatePointersAsserts(const std::vector<InfoVariable> &parameters,
                             const std::string &function) const override;
 
-    const static std::string BOOST_ASSERT_POINTER;
+    int getFunctionCounter(const std::string &function) const;
+    void incrementFunctionCounter(const std::string &function);
+    std::map<std::string, unsigned> functionCounter;
 };

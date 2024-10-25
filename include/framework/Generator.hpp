@@ -2,24 +2,37 @@
 
 #include "Config.hpp"
 #include "VariableInfo.hpp"
+
 #include <map>
+#include <nlohmann/json.hpp>
 #include <set>
 #include <string>
 #include <vector>
 
-enum Framework { BOOST, CATCH, GTEST };
+struct targetInfo {
+    std::string name;
+    std::string path;
+    bool isClass;
+};
+
+struct outputFiles {
+    std::string fixture;
+    std::string makefile;
+    std::string supported;
+    std::string test;
+};
 
 class Generator {
 public:
     Generator() = delete;
-
     Generator(const std::string &targetName, const std::string &filePath,
-              const std::string &framework, bool isFromClass = false);
+              bool isFromClass = false);
 
+    bool isTypeSupported(const InfoType &type) const;
     void createTypeReadToFixture(const InfoType &type, unsigned level = 0);
     void markTypeAsSupported(const InfoType &type);
 
-    bool isTypeSupported(const InfoType &type) const;
+    static void setTemplateItems();
 
     virtual void
     generateFunctionAssert(const std::string &function,
@@ -34,11 +47,14 @@ public:
 
     virtual ~Generator();
 
-    static std::string ASKELETON_HOME;
-    static Framework FRAMEWORK;
     static unsigned MAX_DEPTH;
 
 protected:
+    void
+    setValuesToChange(std::map<std::string, std::string> &valuesToChange) const;
+    void setOutputFiles(const std::map<std::string, std::string> &) const;
+    void setFrameworkTemplatePath(const std::filesystem::path &frwPath);
+
     std::string
     generateParameterInitialization(const std::vector<InfoVariable> &parameters,
                                     const std::string &function) const;
@@ -61,29 +77,21 @@ protected:
     generatePointersAsserts(const std::vector<InfoVariable> &parameters,
                             const std::string &function) const = 0;
 
-    std::string getFrameworkTemplatePath(const std::string &tpl = "") const;
-
     void appendTestCaseToTestFile(const std::string &testCase) const;
 
-    std::string targetName, filePath, templatePath;
-    bool isFromClass;
-    std::string fileName;
-    std::string folderPath, fixturePath, makefilePath, supportedPath,
-        configPath, testPath;
-    std::set<std::string> supportedTypes;
+    const static Config &config;
+
+    const std::string targetName, targetFilePath, targetFileName;
+    const bool isFromClass;
+
+    std::filesystem::path templateFrameworkPath, templateMethodPath;
+    std::filesystem::path utPath, fixturePath, makefilePath, supportedPath,
+        testPath;
+    static nlohmann::json templateItems;
 
 private:
-    void replaceTargetOnPaths();
-    void generateTemplatePath();
-
-    void initializeValuesToChange(
-        std::map<std::string, std::string> &valuesToChange) const;
-    void createTestDirectory() const;
-    void initializeSupportedTypes();
-
-    void generateTest() const;
-    void generateFixture(const std::map<std::string, std::string> &) const;
-    void generateMakefile(const std::map<std::string, std::string> &) const;
+    void setOutputFilesPath();
+    void setSupportedTypes();
 
     void createPointerReadToFixture(const InfoType &type) const;
     void createEnumReadToFixture(const InfoType &type) const;
@@ -96,9 +104,5 @@ private:
     static std::string
     getMethodTemplatePath(const std::string &methodTemplate = "");
 
-    const static std::string ASSIGN_INSTRUCTION_TEMPLATE,
-        READ_INSTRUCTION_TEMPLATE;
-    const static std::string FIELD_ASSIGN_TPL, FIELD_COMPARISON_TPL,
-        FIELD_INSERTION_TPL;
-    const static Config &config;
+    std::set<std::string> supportedTypes;
 };

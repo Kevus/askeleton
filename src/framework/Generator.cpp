@@ -4,123 +4,89 @@
 #include <fstream>
 #include <iostream>
 
-#include <nlohmann/json.hpp>
-
 #include "constants.hpp"
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
 #include "utils/templating.hpp"
 
 using namespace askeleton;
+using namespace std;
+namespace fs = std::filesystem;
 
-using std::cerr;
-using std::cout;
-using std::string;
-using std::stringstream;
-using std::vector;
+Generator::Generator(const string &targetName, const string &filePath,
+                     bool isFromClass)
+    : targetName(targetName), targetFilePath(filePath), templateFrameworkPath(),
+      isFromClass(isFromClass), targetFileName(extractFileName(filePath)),
+      utPath(getAskeletonHome() / config.get("route.ut") / targetName) {
 
-Generator::Generator(const std::string &targetName, const std::string &filePath,
-                     const std::string &framework, bool isFromClass)
-    : targetName(targetName), filePath(filePath), templatePath(ASKELETON_HOME),
-      isFromClass(isFromClass), fileName(extractFileName(filePath)),
-      folderPath(createPath({routes::TEST_ROUTE, targetName})),
-      fixturePath(createPath(
-          {folderPath, config.get("file.output.test_fixture")}, true)),
-      makefilePath(
-          createPath({folderPath, config.get("file.output.makefile")}, true)),
-      supportedPath(createPath(
-          {folderPath, config.get("file.output.supported_types")}, true)),
-      configPath(createPath({folderPath, config.get("file.output.cfg")}, true)),
-      testPath(
-          createPath({folderPath, config.get("file.output.test_file")}, true)) {
-    generateTemplatePath();
-    replaceTargetOnPaths();
-    std::map<std::string, std::string> valuesToChange;
-    initializeValuesToChange(valuesToChange);
-    initializeSupportedTypes();
-
-    createTestDirectory();
-
-    generateTest();
-    generateFixture(valuesToChange);
-    generateMakefile(valuesToChange);
+    setOutputFilesPath();
+    setSupportedTypes();
 }
 
 void Generator::appendTestCaseToTestFile(const std::string &testCase) const {
     appendToFile(testPath, "\n\n" + testCase);
 }
 
-void Generator::replaceTargetOnPaths() {
-    std::map<std::string, std::string> replacements = {
-        {tplitems::TARGET, targetName}};
-    replaceTokensInText(supportedPath, replacements);
-    replaceTokensInText(makefilePath, replacements);
-    replaceTokensInText(testPath, replacements);
-    replaceTokensInText(fixturePath, replacements);
+void Generator::setOutputFilesPath() {
+    const std::map<std::string, std::string> replacements = {
+        {config.get("tplitem.target"), targetName}};
+
+    string fixtureFileName = config.get("file.output.test_fixture");
+    string makefileFileName = config.get("file.output.makefile");
+    string testFileName = config.get("file.output.test_file");
+    string supportedFileName = config.get("file.output.supported_types");
+
+    replaceTokensInText(fixtureFileName, replacements);
+    replaceTokensInText(makefileFileName, replacements);
+    replaceTokensInText(testFileName, replacements);
+    replaceTokensInText(supportedFileName, replacements);
+
+    fixturePath = utPath / fixtureFileName;
+    makefilePath = utPath / makefileFileName;
+    supportedPath = utPath / supportedFileName;
+    testPath = utPath / testFileName;
 }
 
-void Generator::generateTemplatePath() {
-    switch (FRAMEWORK) {
-    case Framework::BOOST:
-        templatePath += config.get("route.boost_templates");
-        break;
-    case Framework::CATCH:
-        templatePath += config.get("route.catch_templates");
-        break;
-    case Framework::GTEST:
-        templatePath += config.get("route.gtest_templates");
-        break;
-    }
-}
-
-void Generator::initializeValuesToChange(
+void Generator::setValuesToChange(
     std::map<std::string, std::string> &valuesToChange) const {
-    auto sourceFile = getSourceFile(filePath);
-    auto headerFile = getHeaderFile(filePath);
+    auto sourceFile = getSourceFile(targetFilePath);
+    auto headerFile = getHeaderFile(targetFilePath);
 
     if (!sourceFile)
-        std::cerr << "WARNING: Source file was not found for " << filePath
+        std::cerr << "WARNING: Source file was not found for " << targetFilePath
                   << "\n\tRemind to add it manually in the Makefile\n";
     if (!headerFile)
-        std::cerr << "WARNING: Header file was not found for " << filePath
+        std::cerr << "WARNING: Header file was not found for " << targetFilePath
                   << "\n\tRemind to add it manually in the fixture\n";
 
     valuesToChange = {
-        {tplitems::FILE_PATH, filePath},
-        {tplitems::TARGET, targetName},
-        {tplitems::FILE_NAME, fileName},
+        {config.get("tplitem.file_path"), targetFilePath},
+        {config.get("tplitem.target"), targetName},
+        {config.get("tplitem.file_name"), targetFileName},
 
-        {tplitems::CPP_PATH, sourceFile.value_or(filePath)},
-        {tplitems::HEADER_PATH, headerFile.value_or(filePath)},
+        {config.get("tplitem.cpp_path"), sourceFile.value_or(targetFilePath)},
+        {config.get("tplitem.header_path"),
+         headerFile.value_or(targetFilePath)},
 
-        {tplitems::DATE_OF_GENERATION, getTodayString()},
-        {tplitems::INCLUDES, ""},
-        {tplitems::NAMESPACES, ""},
-        {tplitems::NEW_METHODS, ""},
+        {config.get("tplitem.date_of_generation"), getTodayString()},
+        {config.get("tplitem.includes"), ""},
+        {config.get("tplitem.namespaces"), ""},
+        {config.get("tplitem.new_methods"), ""},
     };
 
     if (isFromClass) {
-        valuesToChange.insert({tplitems::CLASS_NAME, targetName});
+        valuesToChange.insert({config.get("tplitem.class_name"), targetName});
         valuesToChange.insert(
-            {tplitems::CLASS_NAME_TEST, targetName + "_test;"});
+            {config.get("tplitem.class_name_test"), targetName + "_test;"});
     } else {
-        valuesToChange.insert({tplitems::CLASS_NAME, ""});
-        valuesToChange.insert({tplitems::CLASS_NAME_TEST, ""});
+        valuesToChange.insert({config.get("tplitem.class_name"), ""});
+        valuesToChange.insert({config.get("tplitem.class_name_test"), ""});
     }
 }
 
-void Generator::createTestDirectory() const {
-    try {
-        std::filesystem::create_directories(folderPath);
-    } catch (const std::filesystem::filesystem_error &e) {
-        std::cerr << "ERROR: directory " << folderPath
-                  << " couldn't be created: " << e.what() << "\n";
-    }
-}
-
-void Generator::initializeSupportedTypes() {
-    std::string supportedTypesPath =
-        ASKELETON_HOME + askeleton::files::SUPPORTED_TYPES_JSON;
+void Generator::setSupportedTypes() {
+    fs::path supportedTypesPath =
+        getAskeletonHome() / config.get("file.supported_types_json");
     std::ifstream file(supportedTypesPath);
     if (!file.is_open())
         exitWithError(errors::openFileError(supportedTypesPath));
@@ -134,33 +100,30 @@ void Generator::initializeSupportedTypes() {
     }
 }
 
-void Generator::generateTest() const {
-    replaceTokensInFile(templatePath + files::TEST_TPL, testPath,
-                        {{tplitems::TARGET, targetName}});
-}
+void Generator::setOutputFiles(
+    const map<string, string> &tokensToReplace) const {
+    const fs::path templatePath = this->templateFrameworkPath;
 
-void Generator::generateFixture(
-    const std::map<std::string, std::string> &valuesToChange) const {
-    replaceTokensInFile(templatePath + files::FIXTURE_TPL, fixturePath,
-                        valuesToChange);
-}
-
-void Generator::generateMakefile(
-    const std::map<std::string, std::string> &valuesToChange) const {
-    replaceTokensInFile(templatePath + files::MAKEFILE_TPL, makefilePath,
-                        valuesToChange);
+    replaceTokensInFile(templatePath / config.get("file.template.test_tpl"),
+                        tokensToReplace);
+    replaceTokensInFile(templatePath / config.get("file.template.fixture_tpl"),
+                        tokensToReplace);
+    replaceTokensInFile(templatePath / config.get("file.template.makefile_tpl"),
+                        tokensToReplace);
 }
 
 void Generator::appendReadMethodToFixture(const std::string &method) const {
     replaceTokensInFile(
         fixturePath, fixturePath,
-        {{tplitems::READ_OBJECT, "\n\n" + method + tplitems::READ_OBJECT}});
+        {{config.get("tplitem.read_object"),
+          "\n\n" + method + config.get("tplitem.read_object")}});
 }
 
 void Generator::appendOverloadMethodsToFixture(const std::string &op) const {
-    replaceTokensInFile(fixturePath, fixturePath,
-                        {{tplitems::OVERLOAD_OPERATOR,
-                          "\n\n" + op + tplitems::OVERLOAD_OPERATOR}});
+    replaceTokensInFile(
+        fixturePath, fixturePath,
+        {{config.get("tplitem.overload_operator"),
+          "\n\n" + op + config.get("tplitem.overload_operator")}});
 }
 
 void Generator::createPointerReadToFixture(const InfoType &type) const {
@@ -190,7 +153,7 @@ void Generator::createRecordReadToFixture(const InfoType &type) const {
         readFromFile(getMethodTemplatePath(files::READ_RECORD_METHOD));
 
     for (const auto &field : type.getRecordFields()) {
-        string assignField = FIELD_ASSIGN_TPL;
+        string assignField = config.get("templating.field_assign");
         replaceTokensInText(assignField,
                             {{tplitems::FIELD, field.name},
                              {tplitems::FORMATTED, field.formatted}});
@@ -205,27 +168,27 @@ void Generator::createRecordReadToFixture(const InfoType &type) const {
 }
 
 void Generator::createRecordOverloadToFixture(const InfoType &type) const {
-    stringstream comparisons, insertions;
-    string method = readFromFile(
-               getMethodTemplatePath(files::OVERLOAD_RECORD_METHOD)),
-           comparison = FIELD_COMPARISON_TPL, insertion = FIELD_INSERTION_TPL;
+    const static string comparison = config.get("templating.field_comparison"),
+                        insertion = config.get("templating.field_insertion"),
+                        tplitemField = config.get("tplitem.field"),
+                        tplitemFieldFormatted =
+                            config.get("tplitem.field_formatted");
 
+    stringstream comparisons, insertions;
     unsigned n_fields = type.getRecordFields().size();
-    if (n_fields == 0) {
+    if (n_fields == 0)
         comparisons << "\t\ttrue";
-    }
 
     for (const auto &field : type.getRecordFields()) {
-        --n_fields;
         string comparisonField = comparison, insertionField = insertion;
+        map<string, string> replacements = {
+            {tplitemField, field.name},
+            {tplitemFieldFormatted, field.formatted}};
 
-        replaceTokensInText(comparisonField,
-                            {{tplitems::FIELD, field.name},
-                             {tplitems::FIELD_FORMATTED, field.formatted}});
-        replaceTokensInText(insertionField,
-                            {{tplitems::FIELD, field.name},
-                             {tplitems::FIELD_FORMATTED, field.formatted}});
+        replaceTokensInText(comparisonField, replacements);
+        replaceTokensInText(insertionField, replacements);
 
+        --n_fields;
         if (n_fields > 0)
             comparisonField += " &&";
 
@@ -238,6 +201,8 @@ void Generator::createRecordOverloadToFixture(const InfoType &type) const {
         }
     }
 
+    string method =
+        readFromFile(getMethodTemplatePath(files::OVERLOAD_RECORD_METHOD));
     replaceTokensInText(method, {{tplitems::TYPE, type.original},
                                  {tplitems::FORMATTED, type.formatted},
                                  {tplitems::COMPARISONS, comparisons.str()},
@@ -250,7 +215,6 @@ void Generator::createTypeReadToFixture(const InfoType &type, unsigned level) {
         return;
 
     if (type.isPointer()) {
-        // createPointerReadToFixture(type);
         createTypeReadToFixture(type.getUnderlyingType());
 
     } else if (type.isReference()) {
@@ -272,16 +236,14 @@ void Generator::createTypeReadToFixture(const InfoType &type, unsigned level) {
 
 void Generator::markTypeAsSupported(const InfoType &type) {
     supportedTypes.insert(type.original);
-    // writeToFile(supportedPath,
-    //             readFromFile(supportedPath) + type.formatted + "\n");
 }
 
 bool Generator::isTypeSupported(const InfoType &type) const {
     return supportedTypes.find(type.original) != supportedTypes.end();
 }
 
-std::string Generator::getFrameworkTemplatePath(const std::string &tpl) const {
-    return templatePath + tpl;
+void Generator::setFrameworkTemplatePath(const fs::path &frameworkPath) {
+    templateFrameworkPath = frameworkPath;
 }
 
 std::string Generator::generateParameterInitialization(
@@ -300,7 +262,8 @@ std::string
 Generator::generateParameterInitialization(const InfoVariable &variable,
                                            const std::string &function) const {
 
-    std::string readInstructionContent = ASSIGN_INSTRUCTION_TEMPLATE;
+    std::string readInstructionContent =
+        config.get("templating.assign_instruction");
     InfoType underlying = variable.getUnderlyingType();
     string variableName =
         variable.name + (underlying.isPointer() ? "_input" : "");
@@ -331,7 +294,7 @@ Generator::generateParameterInitialization(const InfoType &type,
 
 std::string Generator::generateReadInvocation(const InfoVariable &type,
                                               const string &function) const {
-    string readInvocation = READ_INSTRUCTION_TEMPLATE;
+    string readInvocation = config.get("templating.read_instruction");
     replaceTokensInText(readInvocation,
                         {{tplitems::UNDERLYING_FORMATTED, type.formatted},
                          {"{target}", function},
@@ -378,20 +341,13 @@ Generator::~Generator() {
 
 std::string
 Generator::getMethodTemplatePath(const std::string &methodTemplate) {
-    return ASKELETON_HOME + routes::TEMPLATES_ROUTE + methodTemplate;
+    const static fs::path methodsTplPath =
+        getAskeletonHome() / config.get("route.templates");
+    return methodsTplPath / methodTemplate;
 }
 
-std::string Generator::ASKELETON_HOME;
-Framework Generator::FRAMEWORK = BOOST;
+void Generator::setTemplateItems() { templateItems = loadTemplateItems(); }
+
 unsigned Generator::MAX_DEPTH;
 const Config &Generator::config = Config::getInstance();
-
-const std::string Generator::ASSIGN_INSTRUCTION_TEMPLATE =
-    "{underlying} {name} = Read_{underlyingFormatted}(\"{target}.{name}\")";
-const std::string Generator::READ_INSTRUCTION_TEMPLATE =
-    "Read_{underlyingFormatted}(\"{target}.{name}\")";
-const std::string Generator::FIELD_ASSIGN_TPL =
-    "result.{field} = Read_{formatted}(objectKey + \".{field}\");";
-const std::string Generator::FIELD_COMPARISON_TPL = "a.{field} == b.{field}";
-const std::string Generator::FIELD_INSERTION_TPL =
-    "os << \"{field}:\" << object.{field} << \"\\n\";";
+nlohmann::json Generator::templateItems;

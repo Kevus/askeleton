@@ -1,38 +1,32 @@
 #include "utils/system.hpp"
+
+#include "Config.hpp"
 #include "utils/strings.hpp"
 
 #include <ctime>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <sstream>
-#include <sys/stat.h>
 #include <vector>
 
 using namespace std;
+namespace fs = filesystem;
+using json = nlohmann::json;
 
-string ASKELETON_HOME;
+fs::path ASKELETON_HOME;
+Framework SELECTED_FRAMEWORK;
 
 bool fileExists(const string &filename) {
-    struct stat buffer;
-    return (stat(filename.c_str(), &buffer) == 0);
+    return fs::exists(filename) && fs::is_regular_file(filename);
 }
 
 bool folderExists(const string &folder) {
-    struct stat info;
-
-    if (stat(folder.c_str(), &info) != 0)
-        return false;
-    else
-        return (info.st_mode & S_IFDIR);
+    return fs::exists(folder) && fs::is_directory(folder);
 }
 
-string extractFileName(const string &fileRoute) {
-    unsigned first = fileRoute.find_last_of("/\\") + 1;
-    unsigned last = fileRoute.find_last_of(".");
-
-    return fileRoute.substr(first, last - first);
-}
+string extractFileName(const fs::path &fileRoute) { return fileRoute.stem(); }
 
 void exitWithError(const string &message) {
     cerr << message << "\n";
@@ -41,30 +35,27 @@ void exitWithError(const string &message) {
     exit(EXIT_FAILURE);
 }
 
-string getTodayString() {
+string getTodayString(const string &format) {
     ostringstream oss;
     auto t = time(nullptr);
     auto tm = *localtime(&t);
 
-    oss << put_time(&tm, "%d-%m-%Y %H:%M:%S");
+    oss << put_time(&tm, format.c_str());
 
     return oss.str();
 }
 
 std::string createPath(const std::vector<std::string> &parts, bool isFile) {
-    std::string path;
+    fs::path result;
 
     if (!parts.empty() && parts[0][0] == '/')
-        path = "/";
+        result = "/";
 
     for (const std::string &part : parts) {
-        path += part + "/";
+        result /= part;
     }
 
-    replaceAll(path, "//", "/");
-    if (isFile)
-        path.pop_back();
-    return path;
+    return result;
 }
 
 string readFromFile(const std::string &filePath) {
@@ -97,9 +88,9 @@ void showOpenFileError(const string &filePath) {
     cerr << "Error: " << strerror(errno) << "\n";
 }
 
-void setAskeletonHome(const string &path) { ASKELETON_HOME = path; }
+void setAskeletonHome(const fs::path &askPath) { ASKELETON_HOME = askPath; }
 
-string getAskeletonHome() { return ASKELETON_HOME; }
+fs::path getAskeletonHome() { return ASKELETON_HOME; }
 
 optional<string> getFileWithExtensions(const string &filePath,
                                        const vector<string> &extensions) {
@@ -121,3 +112,21 @@ optional<string> getSourceFile(const string &filePath) {
 optional<string> getHeaderFile(const string &filePath) {
     return getFileWithExtensions(filePath, {".hpp", ".h"});
 }
+
+json loadTemplateItems() {
+    string tplItemFile = Config::getInstance().get("file.data.template_items");
+    fs::path tplItemPath = getAskeletonHome() / tplItemFile;
+
+    ifstream file(tplItemPath);
+    if (!file.is_open())
+        exitWithError("Error opening file: " + tplItemPath.string());
+
+    json templateItems;
+    file >> templateItems;
+
+    return templateItems;
+}
+
+void setFramework(Framework framework) { SELECTED_FRAMEWORK = framework; }
+
+Framework getFramework() { return SELECTED_FRAMEWORK; }

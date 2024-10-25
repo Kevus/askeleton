@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <ctime>
+#include <filesystem>
 #include <fstream>
 #include <initializer_list>
 #include <iomanip>
@@ -19,6 +20,7 @@
 
 using namespace clang;
 using namespace std;
+namespace fs = std::filesystem;
 
 string getCommentHeader(string filename) {
     /**

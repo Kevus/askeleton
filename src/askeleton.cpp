@@ -15,6 +15,7 @@ using namespace clang;
 using namespace clang::tooling;
 
 using namespace std;
+namespace fs = std::filesystem;
 
 static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 
@@ -34,29 +35,52 @@ cl::opt<int> DeepLevel("deep_level",
                        cl::desc("Specify the maximum depth level"),
                        cl::value_desc("level"), cl::init(1), cl::cat(OptC));
 
-static string GENERATION_FOLDER = "Generated";
-
 int main(int argc, const char **argv) {
-    // Setting the ASKELETON_HOME static member
+    if (CatchFramework)
+        setFrameWork(CATCH);
+    else if (GtestFramework)
+        setFrameWork(GTEST);
+    else
+        setFrameWork(BOOST);
+
     if (getenv("ASKELETON_HOME") != NULL) {
-        Generator::ASKELETON_HOME = getenv("ASKELETON_HOME");
+        setAskeletonHome(getenv("ASKELETON_HOME"));
     } else {
-        Generator::ASKELETON_HOME = ".";
+        setAskeletonHome(fs::current_path());
         cerr
             << "WARNING: ASKELETON_HOME is not set. Templates will not be "
                "accesible unless runing ASKELETON in the compilation folder.\n";
     }
-    Generator::ASKELETON_HOME += "/";
-    Generator::MAX_DEPTH = DeepLevel.getValue();
-    Config::getInstance().loadConfig(createPath(
-        {Generator::ASKELETON_HOME, "data/configuration.json"}, true));
 
-    if (CatchFramework)
-        Generator::FRAMEWORK = CATCH;
-    else if (GtestFramework)
-        Generator::FRAMEWORK = GTEST;
-    else
-        Generator::FRAMEWORK = BOOST;
+    fs::path configFile = getAskeletonHome() / "data/configuration.json";
+    if (!fs::exists(configFile))
+        exitWithError("ERROR: Configuration file not found. Check " +
+                      configFile.string());
+
+    Config &config = Config::getInstance();
+    config.loadConfig(configFile);
+
+    fs::path templateFolder =
+        getAskeletonHome() / config.get("route.templates");
+    if (!fs::exists(templateFolder))
+        exitWithError("ERROR: Template folder not found. Check " +
+                      templateFolder.string());
+
+    Generator::MAX_DEPTH = DeepLevel.getValue();
+    Generator::setTemplateItems();
+
+    fs::path utFolder = config.get("route.generated");
+    if (fs::exists(utFolder)) {
+        fs::path logFolder = fs::path(config.get("route.log"));
+        if (!fs::exists(logFolder))
+            create_directory(logFolder);
+
+        logFolder /= (config.get("route.generated") + "_" +
+                      getTodayString("%d%m%Y_%H%M%S"));
+        rename(utFolder, logFolder);
+    }
+
+    fs::create_directories(getAskeletonHome() / config.get("route.ut"));
 
     // CommonOptionsParser OptionsParser(argc, argv, OptC);
     //  Esto se ha quedado 'deprecated', usando esta solucion temporal
@@ -66,28 +90,8 @@ int main(int argc, const char **argv) {
 
     clang::ast_matchers::MatchFinder Finder;
     ASKGen Functionality;
-
     for (auto i : createMapMatchers())
         Finder.addMatcher(i.second, &Functionality);
-
-    // We'll get the time for the LOG folder
-    if (folderExists(GENERATION_FOLDER)) {
-        auto t = time(nullptr);
-        auto tm = *localtime(&t);
-
-        ostringstream oss;
-        oss << put_time(&tm, "%d%m%Y%H%M%S");
-        string today = oss.str();
-
-        // DEBUG: Generation of log folders is temporarily disabled
-        // string system_op = "mkdir Generated_LOG" + today + "/ && cp -r " +
-        // GENERATION_FOLDER + "/UT/* Generated_LOG" + today + "/ && " +
-        //"rm -R " + GENERATION_FOLDER + "/UT/*";
-        string system_op = "rm -R " + GENERATION_FOLDER + "/UT/*";
-
-        // Reset the results Folder
-        system(system_op.c_str());
-    }
 
     return Tool.run(newFrontendActionFactory(&Finder).get());
 }

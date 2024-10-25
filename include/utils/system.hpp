@@ -1,8 +1,12 @@
 #pragma once
 
+#include <filesystem>
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
 #include <vector>
+
+enum Framework { BOOST, CATCH, GTEST };
 
 /**
  * @brief Check if a file exists.
@@ -35,7 +39,7 @@ bool folderExists(const std::string &folder);
  * @param fileRoute Full path of the file to be processed.
  * @return std::string The file name without the extension or path.
  */
-std::string extractFileName(const std::string &fileRoute);
+std::string extractFileName(const std::filesystem::path &fileRoute);
 
 /**
  * @brief Stop the program and display an error message.
@@ -55,7 +59,7 @@ void exitWithError(const std::string &message);
  *
  * @return A string representation of the current date and time.
  */
-std::string getTodayString();
+std::string getTodayString(const std::string &format = "%d-%m-%Y %H:%M:%S");
 
 /**
  * @brief Create a path from a list of parts.
@@ -126,16 +130,16 @@ void showOpenFileError(const std::string &filePath);
  *
  * @param path The path to the user's ASkeleTon path.
  */
-void setAskeletonHome(const std::string &path);
+void setAskeletonHome(const std::filesystem::path &path);
 
 /**
  * @brief Get the path to the user's ASkeleTon path.
  *
  * This function returns the path to the user's ASkeleTon path.
  *
- * @return std::string The path to the user's ASkeleTon path.
+ * @return path The path to the user's ASkeleTon path.
  */
-std::string getAskeletonHome();
+std::filesystem::path getAskeletonHome();
 
 /**
  * @brief Searches for a file with one of the specified extensions.
@@ -178,3 +182,36 @@ std::optional<std::string> getSourceFile(const std::string &filePath);
  *         or std::nullopt if no header file is found.
  */
 std::optional<std::string> getHeaderFile(const std::string &filePath);
+
+/**
+ * @brief Loads template items from a JSON file.
+ *
+ * This function retrieves the file path for the template items JSON file from
+ * the configuration, opens the file, and parses its contents into a JSON
+ * object.
+ *
+ * @return A JSON object containing the template items.
+ *
+ * @throws std::runtime_error if the file cannot be opened.
+ */
+nlohmann::json loadTemplateItems();
+
+/**
+ * @brief Sets the framework to be used.
+ *
+ * This function assigns the specified framework to the global
+ * variable SELECTED_FRAMEWORK, which determines the framework
+ * that will be used by the system.
+ *
+ * @param framework The framework to be set.
+ */
+void setFrameWork(Framework framework);
+
+/**
+ * @brief Retrieves the currently selected framework.
+ *
+ * This function returns the framework that has been selected for use.
+ *
+ * @return Framework The selected framework.
+ */
+Framework getFrameWork();

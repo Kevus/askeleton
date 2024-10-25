@@ -7,6 +7,7 @@
             "test_tpl": "test.tpl",
             "makefile_tpl": "makefile.tpl",
             "cfg_tpl": "cfgFile.tpl",
+
             "method": {
                 "pointer_read": "methods/pointerRead.tpl",
                 "enum_read": "methods/enumRead.tpl",
@@ -15,6 +16,12 @@
                 "record_field_assignment": "methods/fieldAssign.tpl",
                 "record_field_comparison": "methods/fieldComparison.tpl",
                 "record_field_insertion": "methods/fieldInsertion.tpl"
+            },
+
+            "case": {
+                "constructor": "constructorCase.tpl",
+                "function": "functionCase.tpl",
+                "method": "methodCase.tpl"
             }
         },
 
@@ -24,50 +31,24 @@
             "test_fixture": "{target}_fixture.hpp",
             "test_file": "{target}_test.cpp",
             "cfg": "{target}.cfg"
-
         },
 
         "data": {
             "equivalent_types": "data/equivalent_types.json",
             "default_values": "data/default_values.json",
-            "supported_types_json": "data/supported_types.json"
+            "supported_types_json": "data/supported_types.json",
+            "template_items": "data/template_items.json"
         }
     },
 
     "route": {
-        "generated": "Generated/UT/",
-        "templates": "data/templates/",  
-        "boost_templates": "data/templates/boost/",
-        "catch_templates": "data/templates/catch2/",
-        "gtest_templates": "data/templates/gtest/"
-    },
-
-    "tplitem": {
-        "class_name": "{className}",
-        "file_name": "{fileName}",
-        "cpp_path": "{cppPath}",
-        "target": "{target}",
-        "pointer_init_token": "{pointerInitToken}",
-        "pointer_destroy_token": "{pointerDestroyToken}",
-        "assert": "//{assert}",
-        "file_path": "{filePath}",
-        "date_of_generation": "{dateOfGeneration}",
-        "includes": "{includes}",
-        "namespaces": "{namespaces}",
-        "read_object": "//{readObject}",
-        "new_methods": "{newMethods}",
-        "class_name_test": "{classNameTest}",
-        "overload_operator": "//{overloadOperator}",
-        "header_path": "{headerPath}",
-        "type": "{type}",
-        "formatted": "{formatted}",
-        "underlying": "{underlying}",
-        "underlying_formatted": "{underlyingFormatted}",
-        "fields": "//{fields}",
-        "insertions": "//{insertions}",
-        "comparisons": "//{comparisons}",
-        "field": "{field}",
-        "field_formatted": "{fieldFormatted}"
+        "generated": "Generated",
+        "ut": "Generated/UT",
+        "templates": "data/templates",
+        "log": "Generated_log",
+        "boost_templates": "data/templates/boost",
+        "catch_templates": "data/templates/catch2",
+        "gtest_templates": "data/templates/gtest"
     }
   }
   
