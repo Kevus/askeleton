@@ -37,11 +37,11 @@ cl::opt<int> DeepLevel("deep_level",
 
 int main(int argc, const char **argv) {
     if (CatchFramework)
-        setFrameWork(CATCH);
+        setFramework(CATCH);
     else if (GtestFramework)
-        setFrameWork(GTEST);
+        setFramework(GTEST);
     else
-        setFrameWork(BOOST);
+        setFramework(BOOST);
 
     if (getenv("ASKELETON_HOME") != NULL) {
         setAskeletonHome(getenv("ASKELETON_HOME"));

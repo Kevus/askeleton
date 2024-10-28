@@ -30,21 +30,22 @@ void BoostGen::generateFunctionAssert(
     returnContent += generateReturnTypeInvocation(returnType, function);
 
     map<string, string> tokensToReplace = {
-        {config.get("tplitem.boost.target"), targetName},
-        {config.get("tplitem.boost.function"), function},
-        {config.get("tplitem.boost.number"), to_string(functionInvocation)},
+        {templateItems["tplitem"]["boost"]["target"], targetName},
+        {templateItems["tplitem"]["boost"]["function"], function},
+        {templateItems["tplitem"]["boost"]["number"],
+         to_string(functionInvocation)},
 
-        {config.get("tplitem.boost.initializations"),
+        {templateItems["tplitem"]["boost"]["initializations"],
          generateParameterInitialization(parameters, function)},
 
-        {config.get("tplitem.boost.assert_ending"),
+        {templateItems["tplitem"]["boost"]["assert_ending"],
          returnType.isContainer() ? "" : "_EQUAL"},
-        {config.get("tplitem.boost.invocation"), function},
-        {config.get("tplitem.boost.parameters"),
+        {templateItems["tplitem"]["boost"]["invocation"], function},
+        {templateItems["tplitem"]["boost"]["parameters"],
          generateParameterInvocation(parameters)},
-        {config.get("tplitem.boost.return"), returnContent},
+        {templateItems["tplitem"]["boost"]["return"], returnContent},
 
-        {config.get("tplitem.boost.pointers"),
+        {templateItems["tplitem"]["boost"]["pointers"],
          generatePointersAsserts(parameters, function)}};
 
     string testContent = replaceTokensInFile(
@@ -67,24 +68,24 @@ void BoostGen::generateMethodAssert(const std::string &method,
     objectTest[0] = tolower(objectTest[0]);
 
     map<string, string> tokensToReplace = {
-        {config.get("tplitem.boost.target"), targetName},
-        {config.get("tplitem.boost.function"), method},
-        {config.get("tplitem.boost.number"), "1"},
+        {templateItems["tplitem"]["boost"]["target"], targetName},
+        {templateItems["tplitem"]["boost"]["function"], method},
+        {templateItems["tplitem"]["boost"]["number"], "1"},
 
-        {config.get("tplitem.boost.class"), targetName},
-        {config.get("tplitem.boost.object"), objectTest},
+        {templateItems["tplitem"]["boost"]["class"], targetName},
+        {templateItems["tplitem"]["boost"]["object"], objectTest},
 
-        {config.get("tplitem.boost.initializations"),
+        {templateItems["tplitem"]["boost"]["initializations"],
          generateParameterInitialization(parameters, method)},
 
-        {config.get("tplitem.boost.assert_ending"),
+        {templateItems["tplitem"]["boost"]["assert_ending"],
          returnType.isContainer() ? "" : "_EQUAL"},
-        {config.get("tplitem.boost.invocation"), method},
-        {config.get("tplitem.boost.parameters"),
+        {templateItems["tplitem"]["boost"]["invocation"], method},
+        {templateItems["tplitem"]["boost"]["parameters"],
          generateParameterInvocation(parameters)},
-        {config.get("tplitem.boost.return"), returnContent},
+        {templateItems["tplitem"]["boost"]["return"], returnContent},
 
-        {config.get("tplitem.boost.pointers"),
+        {templateItems["tplitem"]["boost"]["pointers"],
          generatePointersAsserts(parameters, method)}};
 
     string testContent = replaceTokensInFile(
@@ -101,18 +102,18 @@ void BoostGen::generateConstructorAssert(
     string invocationContent = targetName;
 
     map<string, string> tokensToReplace = {
-        {config.get("tplitem.boost.target"), targetName},
-        {config.get("tplitem.boost.function"), targetName},
-        {config.get("tplitem.boost.number"), "1"},
+        {templateItems["tplitem"]["boost"]["target"], targetName},
+        {templateItems["tplitem"]["boost"]["function"], targetName},
+        {templateItems["tplitem"]["boost"]["number"], "1"},
 
-        {config.get("tplitem.boost.initializations"),
+        {templateItems["tplitem"]["boost"]["initializations"],
          generateParameterInitialization(parameters, targetName)},
 
-        {config.get("tplitem.boost.class"), targetName},
-        {config.get("tplitem.boost.parameters"),
+        {templateItems["tplitem"]["boost"]["class"], targetName},
+        {templateItems["tplitem"]["boost"]["parameters"],
          generateParameterInvocation(parameters)},
 
-        {config.get("tplitem.boost.pointers"),
+        {templateItems["tplitem"]["boost"]["pointers"],
          generatePointersAsserts(parameters, targetName)}};
 
     string testContent = replaceTokensInFile(
@@ -128,8 +129,9 @@ BoostGen::generatePointersAsserts(const std::vector<InfoVariable> &parameters,
                                   const std::string &function) const {
     std::stringstream ss;
     const string TPLITEM_BOOST_PARAMETER =
-                     config.get("tplitem.boost.parameter"),
-                 TPLITEM_BOOST_EXPECTED = config.get("tplitem.boost.expected");
+                     templateItems["tplitem"]["boost"]["parameter"],
+                 TPLITEM_BOOST_EXPECTED =
+                     templateItems["tplitem"]["boost"]["expected"];
 
     for (const auto &param : parameters) {
         if (param.isPointer() || param.isReference()) {

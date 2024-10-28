@@ -205,7 +205,7 @@ nlohmann::json loadTemplateItems();
  *
  * @param framework The framework to be set.
  */
-void setFrameWork(Framework framework);
+void setFramework(Framework framework);
 
 /**
  * @brief Retrieves the currently selected framework.
@@ -214,4 +214,4 @@ void setFrameWork(Framework framework);
  *
  * @return Framework The selected framework.
  */
-Framework getFrameWork();
+Framework getFramework();

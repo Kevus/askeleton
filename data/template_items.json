@@ -1,0 +1,58 @@
+{
+    "tplitem": {
+        "assert": "//{assert}",
+        "class_name": "{className}",
+        "class_name_test": "{classNameTest}",
+        "comparisons": "//{comparisons}",
+        "cpp_path": "{cppPath}",
+        "date_of_generation": "{dateOfGeneration}",
+        "field": "{field}",
+        "field_formatted": "{fieldFormatted}",
+        "file_name": "{fileName}",
+        "file_path": "{filePath}",
+        "fields": "//{fields}",
+        "formatted": "{formatted}",
+        "header_path": "{headerPath}",
+        "includes": "{includes}",
+        "insertions": "//{insertions}",
+        "name": "{name}",
+        "namespaces": "{namespaces}",
+        "new_methods": "{newMethods}",
+        "overload_operator": "//{overloadOperator}",
+        "pointer_destroy_token": "{pointerDestroyToken}",
+        "pointer_init_token": "{pointerInitToken}",
+        "read_object": "//{readObject}",
+        "target": "{target}",
+        "type": "{type}",
+        "underlying": "{underlying}",
+        "underlying_formatted": "{underlyingFormatted}",
+
+        "boost": {
+            "assert_ending": "{assertEnding}",
+            "function": "{function}",
+            "initializations": "{initializations}",
+            "invocation": "{invocation}",
+            "number": "{number}",
+            "parameters": "{parameters}",
+            "parameter": "{parameter}",
+            "expected": "{expected}",
+            "pointers": "{pointers}",
+            "return": "{return}",
+            "target": "{target}",
+            "class": "{class}",
+            "object": "{object}"
+        }
+        
+    },
+
+    "templating": {
+        "assign_instruction": "{underlying} {name} = Read_{underlyingFormatted}(\"{target}.{name}\")",
+        "read_instruction": "Read_{underlyingFormatted}(\"{target}.{name}\")",
+        "field_assign": "result.{field} = Read_{formatted}(objectKey + \".{field}\");",
+        "field_comparison": "a.{field} == b.{field}",
+        "field_insertion": "os << \"{field}:\" << object.{field} << \"\\n\";",
+        "boost": {
+            "assert_pointer": "BOOST_CHECK_EQUAL({parameter}, {expected});"
+        }
+    }
+}
