@@ -172,3 +172,23 @@ bool includes(const std::string &str1, const std::string &str2);
  * @return True if the string is found, false otherwise.
  */
 bool includes(const char *str1, const char *str2);
+
+/**
+ * @brief Convert a string to lowercase.
+ *
+ * This function converts a string to lowercase.
+ *
+ * @param str The string to convert.
+ * @return The lowercase version of the input string.
+ */
+std::string toLower(const std::string &str);
+
+/**
+ * @brief Convert a string to uppercase.
+ *
+ * This function converts a string to uppercase.
+ *
+ * @param str The string to convert.
+ * @return The uppercase version of the input string.
+ */
+std::string toUpper(const std::string &str);

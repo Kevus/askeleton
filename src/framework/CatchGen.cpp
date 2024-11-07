@@ -25,7 +25,8 @@ void CatchGenerator::generateFunctionAssert(
     const string init = generateParameterInitialization(parameters, function);
     const string paramInvocation = generateParameterInvocation(parameters);
     const string pointers = generatePointersAsserts(parameters, function);
-    const string functionInvocation = to_string(getFunctionCounter(function));
+    const string functionInvocation =
+        to_string(getFunctionCounter(function) + 1);
     const string returnContent =
         (returnType.isPointer() ? "*" : "") +
         generateReturnTypeInvocation(returnType, function);
@@ -49,32 +50,66 @@ void CatchGenerator::generateFunctionAssert(
 void CatchGenerator::generateMethodAssert(
     const string &method, const vector<InfoVariable> &parameters,
     const InfoType &returnType) {
-    string paramInvocation = generateParameterInvocation(parameters);
-    string returnContent = (returnType.isPointer() ? "*" : "") +
-                           generateReturnTypeInvocation(returnType, method);
+    const string functionInvocation = to_string(getFunctionCounter(method) + 1);
+    const string returnContent =
+        (returnType.isPointer() ? "*" : "") +
+        generateReturnTypeInvocation(returnType, method);
+    const string paramInvocation = generateParameterInvocation(parameters);
+    const string paramInit =
+        generateParameterInitialization(parameters, method);
+    const string pointers = generatePointersAsserts(parameters, method);
+    string objectTest = targetName + "_test";
+    objectTest[0] = tolower(objectTest[0]);
 
-    map<string, string> tokensToReplace = {{"{{target}}", targetName},
-                                           {"{{method}}", method},
-                                           {"{{parameters}}", paramInvocation},
-                                           {"{{return}}", returnContent}};
+    map<string, string> tokensToReplace = {
+        {templateItems["tplitem"]["catch"]["target"], targetName},
+        {templateItems["tplitem"]["catch"]["function"], method},
+        {templateItems["tplitem"]["catch"]["number"], functionInvocation},
+
+        {templateItems["tplitem"]["catch"]["class"], targetName},
+        {templateItems["tplitem"]["catch"]["object"], objectTest},
+
+        {templateItems["tplitem"]["catch"]["initializations"], paramInit},
+
+        {templateItems["tplitem"]["catch"]["invocation"], method},
+        {templateItems["tplitem"]["catch"]["parameters"], paramInvocation},
+        {templateItems["tplitem"]["catch"]["return"], returnContent},
+
+        {templateItems["tplitem"]["catch"]["pointers"], pointers}};
 
     string testContent = replaceTokensInFile(
         templateFrameworkPath / config.get("file.template.case.method"),
         tokensToReplace);
     appendTestCaseToTestFile(testContent);
+    incrementFunctionCounter(method);
 }
 
 void CatchGenerator::generateConstructorAssert(
     const vector<InfoVariable> &parameters) {
-    string paramInvocation = generateParameterInvocation(parameters);
+    const string paramInvocation = generateParameterInvocation(parameters);
+    const string functionInvocation =
+        to_string(getFunctionCounter(targetName) + 1);
+    const string paramInit =
+        generateParameterInitialization(parameters, targetName);
+    const string pointers = generatePointersAsserts(parameters, targetName);
 
-    map<string, string> tokensToReplace = {{"{{target}}", targetName},
-                                           {"{{parameters}}", paramInvocation}};
+    map<string, string> tokensToReplace = {
+        {templateItems["tplitem"]["catch"]["target"], targetName},
+        {templateItems["tplitem"]["catch"]["function"], targetName},
+        {templateItems["tplitem"]["catch"]["number"], functionInvocation},
+
+        {templateItems["tplitem"]["catch"]["initializations"], paramInit},
+
+        {templateItems["tplitem"]["catch"]["class"], targetName},
+        {templateItems["tplitem"]["catch"]["parameters"], paramInvocation},
+
+        {templateItems["tplitem"]["catch"]["pointers"], pointers}};
 
     string testContent = replaceTokensInFile(
         templateFrameworkPath / config.get("file.template.case.constructor"),
         tokensToReplace);
     appendTestCaseToTestFile(testContent);
+    incrementFunctionCounter(targetName);
 }
 
 string

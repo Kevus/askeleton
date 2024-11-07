@@ -102,3 +102,15 @@ bool includes(const string &str1, const string &str2) {
 bool includes(const char *str1, const char *str2) {
     return strstr(str1, str2) != NULL;
 }
+
+string toLower(const std::string &str) {
+    string result = str;
+    transform(str.begin(), str.end(), result.begin(), ::tolower);
+    return str;
+}
+
+string toUpper(const std::string &str) {
+    string result = str;
+    transform(str.begin(), str.end(), result.begin(), ::toupper);
+    return str;
+}

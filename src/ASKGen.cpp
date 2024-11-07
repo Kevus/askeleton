@@ -20,7 +20,6 @@ namespace fs = std::filesystem;
 
 void printDebugInfo(const vector<InfoVariable> &parameters,
                     const InfoType &returnType) {
-    cout << "--------------\n";
     unsigned i = 0;
     cout << "Params list: (";
     for (const auto &param : parameters) {
@@ -29,7 +28,7 @@ void printDebugInfo(const vector<InfoVariable> &parameters,
             cout << ", ";
     }
 
-    cout << ")\nReturn type: " << returnType.original << "\n";
+    cout << ")\nReturn type: " << returnType.original << "\n--------------\n";
 }
 
 void ASKGen::run(const MatchFinder::MatchResult &Result) {
@@ -426,15 +425,10 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
     printDebugInfo(parameters, returnType);
 #endif /* FULL_DEBUG */
 
-    cout << "Generating read method for params " << functionName << "\n";
     generateReadMethod(testGen, parameters);
-    cout << "Generating read method for return " << functionName << "\n";
     generateReadMethod(testGen, returnType);
 
-    cout << "Generating config for method " << functionName << "\n";
     configGenerator.generateTestCase(functionName, parameters, returnType);
-
-    cout << "Generating test case for method " << functionName << "\n";
     testGen.generateFunctionAssert(functionName, parameters, returnType);
 }
 
@@ -457,7 +451,6 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
     generateReadMethod(testGen, returnType);
 
     configGenerator.generateTestCase(functionName, parameters, returnType);
-
     testGen.generateMethodAssert(functionName, parameters, returnType);
 }
 
@@ -478,7 +471,6 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
     generateReadMethod(testGen, parameters);
 
     configGenerator.generateConstructorTest(constructorName, parameters);
-
     testGen.generateConstructorAssert(parameters);
 }
 

@@ -76,7 +76,7 @@
     },
 
     "templating": {
-        "assign_instruction": "{underlying} {name} = Read_{underlyingFormatted}(\"{target}.{name}\")",
+        "assign_instruction": "{underlying} {name} = Read_{underlyingFormatted}(\"{target}.{formatted}\")",
         "read_instruction": "Read_{underlyingFormatted}(\"{target}.{name}\")",
         "field_assign": "result.{field} = Read_{formatted}(objectKey + \".{field}\");",
         "field_comparison": "a.{field} == b.{field}",

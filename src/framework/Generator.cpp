@@ -137,8 +137,8 @@ void Generator::appendOverloadMethodsToFixture(const std::string &op) const {
 
 void Generator::createPointerReadToFixture(const InfoType &type) const {
     InfoType underlying = type.getUnderlyingType();
-    string method =
-        readFromFile(getMethodTemplatePath(files::READ_POINTER_METHOD));
+    string method = readFromFile(
+        getMethodTemplatePath(config.get("file.method.pointer_read")));
     replaceTokensInText(
         method, {{templateItems["tplitem"]["type"], type.original},
                  {templateItems["tplitem"]["formatted"], type.formatted},
@@ -150,8 +150,8 @@ void Generator::createPointerReadToFixture(const InfoType &type) const {
 }
 
 void Generator::createEnumReadToFixture(const InfoType &type) const {
-    string method =
-        readFromFile(getMethodTemplatePath(files::READ_ENUM_METHOD));
+    string method = readFromFile(
+        getMethodTemplatePath(config.get("file.template.method.enum_read")));
     replaceTokensInText(
         method, {{templateItems["tplitem"]["type"], type.original},
                  {templateItems["tplitem"]["formatted"], type.formatted}});
@@ -160,8 +160,8 @@ void Generator::createEnumReadToFixture(const InfoType &type) const {
 
 void Generator::createRecordReadToFixture(const InfoType &type) const {
     stringstream assigns;
-    string method =
-        readFromFile(getMethodTemplatePath(files::READ_RECORD_METHOD));
+    string method = readFromFile(
+        getMethodTemplatePath(config.get("file.template.method.record_read")));
 
     for (const auto &field : type.getRecordFields()) {
         string assignField = templateItems["templating"]["field_assign"];
@@ -216,8 +216,8 @@ void Generator::createRecordOverloadToFixture(const InfoType &type) const {
         }
     }
 
-    string method =
-        readFromFile(getMethodTemplatePath(files::OVERLOAD_RECORD_METHOD));
+    string method = readFromFile(getMethodTemplatePath(
+        config.get("file.template.method.record_overload")));
     replaceTokensInText(
         method, {{templateItems["tplitem"]["type"], type.original},
                  {templateItems["tplitem"]["formatted"], type.formatted},
@@ -281,19 +281,16 @@ Generator::generateParameterInitialization(const InfoVariable &variable,
     std::string readInstructionContent =
         templateItems["templating"]["assign_instruction"];
     InfoType underlying = variable.getUnderlyingType();
-    string variableName =
-        variable.name + (underlying.isPointer() ? "_input" : "");
-    InfoVariable variableForRead{variableName, underlying.original,
-                                 underlying.formatted};
+    const string variableName =
+        variable.name + (variable.isPointer() ? "_input" : "");
     std::string typeForReadMethod = underlying.formatted;
     replaceTypeCharacters(typeForReadMethod);
-
-    generateReadInvocation(variable, function);
 
     std::map<std::string, std::string> replacements = {
         {templateItems["tplitem"]["underlying"], underlying.original},
         {templateItems["tplitem"]["name"], variable.name},
         {templateItems["tplitem"]["target"], function},
+        {templateItems["tplitem"]["formatted"], variableName},
         {templateItems["tplitem"]["underlying_formatted"], typeForReadMethod}};
 
     replaceTokensInText(readInstructionContent, replacements);

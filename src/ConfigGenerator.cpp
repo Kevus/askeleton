@@ -10,33 +10,34 @@
 #include "utils/templating.hpp"
 
 using namespace std;
+using json = nlohmann::json;
+namespace fs = std::filesystem;
 
 const Config &ConfigGenerator::config = Config::getInstance();
-
 RandomValuesGenerator ConfigGenerator::rvg;
+std::map<std::string, std::string> ConfigGenerator::tplItems;
+
+void ConfigGenerator::loadConfigurations() {
+    json tplItemsJson = loadTemplateItems();
+    tplItems = {
+        {"date_of_generation", tplItemsJson["tplitem"]["date_of_generation"]},
+        {"file_path", tplItemsJson["tplitem"]["file_path"]},
+        {"target", tplItemsJson["tplitem"]["target"]}};
+}
 
 ConfigGenerator::ConfigGenerator(const string &target)
-    : target(target), testFolder(askeleton::routes::TEST_ROUTE + target + "/"),
-      configFilePath(testFolder + target + ".cfg") {
+    : target(target), testFolder(fs::path(config.get("route.ut")) / target),
+      configFilePath(fs::path(testFolder) / (target + ".cfg")) {
+    fs::path configFileTemplate = getAskeletonHome() /
+                                  config.get("route.templates") /
+                                  config.get("file.template.cfg_tpl");
 
-    try {
-        std::filesystem::create_directory(testFolder);
-    } catch (const std::filesystem::filesystem_error &e) {
-        exitWithError("Error creating directory: " + string(e.what()));
-    }
+    map<string, string> replacements = {
+        {tplItems["file_path"], target},
+        {tplItems["target"], target},
+        {tplItems["date_of_generation"], getTodayString()}};
 
-    // string configFileTemplate = createPath({
-    //     getAskeletonHome(),
-    //     config.get("route.templates"),
-    //     config.get("file.template.cfg_tpl"),
-    // });
-
-    std::ofstream configfileStream(configFilePath, ios_base::app);
-    if (configfileStream.is_open()) {
-        configfileStream << getCommentHeader(target);
-    } else {
-        exitWithError("Error opening file: " + configFilePath);
-    }
+    replaceTokensInFile(configFileTemplate, configFilePath, replacements);
 }
 
 void ConfigGenerator::generateTestCase(const string &functionName,
@@ -74,36 +75,35 @@ ConfigGenerator::generateParams(const vector<InfoVariable> &params) const {
 }
 
 std::string ConfigGenerator::generateReturn(const InfoType &returnType) const {
+    InfoType underlying = returnType.getUnderlyingType();
     stringstream ss;
 
-    if (returnType.isRecord() && !returnType.isContainer())
-        ss << generateReturnRecord(returnType);
+    if (underlying.isRecord() && !underlying.isContainer())
+        ss << generateReturnRecord(underlying);
     else {
         ss << "\treturn_"
-           << (returnType.isContainer()
-                   ? extractSubstringUntilCharacter(returnType.formatted, '<')
-                   : returnType.formatted)
-           << "=" << rvg.getRandomValue(returnType.formatted) << ";#"
-           << returnType.original << "\n";
+           << (underlying.isContainer()
+                   ? extractSubstringUntilCharacter(underlying.formatted, '<')
+                   : underlying.formatted)
+           << "=" << rvg.getRandomValue(underlying.formatted) << ";#"
+           << underlying.original << "\n";
     }
 
     return ss.str();
 }
 
 std::string ConfigGenerator::generateParam(const InfoVariable &param) const {
-    const string &original = param.original, &name = param.name;
+    string original = param.original,
+           name = param.isPointer() ? param.name + "_input" : param.name;
+    InfoType underlying = param.getUnderlyingType();
     string value = rvg.getRandomValue(param.formatted);
     stringstream ss;
 
-    if (param.isRecord() && !param.isContainer()) {
-        for (const InfoVariable &field : param.getRecordFields()) {
-            ss << "\t" << name << "." << field.name << "="
-               << rvg.getRandomValue(field.formatted) << ";#" << field.original
-               << "\n";
+    if (underlying.isRecord() && !underlying.isContainer()) {
+        ss << generateParamRecord(underlying, name);
+        if (param.isPointer() || param.isReference()) {
+            ss << generateParamRecord(underlying, param.name + "_output");
         }
-    } else if (param.isPointer() || param.isReference()) {
-        ss << "\t" << name << "_input=" << value << ";#" << original << "\n\t"
-           << name << "_output=" << value << ";#" << original << "\n";
     } else {
         ss << "\t" << name << "=" << value << ";#" << original << "\n";
     }
@@ -111,20 +111,14 @@ std::string ConfigGenerator::generateParam(const InfoVariable &param) const {
     return ss.str();
 }
 
-std::string ConfigGenerator::generateParamRecord(const InfoVariable &record,
-                                                 const string &prefix) const {
-    const string &name = prefix + record.name;
-    stringstream ss;
-
-    for (const InfoVariable &field : record.getRecordFields()) {
-        if (field.isRecord())
-            ss << generateParamRecord(field, name + ".");
-        else
-            ss << "\t" << name << "." << field.name << "="
-               << rvg.getRandomValue(field.formatted) << ";#" << field.original
-               << "\n";
+string ConfigGenerator::generateParamRecord(InfoType &underlying,
+                                            const std::string &name) const {
+    std::stringstream ss;
+    for (const InfoVariable &field : underlying.getRecordFields()) {
+        ss << "\t" << name << "." << field.name << "="
+           << rvg.getRandomValue(field.formatted) << ";#" << field.original
+           << "\n";
     }
-
     return ss.str();
 }
 

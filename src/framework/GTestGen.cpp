@@ -25,7 +25,8 @@ void GTestGenerator::generateFunctionAssert(
     const string init = generateParameterInitialization(parameters, function);
     const string paramInvocation = generateParameterInvocation(parameters);
     const string pointers = generatePointersAsserts(parameters, function);
-    const string functionInvocation = to_string(getFunctionCounter(function));
+    const string functionInvocation =
+        to_string(getFunctionCounter(function) + 1);
     const string returnContent =
         (returnType.isPointer() ? "*" : "") +
         generateReturnTypeInvocation(returnType, function);
@@ -49,7 +50,7 @@ void GTestGenerator::generateFunctionAssert(
 void GTestGenerator::generateMethodAssert(
     const std::string &method, const std::vector<InfoVariable> &parameters,
     const InfoType &returnType) {
-    const string functionInvocation = to_string(getFunctionCounter(method));
+    const string functionInvocation = to_string(getFunctionCounter(method) + 1);
 
     string returnContent = returnType.isPointer() ? "*" : "";
     returnContent += generateReturnTypeInvocation(returnType, method);
@@ -88,7 +89,8 @@ void GTestGenerator::generateMethodAssert(
 
 void GTestGenerator::generateConstructorAssert(
     const std::vector<InfoVariable> &parameters) {
-    const string functionInvocation = to_string(getFunctionCounter(targetName));
+    const string functionInvocation =
+        to_string(getFunctionCounter(targetName) + 1);
     string invocationContent = targetName;
 
     map<string, string> tokensToReplace = {
