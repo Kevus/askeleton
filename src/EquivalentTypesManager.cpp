@@ -1,8 +1,8 @@
 #include "EquivalentTypesManager.hpp"
 
+#include "constants.hpp"
 #include <fstream>
 #include <iostream>
-#include "constants.hpp"
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
@@ -16,19 +16,13 @@ std::map<std::string, std::string> readTypesFromFile(
         return {};
     }
 
-    std::cout << "Reading from " << filename << "\n";
     json j;
-
     jsonFile >> j;
     jsonFile.close();
 
     std::map<std::string, std::string> types;
     for (auto &[key, value] : j.items()) {
         types[key] = value;
-    }
-
-    for (const auto &[key, value] : types) {
-        std::cout << key << " : " << value << std::endl;
     }
 
     return types;

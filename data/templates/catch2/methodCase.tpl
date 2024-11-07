@@ -1,14 +1,11 @@
-TEST_CASE("{target}_{function}_{number}", "[Fixture]") {
+TEST_CASE_METHOD(Fixture, "Testing method {function} from class {target} #{number}", "[{target}]") {
     Date("Start");
 
     {class} {object};
-    {initializations}
-
-    REQUIRE{assertEnding}(
+{initializations}
+    REQUIRE(
         {object}.{invocation}({parameters}) == {return}
     );
-
-    {pointers}
-
+{pointers}
     Date("End");
 }

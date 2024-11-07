@@ -1,11 +1,14 @@
 #include "ASKGen.hpp"
 
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 
 #include "framework/BoostGen.hpp"
+#include "framework/CatchGen.hpp"
+#include "framework/GTestGen.hpp"
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
 #include "clang/AST/ASTContext.h"
@@ -13,6 +16,7 @@
 using namespace clang::ast_matchers;
 using namespace clang;
 using namespace std;
+namespace fs = std::filesystem;
 
 void printDebugInfo(const vector<InfoVariable> &parameters,
                     const InfoType &returnType) {
@@ -35,10 +39,11 @@ void ASKGen::run(const MatchFinder::MatchResult &Result) {
     apply_CC1(Result);
 
     // Kevin: dejamos estos fuera, nos interesa ahora solo las funciones, los
-    // datos vendrán por KLEE apply_DG1(Result); apply_DG2(Result);
+    // datos vendrán por KLEE
+    // apply_DG1(Result);
+    // apply_DG2(Result);
 }
 
-// Method outside classes
 void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
     ASTContext *Context = Result.Context;
 
@@ -54,9 +59,10 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
             if (!isa<CXXMethodDecl>(UT)) {
 
                 // Get the file name
-                string filePath = Context->getSourceManager()
-                                      .getFilename(UT->getBeginLoc())
-                                      .str();
+                fs::path filePath =
+                    fs::absolute(Context->getSourceManager()
+                                     .getFilename(UT->getBeginLoc())
+                                     .str());
                 string fileName = extractFileName(filePath);
                 string target = fileName;
 
@@ -361,8 +367,22 @@ std::shared_ptr<Generator> ASKGen::getGenerator(const std::string &target,
     auto pos = generators.find(target);
 
     if (pos == generators.end()) {
-        auto generator =
-            std::make_shared<BoostGen>(target, filePath, isFromClass);
+        std::shared_ptr<Generator> generator;
+
+        switch (getFramework()) {
+        case CATCH:
+            generator =
+                std::make_shared<CatchGenerator>(target, filePath, isFromClass);
+            break;
+        case GTEST:
+            generator =
+                std::make_shared<GTestGenerator>(target, filePath, isFromClass);
+            break;
+        default:
+            generator =
+                std::make_shared<BoostGen>(target, filePath, isFromClass);
+            break;
+        }
         generators.insert({target, generator});
         return generator;
     }

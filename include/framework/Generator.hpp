@@ -55,6 +55,9 @@ protected:
     void setOutputFiles(const std::map<std::string, std::string> &) const;
     void setFrameworkTemplatePath(const std::filesystem::path &frwPath);
 
+    int getFunctionCounter(const std::string &function) const;
+    void incrementFunctionCounter(const std::string &function);
+
     std::string
     generateParameterInitialization(const std::vector<InfoVariable> &parameters,
                                     const std::string &function) const;
@@ -105,4 +108,5 @@ private:
     getMethodTemplatePath(const std::string &methodTemplate = "");
 
     std::set<std::string> supportedTypes;
+    std::map<std::string, unsigned> functionCounter;
 };

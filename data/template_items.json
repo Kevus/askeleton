@@ -41,8 +41,38 @@
             "target": "{target}",
             "class": "{class}",
             "object": "{object}"
+        },
+
+        "catch": {
+            "function": "{function}",
+            "initializations": "{initializations}",
+            "invocation": "{invocation}",
+            "number": "{number}",
+            "parameters": "{parameters}",
+            "parameter": "{parameter}",
+            "expected": "{expected}",
+            "pointers": "{pointers}",
+            "return": "{return}",
+            "target": "{target}",
+            "class": "{class}",
+            "object": "{object}"
+        },
+
+        "gtest": {
+            "assert_ending": "{assertEnding}",
+            "function": "{function}",
+            "initializations": "{initializations}",
+            "invocation": "{invocation}",
+            "number": "{number}",
+            "parameters": "{parameters}",
+            "parameter": "{parameter}",
+            "expected": "{expected}",
+            "pointers": "{pointers}",
+            "return": "{return}",
+            "target": "{target}",
+            "class": "{class}",
+            "object": "{object}"
         }
-        
     },
 
     "templating": {
@@ -53,6 +83,12 @@
         "field_insertion": "os << \"{field}:\" << object.{field} << \"\\n\";",
         "boost": {
             "assert_pointer": "BOOST_CHECK_EQUAL({parameter}, {expected});"
+        },
+        "catch": {
+            "assert_pointer": "REQUIRE({parameter} == {expected});"
+        },
+        "gtest": {
+            "assert_pointer": "ASSERT_EQ({parameter}, {expected});"
         }
     }
 }

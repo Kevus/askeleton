@@ -1,14 +1,10 @@
 TEST_F(Fixture, {target}_{function}_{number}) {
     Date("Start");
-
-    {initializations}
-
+{initializations}
     EXPECT_EQ(
         {invocation}({parameters}),
         {return}
     );
-
-    {pointers}
-
+{pointers}
     Date("End");
 }

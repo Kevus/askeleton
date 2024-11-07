@@ -26,22 +26,27 @@ static cl::extrahelp
 static llvm::cl::OptionCategory
     OptC("ASkeleTon - Unit Test Generator for C/C++");
 
-cl::opt<bool> BoostFramework("boost", cl::desc("Enable boost"), cl::init(true));
-cl::opt<bool> CatchFramework("catch2", cl::desc("Enable catch"),
+cl::opt<bool> BoostFramework("-boost", cl::desc("Enable boost"),
                              cl::init(false));
-cl::opt<bool> GtestFramework("gtest", cl::desc("Enable google test"),
+cl::opt<bool> CatchFramework("-catch2", cl::desc("Enable catch"),
                              cl::init(false));
+cl::opt<bool> GtestFramework("-gtest", cl::desc("Enable google test"),
+                             cl::init(true));
 cl::opt<int> DeepLevel("deep_level",
                        cl::desc("Specify the maximum depth level"),
                        cl::value_desc("level"), cl::init(1), cl::cat(OptC));
 
 int main(int argc, const char **argv) {
-    if (CatchFramework)
+    if (CatchFramework) {
         setFramework(CATCH);
-    else if (GtestFramework)
+        cout << "SELECTED FRAMEWORK: CATCH\n";
+    } else if (GtestFramework) {
         setFramework(GTEST);
-    else
+        cout << "SELECTED FRAMEWORK: GTEST\n";
+    } else {
         setFramework(BOOST);
+        cout << "SELECTED FRAMEWORK: BOOST\n";
+    }
 
     if (getenv("ASKELETON_HOME") != NULL) {
         setAskeletonHome(getenv("ASKELETON_HOME"));
@@ -82,8 +87,6 @@ int main(int argc, const char **argv) {
 
     fs::create_directories(getAskeletonHome() / config.get("route.ut"));
 
-    // CommonOptionsParser OptionsParser(argc, argv, OptC);
-    //  Esto se ha quedado 'deprecated', usando esta solucion temporal
     Expected<CommonOptionsParser> options =
         CommonOptionsParser::create(argc, argv, OptC);
     ClangTool Tool(options->getCompilations(), options->getSourcePathList());

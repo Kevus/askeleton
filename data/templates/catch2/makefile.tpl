@@ -1,5 +1,5 @@
-CXX=clang++ --std=c++14
-OBJS = {target}.o tests.o # Please add your own .o files here
+CXX=clang++ --std=c++17
+OBJS = {target}.o tests.o main.o # Please add your own .o files here
 TARGET = {target}_test
 
 test: $(TARGET)

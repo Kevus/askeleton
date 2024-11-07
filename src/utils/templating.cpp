@@ -132,11 +132,17 @@ void replaceTokensInFile(
     writeToFile(outputFilePath, fileContent);
 }
 
-std::string
-replaceTokensInFile(const std::string &inputFilePath,
-                    const std::map<std::string, std::string> &replacements) {
+string replaceTokensInFile(const string &inputFilePath,
+                           const map<string, string> &replacements) {
 
     string fileContent = readFromFile(inputFilePath);
     replaceTokensInText(fileContent, replacements);
     return fileContent;
+}
+
+void createFileFromTemplate(const fs::path &templateFilePath,
+                            const fs::path &outputFilePath,
+                            const map<string, string> &replacements) {
+    string fileContent = replaceTokensInFile(templateFilePath, replacements);
+    writeToFile(outputFilePath, fileContent);
 }

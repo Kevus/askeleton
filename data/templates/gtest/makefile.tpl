@@ -1,18 +1,21 @@
-CXX=clang++ --std=c++14
-OBJS = {target}.o tests.o # Please add your own .o files here
+CXX=clang++ --std=c++17
+LIBS = -lgtest -lgtest_main -pthread
+OBJS = {target}.o tests.o main.o
 TARGET = {target}_test
 
-test: $(TARGET)
+all: $(TARGET)
+
 $(TARGET): $(OBJS)
-	$(CXX) -o $@ $^
+	$(CXX) -o $@ $^ $(LIBS)
+
+{target}.o: {cppPath}
+	$(CXX) -c $< -o $@
+
+tests.o: $(TARGET).cpp
+	$(CXX) -c $< -o $@
+
+main.o: main.cpp
+	$(CXX) -c $< -o $@
 
 clean:
 	rm -rf $(TARGET) $(OBJS) *~
-
-{target}.o: 
-	$(CXX) {cppPath} -c $< -o {target}.o
-
-tests.o:
-	$(CXX) $(TARGET).cpp -c $< -o tests.o
-
-compilation: {target}.o

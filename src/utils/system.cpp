@@ -68,7 +68,7 @@ string readFromFile(const std::string &filePath) {
 }
 
 void writeToFile(const std::string &filePath, const std::string &content) {
-    std::ofstream file(filePath);
+    std::ofstream file(filePath, std::ios::out | std::ios::trunc);
     if (!file.is_open())
         showOpenFileError(filePath);
 

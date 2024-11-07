@@ -4,11 +4,11 @@
 //// UNIVERSIDAD DE CADIZ                           						////
 ////                                                                        ////
 ////////////////////////////////////////////////////////////////////////////////
-//File generated automatically by ASKELETON
-//Template originally created for LATEGEN
-//File to test: {filePath}
-//DESCRIPTION: This file sets tests cases for {target}.
-//DATE: {dateOfGeneration}
+// File generated automatically by ASKELETON
+// Template originally created for LATEGEN
+// File to test: {filePath}
+// DESCRIPTION: This file sets tests cases for {target}.
+// DATE: {dateOfGeneration}
 ////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
@@ -17,23 +17,21 @@
 #define BOOST_TEST_MODULE {target}_TEST
 #include <boost/test/included/unit_test.hpp>
 
-#include <string>
-#include <fstream>
-#include <sstream>
-#include <streambuf>
-#include <iomanip>
-#include <ctime>
-
-#include <map>
-#include <vector>
-#include <list>
-
-#include <experimental/filesystem>
-
-// Boost libraries
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/lexical_cast.hpp>
+#include <cstring>
+#include <ctime>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <list>
+#include <map>
+#include <sstream>
+#include <streambuf>
+#include <string>
+#include <vector>
 
 // Aditional includes (only appears if needed)
 {includes}

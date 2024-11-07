@@ -28,8 +28,4 @@ private:
     std::string
     generatePointersAsserts(const std::vector<InfoVariable> &parameters,
                             const std::string &function) const override;
-
-    int getFunctionCounter(const std::string &function) const;
-    void incrementFunctionCounter(const std::string &function);
-    std::map<std::string, unsigned> functionCounter;
 };

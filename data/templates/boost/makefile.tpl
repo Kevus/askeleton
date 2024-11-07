@@ -1,4 +1,4 @@
-CXX=clang++ --std=c++14
+CXX=clang++ --std=c++17
 OBJS = {target}.o tests.o # Please add your own .o files here
 TARGET = {target}_test
 

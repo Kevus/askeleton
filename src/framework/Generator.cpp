@@ -21,6 +21,8 @@ Generator::Generator(const string &targetName, const string &filePath,
 
     setOutputFilesPath();
     setSupportedTypes();
+
+    fs::create_directory(utPath);
 }
 
 void Generator::appendTestCaseToTestFile(const std::string &testCase) const {
@@ -89,7 +91,7 @@ void Generator::setValuesToChange(
 
 void Generator::setSupportedTypes() {
     fs::path supportedTypesPath =
-        getAskeletonHome() / config.get("file.supported_types_json");
+        getAskeletonHome() / config.get("file.data.supported_types_json");
     std::ifstream file(supportedTypesPath);
     if (!file.is_open())
         exitWithError(errors::openFileError(supportedTypesPath));
@@ -107,12 +109,14 @@ void Generator::setOutputFiles(
     const map<string, string> &tokensToReplace) const {
     const fs::path templatePath = this->templateFrameworkPath;
 
-    replaceTokensInFile(templatePath / config.get("file.template.test_tpl"),
-                        tokensToReplace);
-    replaceTokensInFile(templatePath / config.get("file.template.fixture_tpl"),
-                        tokensToReplace);
-    replaceTokensInFile(templatePath / config.get("file.template.makefile_tpl"),
-                        tokensToReplace);
+    createFileFromTemplate(templatePath / config.get("file.template.test_tpl"),
+                           testPath, tokensToReplace);
+    createFileFromTemplate(templatePath /
+                               config.get("file.template.fixture_tpl"),
+                           fixturePath, tokensToReplace);
+    createFileFromTemplate(templatePath /
+                               config.get("file.template.makefile_tpl"),
+                           makefilePath, tokensToReplace);
 }
 
 void Generator::appendReadMethodToFixture(const std::string &method) const {
@@ -338,6 +342,19 @@ std::string Generator::generateParameterInvocation(
     }
 
     return ss.str();
+}
+
+int Generator::getFunctionCounter(const std::string &function) const {
+    auto it = functionCounter.find(function);
+    if (it != functionCounter.end()) {
+        return it->second;
+    } else {
+        return 0;
+    }
+}
+
+void Generator::incrementFunctionCounter(const std::string &function) {
+    functionCounter[function]++;
 }
 
 Generator::~Generator() {

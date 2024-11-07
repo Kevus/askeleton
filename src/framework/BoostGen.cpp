@@ -11,7 +11,7 @@ using namespace std;
 
 BoostGen::BoostGen(const std::string &targetName, const std::string &filePath,
                    bool isFromClass)
-    : Generator(targetName, filePath, isFromClass), functionCounter() {
+    : Generator(targetName, filePath, isFromClass) {
 
     setFrameworkTemplatePath(getAskeletonHome() /
                              config.get("route.boost_templates"));
@@ -24,29 +24,26 @@ BoostGen::BoostGen(const std::string &targetName, const std::string &filePath,
 void BoostGen::generateFunctionAssert(
     const std::string &function, const std::vector<InfoVariable> &parameters,
     const InfoType &returnType) {
-    const unsigned functionInvocation = getFunctionCounter(function);
 
-    string returnContent = returnType.isPointer() ? "*" : "";
-    returnContent += generateReturnTypeInvocation(returnType, function);
+    const string init = generateParameterInitialization(parameters, function);
+    const string assertEnding = returnType.isContainer() ? "" : "_EQUAL";
+    const string paramInvocation = generateParameterInvocation(parameters);
+    const string pointers = generatePointersAsserts(parameters, function);
+    const string functionInvocation = to_string(getFunctionCounter(function));
+    const string returnContent =
+        (returnType.isPointer() ? "*" : "") +
+        generateReturnTypeInvocation(returnType, function);
 
     map<string, string> tokensToReplace = {
         {templateItems["tplitem"]["boost"]["target"], targetName},
         {templateItems["tplitem"]["boost"]["function"], function},
-        {templateItems["tplitem"]["boost"]["number"],
-         to_string(functionInvocation)},
-
-        {templateItems["tplitem"]["boost"]["initializations"],
-         generateParameterInitialization(parameters, function)},
-
-        {templateItems["tplitem"]["boost"]["assert_ending"],
-         returnType.isContainer() ? "" : "_EQUAL"},
+        {templateItems["tplitem"]["boost"]["number"], functionInvocation},
+        {templateItems["tplitem"]["boost"]["initializations"], init},
+        {templateItems["tplitem"]["boost"]["assert_ending"], assertEnding},
         {templateItems["tplitem"]["boost"]["invocation"], function},
-        {templateItems["tplitem"]["boost"]["parameters"],
-         generateParameterInvocation(parameters)},
+        {templateItems["tplitem"]["boost"]["parameters"], paramInvocation},
         {templateItems["tplitem"]["boost"]["return"], returnContent},
-
-        {templateItems["tplitem"]["boost"]["pointers"],
-         generatePointersAsserts(parameters, function)}};
+        {templateItems["tplitem"]["boost"]["pointers"], pointers}};
 
     string testContent = replaceTokensInFile(
         templateFrameworkPath / config.get("file.template.case.function"),
@@ -59,7 +56,7 @@ void BoostGen::generateFunctionAssert(
 void BoostGen::generateMethodAssert(const std::string &method,
                                     const std::vector<InfoVariable> &parameters,
                                     const InfoType &returnType) {
-    const unsigned functionInvocation = getFunctionCounter(method);
+    const string functionInvocation = to_string(getFunctionCounter(method));
 
     string returnContent = returnType.isPointer() ? "*" : "";
     returnContent += generateReturnTypeInvocation(returnType, method);
@@ -70,7 +67,7 @@ void BoostGen::generateMethodAssert(const std::string &method,
     map<string, string> tokensToReplace = {
         {templateItems["tplitem"]["boost"]["target"], targetName},
         {templateItems["tplitem"]["boost"]["function"], method},
-        {templateItems["tplitem"]["boost"]["number"], "1"},
+        {templateItems["tplitem"]["boost"]["number"], functionInvocation},
 
         {templateItems["tplitem"]["boost"]["class"], targetName},
         {templateItems["tplitem"]["boost"]["object"], objectTest},
@@ -98,13 +95,13 @@ void BoostGen::generateMethodAssert(const std::string &method,
 
 void BoostGen::generateConstructorAssert(
     const std::vector<InfoVariable> &parameters) {
-    const unsigned functionInvocation = getFunctionCounter(targetName);
+    const string functionInvocation = to_string(getFunctionCounter(targetName));
     string invocationContent = targetName;
 
     map<string, string> tokensToReplace = {
         {templateItems["tplitem"]["boost"]["target"], targetName},
         {templateItems["tplitem"]["boost"]["function"], targetName},
-        {templateItems["tplitem"]["boost"]["number"], "1"},
+        {templateItems["tplitem"]["boost"]["number"], functionInvocation},
 
         {templateItems["tplitem"]["boost"]["initializations"],
          generateParameterInitialization(parameters, targetName)},
@@ -156,12 +153,4 @@ BoostGen::generatePointersAsserts(const std::vector<InfoVariable> &parameters,
     }
 
     return ss.str();
-}
-
-int BoostGen::getFunctionCounter(const std::string &function) const {
-    return functionCounter.at(function);
-}
-
-void BoostGen::incrementFunctionCounter(const std::string &function) {
-    functionCounter[function]++;
 }

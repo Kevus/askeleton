@@ -1,13 +1,10 @@
-TEST_CASE("{target}_{function}_{number}", "[Fixture]") {
+TEST_CASE_METHOD(Fixture, "Testing constructor {function} from class {target} #{number}", "[{target}]") {
     Date("Start");
 
-    {initializations}
-
+{initializations}
     REQUIRE(
         {class}({parameters})
     );
-
-    {pointers}
-
+{pointers}
     Date("End");
 }

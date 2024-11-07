@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <string>
 
 #include "clang/AST/Expr.h"
@@ -113,3 +114,21 @@ void replaceTokensInFile(
 std::string
 replaceTokensInFile(const std::string &inputFilePath,
                     const std::map<std::string, std::string> &replacements);
+
+/**
+ * @brief Creates a file from a template by replacing tokens with specified
+ * values.
+ *
+ * This function reads the content of a template file, replaces tokens in the
+ * content with the corresponding values provided in the replacements map, and
+ * writes the modified content to an output file.
+ *
+ * @param templateFilePath The path to the template file.
+ * @param outputFilePath The path where the output file will be created.
+ * @param replacements A map containing token-value pairs for replacement in the
+ * template.
+ */
+void createFileFromTemplate(
+    const std::filesystem::path &templateFilePath,
+    const std::filesystem::path &outputFilePath,
+    const std::map<std::string, std::string> &replacements = {});

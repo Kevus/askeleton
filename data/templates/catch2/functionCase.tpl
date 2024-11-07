@@ -1,12 +1,10 @@
-TEST_CASE("{target}_{function}_{number}", "[Fixture]") {
+TEST_CASE_METHOD(Fixture, "Function {function} from {target} #{number}", "[{target}]") {
     Date("Start");
 
-    {initializations}
-    REQUIRE{assertEnding}(
+{initializations}
+    REQUIRE(
         {invocation}({parameters}) == {return}
     );
-
-    {pointers}
-
+{pointers}
     Date("End");
 }
