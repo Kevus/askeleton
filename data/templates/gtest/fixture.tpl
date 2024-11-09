@@ -13,13 +13,12 @@
 #pragma once
 
 #include "{headerPath}"
-#include <gtest/gtest.h>
 
 #include <boost/lexical_cast.hpp>
-#include <catch2/catch.hpp>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
+#include <gtest/gtest.h>
 #include <iomanip>
 #include <iostream>
 #include <list>

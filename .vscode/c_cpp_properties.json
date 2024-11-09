@@ -6,7 +6,8 @@
                 "/home/heredia/assenter_src/NEO_UT/include",
                 "/lib/llvm-15/include",
                 "/home/heredia/astutmatcher/**",
-                "${workspaceFolder}/include"
+                "${workspaceFolder}/include",
+                "/usr/include"
             ],
             "defines": [],
             "cStandard": "c17",

@@ -99,21 +99,21 @@ void BoostGen::generateConstructorAssert(
     const string functionInvocation =
         to_string(getFunctionCounter(targetName) + 1);
     string invocationContent = targetName;
+	const string init = generateParameterInitialization(parameters, targetName);
+	const string paramsInvocation = generateParameterInvocation(parameters);
+	const string pointers = generatePointersAsserts(parameters, targetName);
 
     map<string, string> tokensToReplace = {
         {templateItems["tplitem"]["boost"]["target"], targetName},
         {templateItems["tplitem"]["boost"]["function"], targetName},
         {templateItems["tplitem"]["boost"]["number"], functionInvocation},
 
-        {templateItems["tplitem"]["boost"]["initializations"],
-         generateParameterInitialization(parameters, targetName)},
+        {templateItems["tplitem"]["boost"]["initializations"], init},
 
         {templateItems["tplitem"]["boost"]["class"], targetName},
-        {templateItems["tplitem"]["boost"]["parameters"],
-         generateParameterInvocation(parameters)},
+        {templateItems["tplitem"]["boost"]["parameters"], paramsInvocation},
 
-        {templateItems["tplitem"]["boost"]["pointers"],
-         generatePointersAsserts(parameters, targetName)}};
+        {templateItems["tplitem"]["boost"]["pointers"], pointers}};
 
     string testContent = replaceTokensInFile(
         templateFrameworkPath / config.get("file.template.case.constructor"),
@@ -130,7 +130,9 @@ BoostGen::generatePointersAsserts(const std::vector<InfoVariable> &parameters,
     const string TPLITEM_BOOST_PARAMETER =
                      templateItems["tplitem"]["boost"]["parameter"],
                  TPLITEM_BOOST_EXPECTED =
-                     templateItems["tplitem"]["boost"]["expected"];
+                     templateItems["tplitem"]["boost"]["expected"],
+				 TPLITEM_BOOST_ASSERT =
+					 templateItems["templating"]["boost"]["assert_pointer"];
 
     for (const auto &param : parameters) {
         if (param.isPointer() || param.isReference()) {
@@ -144,8 +146,7 @@ BoostGen::generatePointersAsserts(const std::vector<InfoVariable> &parameters,
                 {TPLITEM_BOOST_EXPECTED,
                  generateReadInvocation(underlyingVar, function)}};
 
-            string pointerAssert =
-                config.get("templating.boost.assert_pointer");
+            string pointerAssert = TPLITEM_BOOST_ASSERT;
             replaceTokensInText(pointerAssert, tokensToReplace);
             ss << "\n\t" << pointerAssert;
             if (&param == &parameters.back()) {
