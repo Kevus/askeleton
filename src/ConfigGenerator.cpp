@@ -15,27 +15,18 @@ namespace fs = std::filesystem;
 
 const Config &ConfigGenerator::config = Config::getInstance();
 RandomValuesGenerator ConfigGenerator::rvg;
-std::map<std::string, std::string> ConfigGenerator::tplItems;
-
-void ConfigGenerator::loadConfigurations() {
-    json tplItemsJson = loadTemplateItems();
-    tplItems = {
-        {"date_of_generation", tplItemsJson["tplitem"]["date_of_generation"]},
-        {"file_path", tplItemsJson["tplitem"]["file_path"]},
-        {"target", tplItemsJson["tplitem"]["target"]}};
-}
+json &ConfigGenerator::tplItems = getTemplateItems();
 
 ConfigGenerator::ConfigGenerator(const string &target)
-    : target(target), testFolder(fs::path(config.get("route.ut")) / target),
+    : target(target), testFolder(fs::current_path() / config.get("route.ut") / target),
       configFilePath(fs::path(testFolder) / (target + ".cfg")) {
-    fs::path configFileTemplate = getAskeletonHome() /
-                                  config.get("route.templates") /
+    fs::path configFileTemplate = getAskeletonHome() / config.get("route.templates") /
                                   config.get("file.template.cfg_tpl");
 
     map<string, string> replacements = {
-        {tplItems["file_path"], target},
-        {tplItems["target"], target},
-        {tplItems["date_of_generation"], getTodayString()}};
+        {tplItems["tplitem"]["file_path"], target},
+        {tplItems["tplitem"]["target"], target},
+        {tplItems["tplitem"]["date_of_generation"], getTodayString()}};
 
     replaceTokensInFile(configFileTemplate, configFilePath, replacements);
 }
@@ -44,96 +35,61 @@ void ConfigGenerator::generateTestCase(const string &functionName,
                                        const vector<InfoVariable> &params,
                                        const InfoType &returnType) const {
     stringstream ss;
+    const string returnVarName =
+        returnType.getUnderlyingType().getFormattedNotParametrized();
+    InfoVariable returnVar{returnVarName, returnType};
+    const static string returnPrefix = tplItems["tplitem"]["return_prefix"];
 
     ss << functionName << ":\n{\n";
-    ss << generateParams(params);
-    ss << generateReturn(returnType);
-    ss << "};\n\n";
+    ss << generateParam(params);
+    ss << generateParam(returnVar, false, returnPrefix);
+    ss << "\n};\n\n";
 
     appendToConfigFile(ss.str());
 }
 
-void ConfigGenerator::generateConstructorTest(
-    const string &ctorName, const vector<InfoVariable> &params) const {
+void ConfigGenerator::generateConstructorTest(const string &ctorName,
+                                              const vector<InfoVariable> &params) const {
     stringstream ss;
 
     ss << ctorName << ":\n{\n";
-    ss << generateParams(params);
-    ss << "};\n\n";
+    ss << generateParam(params);
+    ss << "\n};\n\n";
 
     appendToConfigFile(ss.str());
 }
 
-std::string
-ConfigGenerator::generateParams(const vector<InfoVariable> &params) const {
+std::string ConfigGenerator::generateParam(const vector<InfoVariable> &params,
+                                           bool generatePointers,
+                                           const string &prefix) const {
     stringstream ss;
 
     for (const InfoVariable &param : params)
-        ss << generateParam(param);
+        ss << generateParam(param, generatePointers, prefix) << "\n";
 
     return ss.str();
 }
 
-std::string ConfigGenerator::generateReturn(const InfoType &returnType) const {
-    InfoType underlying = returnType.getUnderlyingType();
-    stringstream ss;
-
-    if (underlying.isRecord() && !underlying.isContainer())
-        ss << generateReturnRecord(underlying);
-    else {
-        ss << "\treturn_"
-           << (underlying.isContainer()
-                   ? extractSubstringUntilCharacter(underlying.formatted, '<')
-                   : underlying.formatted)
-           << "=" << rvg.getRandomValue(underlying.formatted) << ";#"
-           << underlying.original << "\n";
-    }
-
-    return ss.str();
-}
-
-std::string ConfigGenerator::generateParam(const InfoVariable &param) const {
-    string original = param.original,
-           name = param.isPointer() ? param.name + "_input" : param.name;
+std::string ConfigGenerator::generateParam(const InfoVariable &param,
+                                           bool generatePointers,
+                                           const string &prefix) const {
+    pair<InfoVariable, InfoVariable> pointers = param.getPointers();
     InfoType underlying = param.getUnderlyingType();
-    string value = rvg.getRandomValue(param.formatted);
+    string value = rvg.getRandomValue(underlying.formatted);
     stringstream ss;
 
     if (underlying.isRecord() && !underlying.isContainer()) {
-        ss << generateParamRecord(underlying, name);
-        if (param.isPointer() || param.isReference()) {
-            ss << generateParamRecord(underlying, param.name + "_output");
-        }
+        ss << generateParam(pointers.first.getRecordFields(), generatePointers,
+                            prefix + pointers.first.name + ".");
+        if (generatePointers && (param.isPointer() || param.isReference()))
+            ss << generateParam(pointers.second.getRecordFields(), generatePointers,
+                                prefix + pointers.second.name + ".");
     } else {
-        ss << "\t" << name << "=" << value << ";#" << original << "\n";
-    }
-
-    return ss.str();
-}
-
-string ConfigGenerator::generateParamRecord(InfoType &underlying,
-                                            const std::string &name) const {
-    std::stringstream ss;
-    for (const InfoVariable &field : underlying.getRecordFields()) {
-        ss << "\t" << name << "." << field.name << "="
-           << rvg.getRandomValue(field.formatted) << ";#" << field.original
-           << "\n";
-    }
-    return ss.str();
-}
-
-std::string ConfigGenerator::generateReturnRecord(const InfoType &record,
-                                                  const string &prefix) const {
-    const string &name = prefix + record.formatted;
-    stringstream ss;
-
-    for (const InfoVariable &field : record.getRecordFields()) {
-        if (field.isRecord())
-            ss << generateReturnRecord(field, name + ".");
-        else
-            ss << "\t" << name << "." << field.name << "="
-               << rvg.getRandomValue(field.formatted) << ";#" << field.original
-               << "\n";
+        ss << "\t" << prefix + pointers.first.name << "=" << value << ";#"
+           << param.original;
+        if (generatePointers && (param.isPointer() || param.isReference()))
+            ss << "\n\t" << prefix + pointers.second.name << "=" << value << ";#"
+               << param.original;
     }
 
     return ss.str();

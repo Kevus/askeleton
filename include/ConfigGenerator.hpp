@@ -19,23 +19,19 @@ public:
     void generateConstructorTest(const std::string &ctorName,
                                  const std::vector<InfoVariable> &params) const;
 
-    static void loadConfigurations();
-
 private:
     const std::string target, testFolder, configFilePath;
 
-    std::string generateParams(const std::vector<InfoVariable> &params) const;
+    std::string generateParam(const InfoVariable &param, bool generatePointers = true,
+                              const std::string &prefix = "") const;
+    std::string generateParam(const std::vector<InfoVariable> &params,
+                              bool generatePointers = true,
+                              const std::string &prefix = "") const;
     std::string generateReturn(const InfoType &returnType) const;
-    std::string generateParam(const InfoVariable &param) const;
-    std::string generateParamRecord(InfoType &underlying,
-                                    const std::string &name) const;
-    std::string
-    generateReturnRecord(const InfoType &record,
-                         const std::string &prefix = "return_") const;
 
     void appendToConfigFile(const std::string &content) const;
 
     static const Config &config;
-    static std::map<std::string, std::string> tplItems;
+    static nlohmann::json &tplItems;
     static RandomValuesGenerator rvg;
 };

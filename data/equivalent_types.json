@@ -1,6 +1,23 @@
 {
+    "_Bool": "bool",
+    "char *": "char *",
     "class std::basic_string<char>": "std::string",
     "const char *": "const char *",
-    "char *": "char *",
-	"_Bool": "bool"
+    "long int": "long",
+    "long long int": "long long",
+    "short int": "short",
+    "signed": "int",
+    "signed char": "char",
+    "signed int": "int",
+    "signed long": "long",
+    "signed long int": "long",
+    "signed long long": "long long",
+    "signed long long int": "long long",
+    "signed short": "short",
+    "signed short int": "short",
+    "size_t": "unsigned",
+    "unsigned int": "unsigned",
+    "unsigned long int": "unsigned long",
+    "unsigned long long int": "unsigned long long",
+    "unsigned short int": "unsigned short"
 }

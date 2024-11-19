@@ -14,13 +14,21 @@ struct InfoType {
     InfoType(const std::string &original, const std::string &formatted);
 
     bool isContainer() const;
+    bool isList() const;
+    bool isMap() const;
+
     bool isPointer() const;
     bool isReference() const;
+
     bool isRecord() const;
     bool isEnum() const;
 
+    bool isTemplateParametrized() const;
+
     InfoType getUnderlyingType() const;
+    InfoVariable getTypeAsReturn() const;
     std::vector<InfoVariable> getRecordFields() const;
+    std::string getFormattedNotParametrized() const;
 
     std::string original, formatted;
     const clang::QualType type;
@@ -36,8 +44,12 @@ struct InfoVariable : public InfoType {
     InfoVariable() = default;
     InfoVariable(const clang::ParmVarDecl *);
     InfoVariable(const clang::FieldDecl *);
+    InfoVariable(const std::string &varName, const InfoType &type);
     InfoVariable(const std::string &name, const std::string &original,
                  const std::string &formatted);
+
+    std::pair<InfoVariable, InfoVariable> getPointers() const;
+    std::pair<std::string, std::string> getPointersVarName() const;
 
     std::string name;
     static unsigned NO_NAME_COUNT;

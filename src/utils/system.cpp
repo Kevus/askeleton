@@ -121,9 +121,14 @@ json loadTemplateItems() {
     if (!file.is_open())
         exitWithError("Error opening file: " + tplItemPath.string());
 
-    json templateItems;
-    file >> templateItems;
+    json tplItems;
+    file >> tplItems;
 
+    return tplItems;
+}
+
+json &getTemplateItems() {
+    static json templateItems = loadTemplateItems();
     return templateItems;
 }
 

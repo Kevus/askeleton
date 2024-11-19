@@ -1,10 +1,9 @@
-TEST_CASE_METHOD(Fixture, "Function {function} from {target} #{number}", "[{target}]") {
+TEST_CASE_METHOD(Fixture, "{function} from {target} #{number}", "[{target}]") {
     Date("Start");
-
 {initializations}
-    REQUIRE(
-        {invocation}({parameters}) == {return}
-    );
+    {returnType} expected = {returnReadMethod};
+
+    REQUIRE({invocation}({parameters}) == expected);
 {pointers}
     Date("End");
 }

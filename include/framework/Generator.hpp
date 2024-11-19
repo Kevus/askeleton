@@ -90,7 +90,7 @@ protected:
     std::filesystem::path templateFrameworkPath, templateMethodPath;
     std::filesystem::path utPath, fixturePath, makefilePath, supportedPath,
         testPath;
-    static nlohmann::json templateItems;
+    static const nlohmann::json &templateItems;
 
 private:
     void setOutputFilesPath();

@@ -9,13 +9,13 @@ public:
     Config(Config &&) = delete;
     Config &operator=(Config &&) = delete;
 
-    void loadConfig(const std::string &path);
     std::string get(const std::string &key) const;
+    const nlohmann::json &operator[](const std::string &key) const;
 
     static Config &getInstance();
 
 private:
-    Config() = default;
+    Config();
     std::string getNestedValue(const std::vector<std::string> &keys) const;
 
     nlohmann::json configData;

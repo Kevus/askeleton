@@ -69,15 +69,15 @@ void setAskeletonHomeFromEnv() {
     }
 }
 
-void loadConfigurationFromConfigFile() {
-    fs::path configFile = getAskeletonHome() / "data/configuration.json";
-    if (!fs::exists(configFile))
-        exitWithError("ERROR: Configuration file not found. Check " +
-                      configFile.string());
+// void loadConfigurationFromConfigFile() {
+//     fs::path configFile = getAskeletonHome() / "data/configuration.json";
+//     if (!fs::exists(configFile))
+//         exitWithError("ERROR: Configuration file not found. Check " +
+//                       configFile.string());
 
-    Config::getInstance().loadConfig(configFile);
-    cout << "Configuration loaded from " << configFile << endl;
-}
+//     Config::getInstance().loadConfig(configFile);
+//     cout << "Configuration loaded from " << configFile << endl;
+// }
 
 void exitIfFolderDoesNotExist(fs::path folder) {
     if (!fs::exists(folder))
@@ -129,18 +129,15 @@ int main(int argc, const char **argv) {
 
     setAskeletonHomeFromEnv();
 
-    loadConfigurationFromConfigFile();
-    Config &config = Config::getInstance();
-    ConfigGenerator::loadConfigurations();
+    // loadConfigurationFromConfigFile();
+    const Config &config = Config::getInstance();
 
-    exitIfFolderDoesNotExist(getAskeletonHome() /
-                             config.get("route.templates"));
-    Generator::setTemplateItems();
+    exitIfFolderDoesNotExist(getAskeletonHome() / config["route"]["templates"]);
     Generator::MAX_DEPTH = DeepLevel.getValue();
 
     moveGeneratedFolderToLog(config);
 
-    fs::create_directories(getAskeletonHome() / config.get("route.ut"));
+    fs::create_directories(getAskeletonHome() / config["route"]["ut"]);
 
     clang::ast_matchers::MatchFinder Finder;
     ASKGen Functionality;

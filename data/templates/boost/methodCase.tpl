@@ -1,15 +1,11 @@
 BOOST_FIXTURE_TEST_CASE({target}_{function}_{number}, Fixture) {
     Date("Start");
-
-    {class} {object};
 {initializations}
-
-    BOOST_CHECK{assertEnding}(
+{returnType} expected = {returnReadMethod};
+    BOOST_CHECK_EQUAL(
         {object}.{invocation}({parameters}),
-        {return}
+        expected
     );
-
-    {pointers}
-
+{pointers}
     Date("End");
 }

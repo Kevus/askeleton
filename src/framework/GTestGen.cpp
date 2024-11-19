@@ -10,7 +10,7 @@ GTestGenerator::GTestGenerator(const string &targetName, const string &filePath,
                                bool isFromClass)
     : Generator(targetName, filePath, isFromClass) {
     setFrameworkTemplatePath(getAskeletonHome() /
-                             config.get("route.gtest_templates"));
+                             config["route"]["gtest_templates"]);
 
     map<string, string> tokensToReplace;
     setValuesToChange(tokensToReplace);
@@ -22,129 +22,79 @@ GTestGenerator::GTestGenerator(const string &targetName, const string &filePath,
 void GTestGenerator::generateFunctionAssert(
     const string &function, const vector<InfoVariable> &parameters,
     const InfoType &returnType) {
-    const string init = generateParameterInitialization(parameters, function);
-    const string paramInvocation = generateParameterInvocation(parameters);
-    const string pointers = generatePointersAsserts(parameters, function);
-    const string functionInvocation =
-        to_string(getFunctionCounter(function) + 1);
-    const string returnContent =
-        (returnType.isPointer() ? "*" : "") +
-        generateReturnTypeInvocation(returnType, function);
+    const static fs::path tplFunctionPath =
+        templateFrameworkPath / config["file"]["template"]["case"]["function"];
+    InfoType underlying = returnType.getUnderlyingType();
+    const string number = to_string(getFunctionCounter(function) + 1);
+
+    string init = generateParameterInitialization(parameters, function);
+    if (!init.empty())
+        init = "\n" + init;
+
+    const string returnTypeOriginal = underlying.original;
+    const string returnReadMethod =
+        generateReadInvocation(underlying.getTypeAsReturn(), function);
+
+    const string parametersInvocation = generateParameterInvocation(parameters);
+    string pointers = generatePointersAsserts(parameters, function);
+    if (!pointers.empty())
+        pointers = pointers + "\n";
+
+    string invocation =
+        isFromClass ? generateTestObjectForTarget(targetName) + "." + function
+                    : function;
+    if (returnType.isPointer())
+        invocation = "*" + invocation;
 
     map<string, string> tokensToReplace = {
         {templateItems["tplitem"]["gtest"]["target"], targetName},
         {templateItems["tplitem"]["gtest"]["function"], function},
-        {templateItems["tplitem"]["gtest"]["number"], functionInvocation},
+        {templateItems["tplitem"]["gtest"]["number"], number},
         {templateItems["tplitem"]["gtest"]["initializations"], init},
-        {templateItems["tplitem"]["gtest"]["invocation"], function},
-        {templateItems["tplitem"]["gtest"]["parameters"], paramInvocation},
-        {templateItems["tplitem"]["gtest"]["return"], returnContent},
+        {templateItems["tplitem"]["gtest"]["return_type"], returnTypeOriginal},
+        {templateItems["tplitem"]["gtest"]["return_read_method"],
+         returnReadMethod},
+        {templateItems["tplitem"]["gtest"]["invocation"], invocation},
+        {templateItems["tplitem"]["gtest"]["parameters"], parametersInvocation},
         {templateItems["tplitem"]["gtest"]["pointers"], pointers}};
 
-    string testContent = replaceTokensInFile(
-        templateFrameworkPath / config.get("file.template.case.function"),
-        tokensToReplace);
+    string testContent = replaceTokensInFile(tplFunctionPath, tokensToReplace);
     appendTestCaseToTestFile(testContent);
+    incrementFunctionCounter(function);
 }
 
 void GTestGenerator::generateMethodAssert(
     const std::string &method, const std::vector<InfoVariable> &parameters,
     const InfoType &returnType) {
-    const string functionInvocation = to_string(getFunctionCounter(method) + 1);
-
-    string returnContent = returnType.isPointer() ? "*" : "";
-    returnContent += generateReturnTypeInvocation(returnType, method);
-
-    string objectTest = targetName + "_test";
-    objectTest[0] = tolower(objectTest[0]);
-
-    map<string, string> tokensToReplace = {
-        {templateItems["tplitem"]["gtest"]["target"], targetName},
-        {templateItems["tplitem"]["gtest"]["function"], method},
-        {templateItems["tplitem"]["gtest"]["number"], functionInvocation},
-
-        {templateItems["tplitem"]["gtest"]["class"], targetName},
-        {templateItems["tplitem"]["gtest"]["object"], objectTest},
-
-        {templateItems["tplitem"]["gtest"]["initializations"],
-         generateParameterInitialization(parameters, method)},
-
-        {templateItems["tplitem"]["gtest"]["assert_ending"],
-         returnType.isContainer() ? "" : "_EQ"},
-        {templateItems["tplitem"]["gtest"]["invocation"], method},
-        {templateItems["tplitem"]["gtest"]["parameters"],
-         generateParameterInvocation(parameters)},
-        {templateItems["tplitem"]["gtest"]["return"], returnContent},
-
-        {templateItems["tplitem"]["gtest"]["pointers"],
-         generatePointersAsserts(parameters, method)}};
-
-    string testContent = replaceTokensInFile(
-        templateFrameworkPath / config.get("file.template.case.method"),
-        tokensToReplace);
-
-    appendTestCaseToTestFile(testContent);
-    incrementFunctionCounter(method);
+    generateFunctionAssert(method, parameters, returnType);
 }
 
 void GTestGenerator::generateConstructorAssert(
     const std::vector<InfoVariable> &parameters) {
-    const string functionInvocation =
-        to_string(getFunctionCounter(targetName) + 1);
-    string invocationContent = targetName;
-
-    map<string, string> tokensToReplace = {
-        {templateItems["tplitem"]["gtest"]["target"], targetName},
-        {templateItems["tplitem"]["gtest"]["function"], targetName},
-        {templateItems["tplitem"]["gtest"]["number"], functionInvocation},
-
-        {templateItems["tplitem"]["gtest"]["initializations"],
-         generateParameterInitialization(parameters, targetName)},
-
-        {templateItems["tplitem"]["gtest"]["class"], targetName},
-        {templateItems["tplitem"]["gtest"]["parameters"],
-         generateParameterInvocation(parameters)},
-
-        {templateItems["tplitem"]["gtest"]["pointers"],
-         generatePointersAsserts(parameters, targetName)}};
-
-    string testContent = replaceTokensInFile(
-        templateFrameworkPath / config.get("file.template.case.constructor"),
-        tokensToReplace);
-
-    appendTestCaseToTestFile(testContent);
-    incrementFunctionCounter(targetName);
+    // Constructor test case generation is not supported in Google Test
 }
 
 std::string GTestGenerator::generatePointersAsserts(
     const std::vector<InfoVariable> &parameters,
     const std::string &function) const {
-    const string TPLITEM_GTEST_PARAMETER =
-                     templateItems["tplitem"]["gtest"]["parameter"],
-                 TPLITEM_GTEST_EXPECTED =
-                     templateItems["tplitem"]["gtest"]["expected"],
-                 TPLITEM_GTEST_POINTER =
-                     templateItems["templating"]["gtest"]["assert_pointer"];
+    const static string
+        TPLITEM_GTEST_PARAMETER =
+            templateItems["tplitem"]["gtest"]["parameter"],
+        TPLITEM_GTEST_EXPECTED = templateItems["tplitem"]["gtest"]["expected"],
+        TPLITEM_GTEST_POINTER =
+            templateItems["templating"]["gtest"]["assert_pointer"];
 
     std::stringstream ss;
     for (const auto &param : parameters) {
         if (param.isPointer() || param.isReference()) {
-            InfoType underlyingType = param.getUnderlyingType();
-            InfoVariable underlyingVar{param.name + "_output",
-                                       underlyingType.original,
-                                       underlyingType.formatted};
-
+            pair<string, string> pointers = param.getPointersVarName();
             map<string, string> tokensToReplace = {
-                {TPLITEM_GTEST_PARAMETER, param.name},
-                {TPLITEM_GTEST_EXPECTED,
-                 generateReadInvocation(underlyingVar, function)}};
+                {TPLITEM_GTEST_PARAMETER, pointers.first},
+                {TPLITEM_GTEST_EXPECTED, pointers.second}};
 
             string pointerAssert = TPLITEM_GTEST_POINTER;
             replaceTokensInText(pointerAssert, tokensToReplace);
             ss << "\n\t" << pointerAssert;
-            if (&param == &parameters.back()) {
-                ss << "\n";
-            }
         }
     }
 
@@ -152,8 +102,8 @@ std::string GTestGenerator::generatePointersAsserts(
 }
 
 void GTestGenerator::copyMainFile() const {
-    fs::path tplMain =
-                 templateFrameworkPath / config.get("file.template.gtest_main"),
-             outputMain = utPath / config.get("file.output.gtest_main");
+    fs::path tplMain = templateFrameworkPath /
+                       config["file"]["template"]["gtest_main"],
+             outputMain = utPath / config["file"]["output"]["gtest_main"];
     fs::copy_file(tplMain, outputMain, fs::copy_options::overwrite_existing);
 }

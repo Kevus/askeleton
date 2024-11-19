@@ -191,7 +191,7 @@ void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
             // ======================================================================
 
             auto generator = getGenerator(target, filePath, true);
-			auto configGenerator = getConfigGenerator(target);
+            auto configGenerator = getConfigGenerator(target);
             generateTest(*generator, *configGenerator, UT);
         }
     }
@@ -458,7 +458,7 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
                           const CXXConstructorDecl *UT) {
     std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
     std::string constructorName = UT->getParent()->getName().str();
-	
+
     if (function_occurrences[constructorName]++ > 1) {
         constructorName +=
             "_" + std::to_string(function_occurrences[constructorName]);

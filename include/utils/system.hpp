@@ -184,17 +184,14 @@ std::optional<std::string> getSourceFile(const std::string &filePath);
 std::optional<std::string> getHeaderFile(const std::string &filePath);
 
 /**
- * @brief Loads template items from a JSON file.
+ * @brief Retrieves the template items.
  *
- * This function retrieves the file path for the template items JSON file from
- * the configuration, opens the file, and parses its contents into a JSON
- * object.
+ * This function returns the template items that have been loaded from the JSON
+ * file.
  *
- * @return A JSON object containing the template items.
- *
- * @throws std::runtime_error if the file cannot be opened.
+ * @return The template items as a JSON object.
  */
-nlohmann::json loadTemplateItems();
+nlohmann::json &getTemplateItems();
 
 /**
  * @brief Sets the framework to be used.

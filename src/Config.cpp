@@ -1,15 +1,18 @@
 #include "Config.hpp"
 
 #include "utils/strings.hpp"
+#include "utils/system.hpp"
 #include <fstream>
+
+using json = nlohmann::json;
 
 Config &Config::getInstance() {
     static Config instance;
     return instance;
 }
 
-void Config::loadConfig(const std::string &path) {
-    std::ifstream file(path);
+Config::Config() : configData{} {
+    std::ifstream file(getAskeletonHome() / "data/configuration.json");
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open config file");
     }
@@ -25,8 +28,12 @@ std::string Config::get(const std::string &key) const {
     return getNestedValue(keys);
 }
 
+const json &Config::operator[](const std::string &key) const {
+    return configData[key];
+}
+
 std::string Config::getNestedValue(const std::vector<std::string> &keys) const {
-    const nlohmann::json *currentLevel = &configData;
+    const json *currentLevel = &configData;
 
     for (const auto &key : keys) {
         if (currentLevel->contains(key)) {

@@ -161,11 +161,11 @@ struct Fixture {
 	}
 
 	signed char Read_signed_char(string objectKey) {
-		return Read_char(readObject(objectKey));
+		return Read_char(objectKey);
 	}
 
 	unsigned char Read_unsigned_char(string objectKey) {
-		return Read_char(readObject(objectKey));
+		return Read_char(objectKey);
 	}
 
 	//==========================================================
@@ -180,15 +180,15 @@ struct Fixture {
 	}
 
 	short int Read_short_int(string objectKey) {
-		return Read_short(readObject(objectKey));
+		return Read_short(objectKey);
 	}
 
 	signed short Read_signed_short(string objectKey) {
-		return Read_short(readObject(objectKey));
+		return Read_short(objectKey);
 	}
 
 	signed short int Read_signed_short_int(string objectKey) {
-		return Read_short(readObject(objectKey));
+		return Read_short(objectKey);
 	}
 
 	//==========================================================
@@ -201,7 +201,7 @@ struct Fixture {
 	}
 
 	unsigned short int Read_unsigned_short_int(string objectKey) {
-		return Read_unsigned_short(readObject(objectKey));
+		return Read_unsigned_short(objectKey);
 	}
 
 	//==========================================================
@@ -215,11 +215,11 @@ struct Fixture {
 	}
 
 	signed Read_signed(string objectKey) {
-		return Read_int(readObject(objectKey));
+		return Read_int(objectKey);
 	}
 
 	signed int Read_signed_int(string objectKey) {
-		return Read_int(readObject(objectKey));
+		return Read_int(objectKey);
 	}
 
 	//==========================================================
@@ -233,11 +233,11 @@ struct Fixture {
 	}
 
 	unsigned int Read_unsigned(string objectKey) {
-		return Read_unsigned_int(readObject(objectKey));
+		return Read_unsigned_int(objectKey);
 	}
 
 	size_t Read_size_t(string objectKey) {
-		return Read_unsigned_int(readObject(objectKey));
+		return Read_unsigned_int(objectKey);
 	}
 
 	//==========================================================
@@ -252,15 +252,15 @@ struct Fixture {
 	}
 
 	long int Read_long_int(string objectKey) {
-		return Read_long(readObject(objectKey));
+		return Read_long(objectKey);
 	}
 
 	signed long Read_signed_long(string objectKey) {
-		return Read_long(readObject(objectKey));
+		return Read_long(objectKey);
 	}
 
 	signed long int Read_signed_long_int(string objectKey) {
-		return Read_long(readObject(objectKey));
+		return Read_long(objectKey);
 	}
 
 	//========================================================== 
@@ -273,7 +273,7 @@ struct Fixture {
 	}
 
 	unsigned long int Read_unsigned_long_int(string objectKey) {
-		return Read_unsigned_long(readObject(objectKey));
+		return Read_unsigned_long(objectKey);
 	}
 
 	//==========================================================
@@ -288,15 +288,15 @@ struct Fixture {
 	}
 
 	long long int Read_long_long_int(string objectKey) {
-		return Read_long_long(readObject(objectKey));
+		return Read_long_long(objectKey);
 	}
 
 	signed long long Read_signed_long_long(string objectKey) {
-		return Read_long_long(readObject(objectKey));
+		return Read_long_long(objectKey);
 	}
 
 	signed long long int Read_signed_long_long_int(string objectKey) {
-		return Read_long_long(readObject(objectKey));
+		return Read_long_long(objectKey);
 	}
 
 	//==========================================================
@@ -309,7 +309,7 @@ struct Fixture {
 	}
 
 	unsigned long long int Read_unsigned_long_long_int(string objectKey) {
-		return Read_unsigned_long_long(readObject(objectKey));
+		return Read_unsigned_long_long(objectKey);
 	}
 
 	//==========================================================
@@ -322,7 +322,7 @@ struct Fixture {
 	}
 
 	long double Read_long_double(string objectKey) {
-		return Read_double(readObject(objectKey));
+		return Read_double(objectKey);
 	}
 
 	//==========================================================
@@ -480,7 +480,7 @@ struct Fixture {
 {newMethods}
 	int argc;
 	char **argv;
-{className} {classNameTest}
+	{className} {classNameTest}
 	map<string, map<string, string> > configContent;
 	vector<void *> pointers;
 };

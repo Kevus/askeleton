@@ -46,13 +46,23 @@ void replaceTypeCharacters(std::string &type);
  * This function performs the following operations on the input string:
  * - Removes occurrences of "std::".
  * - Removes occurrences of "__cxx11::".
- * - Replaces all spaces with underscores, but only if the string does not
- * contain the character '<'.
  *
  * @param sToReplace The string to be cleaned.
  * @return A new string with the unnecessary characters removed or replaced.
  */
-std::string cleanUnnecesaryChars(std::string sToReplace);
+std::string removeNamespaceQualifier(std::string sToReplace);
+
+/**
+ * @brief Removes template arguments from a given type string.
+ *
+ * This function takes a string representing a type and removes any template
+ * arguments, returning the base type. For example, given "std::vector<int>",
+ * it will return "std::vector".
+ *
+ * @param type The type string from which to remove template arguments.
+ * @return A string representing the type without template arguments.
+ */
+std::string removeTemplateArguments(std::string type);
 
 /**
  * @brief Convert a clang expression to a string.
@@ -132,3 +142,14 @@ void createFileFromTemplate(
     const std::filesystem::path &templateFilePath,
     const std::filesystem::path &outputFilePath,
     const std::map<std::string, std::string> &replacements = {});
+
+/**
+ * @brief Generates a test object for a given target.
+ *
+ * This function generates a test object for a given target. The test object is
+ * a string that contains the target name with the first letter in lowercase.
+ *
+ * @param target The class target for which to generate the test object.
+ * @return std::string The generated test object.
+ */
+std::string generateTestObjectForTarget(const std::string &target);

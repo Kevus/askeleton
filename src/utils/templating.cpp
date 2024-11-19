@@ -78,22 +78,19 @@ void replaceTypeCharacters(string &type) {
     replaceAll(type, "&", "r");
 }
 
-string cleanUnnecesaryChars(string sToReplace) {
-    //==========================================================
-    // We are formating types:
-    //	std:: flag
-    //  __cxx11:: flag
-    //	All pointers will be treated as normal types
-    // 	All spaces will be replaced with _
-    //==========================================================
-    replaceAll(sToReplace, "std::", "");
-    replaceAll(sToReplace, "__cxx11::", "");
-    // replaceAll(sToReplace, " &", "");
+string removeNamespaceQualifier(string stringToReplace) {
+    removeAll(stringToReplace, {"std::", "__cxx11::"});
+    // replaceAll(stringToReplace, " ", "_");
 
-    if (sToReplace.find("<") == string::npos)
-        replaceAll(sToReplace, " ", "_");
+    return stringToReplace;
+}
 
-    return sToReplace;
+string removeTemplateArguments(string type) {
+    size_t pos = type.find("<");
+    if (pos != string::npos) {
+        return type.substr(0, pos);
+    }
+    return type;
 }
 
 string convertExpressionToString(Expr *E, SourceManager &SM) {
@@ -145,4 +142,10 @@ void createFileFromTemplate(const fs::path &templateFilePath,
                             const map<string, string> &replacements) {
     string fileContent = replaceTokensInFile(templateFilePath, replacements);
     writeToFile(outputFilePath, fileContent);
+}
+
+string generateTestObjectForTarget(const string &target) {
+    string objectTest = target;
+    objectTest[0] = tolower(objectTest[0]);
+    return objectTest + "_test";
 }

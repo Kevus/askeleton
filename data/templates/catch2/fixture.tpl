@@ -108,16 +108,16 @@ struct Fixture {
 	// signed char
 	// unsigned char
 	//==========================================================
-	char Read_char(std::string objectKey) {
+	char Read_char(string objectKey) {
 		return readObject(objectKey)[0];
 	}
 
-	signed char Read_signed_char(std::string objectKey) {
-		return Read_char(readObject(objectKey));
+	signed char Read_signed_char(string objectKey) {
+		return Read_char(objectKey);
 	}
 
-	unsigned char Read_unsigned_char(std::string objectKey) {
-		return Read_char(readObject(objectKey));
+	unsigned char Read_unsigned_char(string objectKey) {
+		return Read_char(objectKey);
 	}
 
 	//==========================================================
@@ -127,20 +127,20 @@ struct Fixture {
 	// signed short
 	// signed short int
 	//==========================================================
-	short Read_short(std::string objectKey) {
+	short Read_short(string objectKey) {
 		return stoi(readObject(objectKey));
 	}
 
-	short int Read_short_int(std::string objectKey) {
-		return Read_short(readObject(objectKey));
+	short int Read_short_int(string objectKey) {
+		return Read_short(objectKey);
 	}
 
-	signed short Read_signed_short(std::string objectKey) {
-		return Read_short(readObject(objectKey));
+	signed short Read_signed_short(string objectKey) {
+		return Read_short(objectKey);
 	}
 
-	signed short int Read_signed_short_int(std::string objectKey) {
-		return Read_short(readObject(objectKey));
+	signed short int Read_signed_short_int(string objectKey) {
+		return Read_short(objectKey);
 	}
 
 	//==========================================================
@@ -148,12 +148,12 @@ struct Fixture {
 	// unsigned short
 	// unsigned short int
 	//==========================================================
-	unsigned short Read_unsigned_short(std::string objectKey) {
+	unsigned short Read_unsigned_short(string objectKey) {
 		return stoul(readObject(objectKey));
 	}
 
-	unsigned short int Read_unsigned_short_int(std::string objectKey) {
-		return Read_unsigned_short(readObject(objectKey));
+	unsigned short int Read_unsigned_short_int(string objectKey) {
+		return Read_unsigned_short(objectKey);
 	}
 
 	//==========================================================
@@ -162,16 +162,16 @@ struct Fixture {
 	// signed
 	// signed int
 	//==========================================================
-	int Read_int(std::string objectKey) {
+	int Read_int(string objectKey) {
 		return stoi(readObject(objectKey));
 	}
 
-	signed Read_signed(std::string objectKey) {
-		return Read_int(readObject(objectKey));
+	signed Read_signed(string objectKey) {
+		return Read_int(objectKey);
 	}
 
-	signed int Read_signed_int(std::string objectKey) {
-		return Read_int(readObject(objectKey));
+	signed int Read_signed_int(string objectKey) {
+		return Read_int(objectKey);
 	}
 
 	//==========================================================
@@ -180,16 +180,16 @@ struct Fixture {
 	// unsigned int
 	// size_t
 	//==========================================================
-	unsigned Read_unsigned_int(std::string objectKey) {
+	unsigned Read_unsigned_int(string objectKey) {
 		return stoul(readObject(objectKey));
 	}
 
-	unsigned int Read_unsigned(std::string objectKey) {
-		return Read_unsigned_int(readObject(objectKey));
+	unsigned int Read_unsigned(string objectKey) {
+		return Read_unsigned_int(objectKey);
 	}
 
-	size_t Read_size_t(std::string objectKey) {
-		return Read_unsigned_int(readObject(objectKey));
+	size_t Read_size_t(string objectKey) {
+		return Read_unsigned_int(objectKey);
 	}
 
 	//==========================================================
@@ -199,20 +199,20 @@ struct Fixture {
 	// signed long
 	// signed long int
 	//==========================================================
-	long Read_long(std::string objectKey) {
+	long Read_long(string objectKey) {
 		return stol(readObject(objectKey));
 	}
 
-	long int Read_long_int(std::string objectKey) {
-		return Read_long(readObject(objectKey));
+	long int Read_long_int(string objectKey) {
+		return Read_long(objectKey);
 	}
 
-	signed long Read_signed_long(std::string objectKey) {
-		return Read_long(readObject(objectKey));
+	signed long Read_signed_long(string objectKey) {
+		return Read_long(objectKey);
 	}
 
-	signed long int Read_signed_long_int(std::string objectKey) {
-		return Read_long(readObject(objectKey));
+	signed long int Read_signed_long_int(string objectKey) {
+		return Read_long(objectKey);
 	}
 
 	//========================================================== 
@@ -220,12 +220,12 @@ struct Fixture {
 	// unsigned long
 	// unsigned long int
 	//==========================================================
-	unsigned long Read_unsigned_long(std::string objectKey) {
+	unsigned long Read_unsigned_long(string objectKey) {
 		return stoul(readObject(objectKey));
 	}
 
-	unsigned long int Read_unsigned_long_int(std::string objectKey) {
-		return Read_unsigned_long(readObject(objectKey));
+	unsigned long int Read_unsigned_long_int(string objectKey) {
+		return Read_unsigned_long(objectKey);
 	}
 
 	//==========================================================
@@ -235,20 +235,20 @@ struct Fixture {
 	// signed long long
 	// signed long long int
 	//==========================================================
-	long long Read_long_long(std::string objectKey) {
+	long long Read_long_long(string objectKey) {
 		return stoll(readObject(objectKey));
 	}
 
-	long long int Read_long_long_int(std::string objectKey) {
-		return Read_long_long(readObject(objectKey));
+	long long int Read_long_long_int(string objectKey) {
+		return Read_long_long(objectKey);
 	}
 
-	signed long long Read_signed_long_long(std::string objectKey) {
-		return Read_long_long(readObject(objectKey));
+	signed long long Read_signed_long_long(string objectKey) {
+		return Read_long_long(objectKey);
 	}
 
-	signed long long int Read_signed_long_long_int(std::string objectKey) {
-		return Read_long_long(readObject(objectKey));
+	signed long long int Read_signed_long_long_int(string objectKey) {
+		return Read_long_long(objectKey);
 	}
 
 	//==========================================================
@@ -256,12 +256,12 @@ struct Fixture {
 	// unsigned long long
 	// unsigned long long int
 	//==========================================================
-	unsigned long long Read_unsigned_long_long(std::string objectKey) {
+	unsigned long long Read_unsigned_long_long(string objectKey) {
 		return stoull(readObject(objectKey));
 	}
 
-	unsigned long long int Read_unsigned_long_long_int(std::string objectKey) {
-		return Read_unsigned_long_long(readObject(objectKey));
+	unsigned long long int Read_unsigned_long_long_int(string objectKey) {
+		return Read_unsigned_long_long(objectKey);
 	}
 
 	//==========================================================
@@ -269,19 +269,19 @@ struct Fixture {
 	// double
 	// long double
 	//==========================================================
-	double Read_double(std::string objectKey) {
+	double Read_double(string objectKey) {
 		return stod(readObject(objectKey));
 	}
 
-	long double Read_long_double(std::string objectKey) {
-		return Read_double(readObject(objectKey));
+	long double Read_long_double(string objectKey) {
+		return Read_double(objectKey);
 	}
 
 	//==========================================================
 	// EQUIVALENT TYPES:
 	// float
 	//==========================================================
-	float Read_float(std::string objectKey) {
+	float Read_float(string objectKey) {
 		return stof(readObject(objectKey));
 	}
 
