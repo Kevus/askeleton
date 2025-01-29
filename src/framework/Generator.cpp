@@ -20,10 +20,13 @@ const nlohmann::json &Generator::templateItems = getTemplateItems();
 Generator::Generator(const string &targetName, const string &filePath, bool isFromClass)
     : targetName(targetName), targetFilePath(filePath),
       targetFileName(extractFileName(filePath)), isFromClass(isFromClass),
-      utPath(fs::current_path() / config.get("route.ut") / targetName) {
+      utPath(getAskeletonHome() / config.get("route.ut") / targetName) {
 
     setOutputFilesPath();
     setSupportedTypes();
+
+    std::cout << "CURRENT PATH: " << fs::current_path() << std::endl;
+    std::cout << "UT PATH: " << utPath << std::endl;
 
     fs::create_directory(utPath);
 }

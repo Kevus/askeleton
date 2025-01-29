@@ -18,7 +18,7 @@ RandomValuesGenerator ConfigGenerator::rvg;
 json &ConfigGenerator::tplItems = getTemplateItems();
 
 ConfigGenerator::ConfigGenerator(const string &target)
-    : target(target), testFolder(fs::current_path() / config.get("route.ut") / target),
+    : target(target), testFolder(getAskeletonHome() / config.get("route.ut") / target),
       configFilePath(fs::path(testFolder) / (target + ".cfg")) {
     fs::path configFileTemplate = getAskeletonHome() / config.get("route.templates") /
                                   config.get("file.template.cfg_tpl");
