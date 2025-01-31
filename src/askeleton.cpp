@@ -10,13 +10,17 @@
 
 #include <ctime>
 #include <iostream>
+#include <nlohmann/json.hpp>
 
 using namespace llvm;
 using namespace clang;
 using namespace clang::tooling;
 
 using namespace std;
+using json = nlohmann::json;
 namespace fs = std::filesystem;
+
+json &config = getConfig();
 
 std::optional<Framework> checkFramework(std::string framework) {
     framework = toLower(framework);
@@ -56,44 +60,21 @@ void selectFrameworkFromOption(Framework framework) {
     }
 }
 
-void setAskeletonHomeFromEnv() {
-    if (getenv("ASKELETON_HOME") != NULL) {
-        setAskeletonHome(getenv("ASKELETON_HOME"));
-        cout << "ASKELETON_HOME set to " << getAskeletonHome() << endl;
-    } else {
-        setAskeletonHome(fs::current_path());
-        cerr << "WARNING: ASKELETON_HOME is not set. Templates will not be "
-                "accesible unless runing ASKELETON in the compilation "
-                "folder.\n";
-        cout << "Running ASKELETON from " << getAskeletonHome() << endl;
-    }
-}
-
-// void loadConfigurationFromConfigFile() {
-//     fs::path configFile = getAskeletonHome() / "data/configuration.json";
-//     if (!fs::exists(configFile))
-//         exitWithError("ERROR: Configuration file not found. Check " +
-//                       configFile.string());
-
-//     Config::getInstance().loadConfig(configFile);
-//     cout << "Configuration loaded from " << configFile << endl;
-// }
-
 void exitIfFolderDoesNotExist(fs::path folder) {
     if (!fs::exists(folder))
         exitWithError("ERROR: Folder not found. Check " + folder.string());
 }
 
-void moveGeneratedFolderToLog(const Config &config) {
-    fs::path utFolder = config.get("route.generated");
+void moveGeneratedFolderToLog() {
+    fs::path utFolder = getAskeletonHome() / config["route"]["generated"];
     if (fs::exists(utFolder)) {
-        fs::path logFolder = fs::absolute(config.get("route.log"));
+        fs::path logFolder = getAskeletonHome() / config["route"]["log"];
         if (!fs::exists(logFolder)) {
             create_directory(logFolder);
             cout << "Log folder created at " << logFolder << endl;
         }
 
-        logFolder /= (config.get("route.generated") + "_" +
+        logFolder /= (config["route"]["generated"].get<string>() + "_" +
                       getTodayString("%d%m%Y_%H%M%S"));
         rename(utFolder, logFolder);
         cout << "Previous generated folder moved to " << logFolder << endl;
@@ -127,15 +108,10 @@ int main(int argc, const char **argv) {
     exitIfNotValidFramework(selectedFramework);
     selectFrameworkFromOption(selectedFramework.value());
 
-    setAskeletonHomeFromEnv();
-
-    // loadConfigurationFromConfigFile();
-    const Config &config = Config::getInstance();
-
     exitIfFolderDoesNotExist(getAskeletonHome() / config["route"]["templates"]);
     Generator::MAX_DEPTH = DeepLevel.getValue();
 
-    moveGeneratedFolderToLog(config);
+    moveGeneratedFolderToLog();
 
     fs::create_directories(getAskeletonHome() / config["route"]["ut"]);
 

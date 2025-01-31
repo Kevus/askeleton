@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Config.hpp"
 #include "VariableInfo.hpp"
 
 #include <map>
@@ -82,7 +81,6 @@ protected:
 
     void appendTestCaseToTestFile(const std::string &testCase) const;
 
-    const static Config &config;
 
     const std::string targetName, targetFilePath, targetFileName;
     const bool isFromClass;
@@ -90,6 +88,7 @@ protected:
     std::filesystem::path templateFrameworkPath, templateMethodPath;
     std::filesystem::path utPath, fixturePath, makefilePath, supportedPath,
         testPath;
+    static const nlohmann::json &config;
     static const nlohmann::json &templateItems;
 
 private:

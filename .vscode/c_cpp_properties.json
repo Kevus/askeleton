@@ -5,10 +5,10 @@
             "includePath": [
                 "/home/heredia/assenter_src/NEO_UT/include",
                 "/home/heredia/assenter_src/NEO_UT/GEO",
-                "/lib/llvm-15/include",
                 "/home/heredia/astutmatcher/**",
                 "${workspaceFolder}/include",
-                "/usr/include"
+                "/usr/include",
+                "/lib/llvm-15/include"
             ],
             "defines": [
                 "NEOMM_LINUX"

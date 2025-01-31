@@ -1,7 +1,6 @@
 #include "EquivalentTypesManager.hpp"
 
-#include "Config.hpp"
-#include "constants.hpp"
+#include "utils/system.hpp"
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -10,11 +9,11 @@ using json = nlohmann::json;
 
 std::map<std::string, std::string>
 readTypesFromFile(const std::string &filename =
-                      Config::getInstance().get("file.data.equivalent_types")) {
+                      getConfig()["file"]["data"]["equivalent_types"]) {
     std::ifstream jsonFile(filename);
 
     if (!jsonFile.is_open()) {
-        std::cerr << askeleton::errors::openFileError(filename) << "\n";
+		showOpenFileError(filename);
         return {};
     }
 

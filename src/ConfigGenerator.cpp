@@ -13,15 +13,15 @@ using namespace std;
 using json = nlohmann::json;
 namespace fs = std::filesystem;
 
-const Config &ConfigGenerator::config = Config::getInstance();
 RandomValuesGenerator ConfigGenerator::rvg;
-json &ConfigGenerator::tplItems = getTemplateItems();
+const json &ConfigGenerator::config = getConfig();
+const json &ConfigGenerator::tplItems = getTemplateItems();
 
 ConfigGenerator::ConfigGenerator(const string &target)
-    : target(target), testFolder(getAskeletonHome() / config.get("route.ut") / target),
+    : target(target), testFolder(getAskeletonHome() / config["route"]["ut"] / target),
       configFilePath(fs::path(testFolder) / (target + ".cfg")) {
-    fs::path configFileTemplate = getAskeletonHome() / config.get("route.templates") /
-                                  config.get("file.template.cfg_tpl");
+    fs::path configFileTemplate = getAskeletonHome() / config["route"]["templates"] /
+                                  config["file"]["template"]["cfg_tpl"];
 
     map<string, string> replacements = {
         {tplItems["tplitem"]["file_path"], target},

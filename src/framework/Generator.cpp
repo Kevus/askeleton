@@ -11,16 +11,17 @@
 
 using namespace askeleton;
 using namespace std;
+using json = nlohmann::json;
 namespace fs = std::filesystem;
 
 unsigned Generator::MAX_DEPTH;
-const Config &Generator::config = Config::getInstance();
+const json &Generator::config = getConfig();
 const nlohmann::json &Generator::templateItems = getTemplateItems();
 
 Generator::Generator(const string &targetName, const string &filePath, bool isFromClass)
     : targetName(targetName), targetFilePath(filePath),
       targetFileName(extractFileName(filePath)), isFromClass(isFromClass),
-      utPath(getAskeletonHome() / config.get("route.ut") / targetName) {
+      utPath(getAskeletonHome() / config["route"]["ut"] / targetName) {
 
     setOutputFilesPath();
     setSupportedTypes();
@@ -39,10 +40,10 @@ void Generator::setOutputFilesPath() {
     const std::map<std::string, std::string> replacements = {
         {templateItems["tplitem"]["target"], targetName}};
 
-    string fixtureFileName = config.get("file.output.test_fixture");
-    string makefileFileName = config.get("file.output.makefile");
-    string testFileName = config.get("file.output.test_file");
-    string supportedFileName = config.get("file.output.supported_types");
+    string fixtureFileName = config["file"]["output"]["test_fixture"];
+    string makefileFileName = config["file"]["output"]["makefile"];
+    string testFileName = config["file"]["output"]["test_file"];
+    string supportedFileName = config["file"]["output"]["supported_types"];
 
     replaceTokensInText(fixtureFileName, replacements);
     replaceTokensInText(makefileFileName, replacements);
@@ -94,7 +95,7 @@ void Generator::setValuesToChange(
 
 void Generator::setSupportedTypes() {
     fs::path supportedTypesPath =
-        getAskeletonHome() / config.get("file.data.supported_types_json");
+        getAskeletonHome() / config["file"]["data"]["supported_types_json"];
     std::ifstream file(supportedTypesPath);
     if (!file.is_open())
         exitWithError(errors::openFileError(supportedTypesPath));
@@ -111,11 +112,11 @@ void Generator::setSupportedTypes() {
 void Generator::setOutputFiles(const map<string, string> &tokensToReplace) const {
     const fs::path templatePath = this->templateFrameworkPath;
 
-    createFileFromTemplate(templatePath / config.get("file.template.test_tpl"), testPath,
+    createFileFromTemplate(templatePath / config["file"]["template"]["test_tpl"], testPath,
                            tokensToReplace);
-    createFileFromTemplate(templatePath / config.get("file.template.fixture_tpl"),
+    createFileFromTemplate(templatePath / config["file"]["template"]["fixture_tpl"],
                            fixturePath, tokensToReplace);
-    createFileFromTemplate(templatePath / config.get("file.template.makefile_tpl"),
+    createFileFromTemplate(templatePath / config["file"]["template"]["makefile_tpl"],
                            makefilePath, tokensToReplace);
 }
 
@@ -136,7 +137,7 @@ void Generator::appendOverloadMethodsToFixture(const std::string &op) const {
 void Generator::createPointerReadToFixture(const InfoType &type) const {
     InfoType underlying = type.getUnderlyingType();
     string method =
-        readFromFile(getMethodTemplatePath(config.get("file.method.pointer_read")));
+        readFromFile(getMethodTemplatePath(config["file"]["method"]["pointer_read"]));
     replaceTokensInText(
         method,
         {{templateItems["tplitem"]["type"], type.original},
@@ -149,7 +150,7 @@ void Generator::createPointerReadToFixture(const InfoType &type) const {
 
 void Generator::createEnumReadToFixture(const InfoType &type) const {
     string method =
-        readFromFile(getMethodTemplatePath(config.get("file.template.method.enum_read")));
+        readFromFile(getMethodTemplatePath(config["file"]["template"]["method"]["enum_read"]));
     replaceTokensInText(method,
                         {{templateItems["tplitem"]["type"], type.original},
                          {templateItems["tplitem"]["formatted"], type.formatted}});
@@ -159,7 +160,7 @@ void Generator::createEnumReadToFixture(const InfoType &type) const {
 void Generator::createRecordReadToFixture(const InfoType &type) const {
     stringstream assigns;
     string method = readFromFile(
-        getMethodTemplatePath(config.get("file.template.method.record_read")));
+        getMethodTemplatePath(config["file"]["template"]["method"]["record_read"]));
 
     for (const auto &field : type.getRecordFields()) {
         string assignField = templateItems["templating"]["field_assign"];
@@ -210,7 +211,7 @@ void Generator::createRecordOverloadToFixture(const InfoType &type) const {
     }
 
     string method = readFromFile(
-        getMethodTemplatePath(config.get("file.template.method.record_overload")));
+        getMethodTemplatePath(config["file"]["template"]["method"]["record_overload"]));
     replaceTokensInText(method,
                         {{templateItems["tplitem"]["type"], type.original},
                          {templateItems["tplitem"]["formatted"], type.formatted},
@@ -361,6 +362,6 @@ Generator::~Generator() {
 
 std::string Generator::getMethodTemplatePath(const std::string &methodTemplate) {
     const static fs::path methodsTplPath =
-        getAskeletonHome() / config.get("route.templates");
+        getAskeletonHome() / config["route"]["templates"];
     return methodsTplPath / methodTemplate;
 }

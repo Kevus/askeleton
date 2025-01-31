@@ -9,7 +9,7 @@ namespace fs = std::filesystem;
 CatchGenerator::CatchGenerator(const string &targetName, const string &filePath,
                                bool isFromClass)
     : Generator(targetName, filePath, isFromClass) {
-    setFrameworkTemplatePath(getAskeletonHome() / config.get("route.catch_templates"));
+    setFrameworkTemplatePath(getAskeletonHome() / config["route"]["catch_templates"]);
 
     map<string, string> tokensToReplace;
     setValuesToChange(tokensToReplace);

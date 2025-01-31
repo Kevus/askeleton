@@ -123,16 +123,6 @@ void appendToFile(const std::string &filePath, const std::string &content);
 void showOpenFileError(const std::string &filePath);
 
 /**
- * @brief Set the path to the user's ASkeleTon path.
- *
- * This function sets the path to the user's ASkeleTon path. This path is used
- * to store configuration files and templates.
- *
- * @param path The path to the user's ASkeleTon path.
- */
-void setAskeletonHome(const std::filesystem::path &path);
-
-/**
  * @brief Get the path to the user's ASkeleTon path.
  *
  * This function returns the path to the user's ASkeleTon path.
@@ -212,3 +202,13 @@ void setFramework(Framework framework);
  * @return Framework The selected framework.
  */
 Framework getFramework();
+
+/**
+ * @brief Retrieves the configuration data.
+ *
+ * This function returns the configuration data that has been loaded from the
+ * configuration file.
+ *
+ * @return The configuration data as a JSON object.
+ */
+nlohmann::json &getConfig();

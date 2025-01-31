@@ -3,8 +3,8 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <nlohmann/json.hpp>
 
-#include "Config.hpp"
 #include "RandomValuesGenerator.hpp"
 #include "VariableInfo.hpp"
 
@@ -31,7 +31,7 @@ private:
 
     void appendToConfigFile(const std::string &content) const;
 
-    static const Config &config;
-    static nlohmann::json &tplItems;
+    static const nlohmann::json &config;
+    static const nlohmann::json &tplItems;
     static RandomValuesGenerator rvg;
 };
