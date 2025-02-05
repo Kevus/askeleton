@@ -7,8 +7,7 @@
             "test_tpl": "test.tpl",
             "makefile_tpl": "makefile.tpl",
             "cfg_tpl": "cfgFile.tpl",
-            "catch_main": "catch_main.cpp",
-            "gtest_main": "gtest_main.cpp",
+			"main": "main.cpp",
 
             "method": {
                 "pointer_read": "methods/pointerRead.tpl",

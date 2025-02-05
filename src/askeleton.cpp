@@ -22,6 +22,37 @@ namespace fs = std::filesystem;
 
 json &config = getConfig();
 
+void exitIfFilesDoNotExit(const json &node, const fs::path &basePath) {
+	for (const auto &item : node.items()) {
+		if(item.value().is_string()) {
+			fs::path filePath = basePath / item.value().get<string>();
+			if (!fileExists(filePath))
+				exitWithError("ERROR: File not found. Check " + filePath.string());
+			else
+				cout << "File checked: " << filePath << endl;
+		}
+		else if(item.value().is_object()) {
+			exitIfFilesDoNotExit(item.value(), basePath);
+		}
+	}
+}
+
+void exitIfFilesDoNotExist() {
+	fs::path basePath = getAskeletonHome();
+	switch(getFramework()) {
+		case Framework::GTEST:
+			exitIfFilesDoNotExit(config["file"]["template"], basePath / config["route"]["gtest_templates"]);
+			break;
+		case Framework::BOOST:
+			exitIfFilesDoNotExit(config["file"]["template"], basePath / config["route"]["boost_templates"]);
+			break;
+		case Framework::CATCH:
+			exitIfFilesDoNotExit(config["file"]["template"], basePath / config["route"]["catch_templates"]);
+			break;
+	}
+	exitIfFilesDoNotExit(config["file"]["data"], basePath);
+}
+
 std::optional<Framework> checkFramework(std::string framework) {
     framework = toLower(framework);
     if (set<string>({"gtest", "googletest", "google test", "google"})
@@ -109,11 +140,19 @@ int main(int argc, const char **argv) {
     selectFrameworkFromOption(selectedFramework.value());
 
     exitIfFolderDoesNotExist(getAskeletonHome() / config["route"]["templates"]);
+	// llvm::outs() << "Checking ASkeleTon files...\n";
+	// exitIfFilesDoNotExist();
+	// llvm::outs() << "Files checked successfully\n";
+
     Generator::MAX_DEPTH = DeepLevel.getValue();
 
     moveGeneratedFolderToLog();
 
     fs::create_directories(getAskeletonHome() / config["route"]["ut"]);
+
+	llvm::outs() << "-------------------------------------\n" 
+				 << "   Starting ASkeleTon UT Generator   \n"
+				 << "-------------------------------------\n";
 
     clang::ast_matchers::MatchFinder Finder;
     ASKGen Functionality;

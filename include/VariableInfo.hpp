@@ -7,6 +7,12 @@
 #include <string>
 struct InfoVariable;
 
+class ComplexTypeException : public std::runtime_error {
+public:
+	explicit ComplexTypeException(const std::string &type);
+	const std::string type;
+};
+
 struct InfoType {
     InfoType() = default;
     InfoType(const clang::QualType &);
@@ -38,6 +44,9 @@ protected:
 
     bool isRecord_, isEnum_;
     std::vector<InfoVariable> recordFields;
+
+private:
+	static bool typeIsComplex(const std::string &);
 };
 
 struct InfoVariable : public InfoType {

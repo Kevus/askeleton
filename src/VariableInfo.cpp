@@ -13,12 +13,17 @@
 using namespace clang;
 using std::string;
 
+ComplexTypeException::ComplexTypeException(const string &complexType)
+	: std::runtime_error("Type is too complex for ASkeleTon: " + complexType), type(complexType) {}
+
 InfoType::InfoType(const clang::QualType &type)
     : original(type.getCanonicalType().getAsString()), formatted(), type(type),
       isRecord_(false), isEnum_(false), recordFields() {
 
-    EquivalentTypesManager &manager = EquivalentTypesManager::getInstance();
-    auto equivalent = manager.getEquivalentType(original);
+	if(typeIsComplex(original))
+		throw ComplexTypeException(original);
+
+	auto equivalent = getEquivalentType(original);
     if (equivalent.has_value()) {
         original = equivalent.value();
     } else if (const CXXRecordDecl *record = type->getAsCXXRecordDecl()) {
@@ -122,6 +127,10 @@ string InfoType::formatType(const string &name) {
     string formatted = removeNamespaceQualifier(name);
     replaceAll(formatted, "*", "s");
     return formatted;
+}
+
+bool InfoType::typeIsComplex(const string &type) {
+	return containsAnySubstring(type, {"<", ">", "[", "]", "..."});
 }
 
 std::vector<InfoVariable> InfoType::getRecordFields() const { return recordFields; }

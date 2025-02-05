@@ -26,9 +26,6 @@ Generator::Generator(const string &targetName, const string &filePath, bool isFr
     setOutputFilesPath();
     setSupportedTypes();
 
-    std::cout << "CURRENT PATH: " << fs::current_path() << std::endl;
-    std::cout << "UT PATH: " << utPath << std::endl;
-
     fs::create_directory(utPath);
 }
 

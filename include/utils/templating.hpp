@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <string>
+#include <optional>
 
 #include "clang/AST/Expr.h"
 
@@ -153,3 +154,5 @@ void createFileFromTemplate(
  * @return std::string The generated test object.
  */
 std::string generateTestObjectForTarget(const std::string &target);
+
+std::optional<std::string> getEquivalentType(const std::string &type);

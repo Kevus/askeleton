@@ -17,6 +17,8 @@ public:
     virtual void
     run(const clang::ast_matchers::MatchFinder::MatchResult &Result);
 
+	~ASKGen();
+
 private:
     void apply_FD1(const clang::ast_matchers::MatchFinder::MatchResult &Result);
     void apply_MD1(const clang::ast_matchers::MatchFinder::MatchResult &Result);

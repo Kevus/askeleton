@@ -20,6 +20,7 @@
 
 using namespace clang;
 using namespace std;
+using json = nlohmann::json;
 namespace fs = std::filesystem;
 
 string getCommentHeader(string filename) {
@@ -148,4 +149,29 @@ string generateTestObjectForTarget(const string &target) {
     string objectTest = target;
     objectTest[0] = tolower(objectTest[0]);
     return objectTest + "_test";
+}
+
+map<string, string> readEquivalentTypes() {
+	const string filename = getConfig()["file"]["data"]["equivalent_types"];
+	map<string, string> equivalentTypes;
+	ifstream jsonFile(filename);
+
+	if (!jsonFile.is_open()) 
+		showOpenFileError(filename);
+	else {
+		json j;
+		jsonFile >> j;
+		jsonFile.close();
+
+		for (auto &[key, value] : j.items()) {
+			equivalentTypes[key] = value;
+		}
+	}
+	return equivalentTypes;
+}
+
+optional<string> getEquivalentType(const string &type) {
+	static map<string, string> equivalentTypes = readEquivalentTypes();
+	auto it = equivalentTypes.find(type);
+	return it == equivalentTypes.end() ? nullopt : optional<string>(it->second);
 }

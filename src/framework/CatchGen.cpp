@@ -97,7 +97,7 @@ string CatchGenerator::generatePointersAsserts(const vector<InfoVariable> &param
 }
 
 void CatchGenerator::copyMainFile() const {
-    fs::path tplMain = templateFrameworkPath / config["file"]["template"]["catch_main"],
+    fs::path tplMain = templateFrameworkPath / config["file"]["template"]["main"],
              outputMain = utPath / config["file"]["output"]["catch_main"];
     fs::copy_file(tplMain, outputMain, fs::copy_options::overwrite_existing);
 }

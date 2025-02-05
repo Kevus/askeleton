@@ -103,7 +103,7 @@ std::string GTestGenerator::generatePointersAsserts(
 
 void GTestGenerator::copyMainFile() const {
     fs::path tplMain = templateFrameworkPath /
-                       config["file"]["template"]["gtest_main"],
+                       config["file"]["template"]["main"],
              outputMain = utPath / config["file"]["output"]["gtest_main"];
     fs::copy_file(tplMain, outputMain, fs::copy_options::overwrite_existing);
 }

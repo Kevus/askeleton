@@ -28,7 +28,7 @@ void printDebugInfo(const vector<InfoVariable> &parameters,
             cout << ", ";
     }
 
-    cout << ")\nReturn type: " << returnType.original << "\n--------------\n";
+    cout << ")\nReturn type: " << returnType.original << "\n";
 }
 
 void ASKGen::run(const MatchFinder::MatchResult &Result) {
@@ -78,7 +78,19 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
 
                 auto generator = getGenerator(target, filePath, false);
                 auto configGenerator = getConfigGenerator(target);
-                generateTest(*generator, *configGenerator, UT);
+
+				try {
+                	generateTest(*generator, *configGenerator, UT);
+					llvm::outs() << "Test for function " 
+								 << UT->getNameInfo().getAsString() 
+								 << " generated successfully\n";
+				} catch (const ComplexTypeException &e) {
+                    llvm::outs() << "Skipping test for function " 
+                                 << UT->getNameInfo().getAsString() 
+                                 << " due to complex type: " << e.type << "\n";
+				}
+
+				llvm::outs() << "--------------\n";
             }
         }
     }
@@ -115,7 +127,19 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
 
                 auto generator = getGenerator(parentname, source_file, true);
                 auto configGenerator = getConfigGenerator(parentname);
-                generateTest(*generator, *configGenerator, UT);
+
+				try {
+                	generateTest(*generator, *configGenerator, UT);
+					llvm::outs() << "Test for method " 
+								 << UT->getNameInfo().getAsString() 
+								 << " generated successfully\n";
+				} catch (const ComplexTypeException &e) {
+                    llvm::outs() << "Skipping test for method " 
+                                 << UT->getNameInfo().getAsString() 
+                                 << " due to complex type: " << e.type << "\n";
+				}
+
+				llvm::outs() << "--------------\n";
             }
         }
     }
@@ -145,7 +169,17 @@ void ASKGen::apply_CT1(const MatchFinder::MatchResult &Result) {
 
             InfoType record(QualType(UT->getTypeForDecl(), 0));
             auto generator = getGenerator(filename, source_file, true);
-            generateReadMethod(*generator, record);
+
+			try {
+				generateReadMethod(*generator, record);
+				llvm::outs() << "Read method for class "
+							 << UT->getName().str()
+							 << " generated successfully\n";
+			} catch (const ComplexTypeException &e) {
+				llvm::outs() << "Skipping read method for class " 
+							 << UT->getName().str() 
+							 << " due to complex type: " << e.type << "\n";
+			}
 
             // Print auxiliary
             // ======================================================================
@@ -192,7 +226,19 @@ void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
 
             auto generator = getGenerator(target, filePath, true);
             auto configGenerator = getConfigGenerator(target);
-            generateTest(*generator, *configGenerator, UT);
+
+			try {
+            	generateTest(*generator, *configGenerator, UT);
+				llvm::outs() << "Test for method " 
+							 << UT->getNameInfo().getAsString() 
+							 << " generated successfully\n";
+			} catch (const ComplexTypeException &e) {
+				llvm::outs() << "Skipping test for method " 
+							 << UT->getNameInfo().getAsString() 
+							 << " due to complex type: " << e.type << "\n";
+			}
+
+			llvm::outs() << "--------------\n";
         }
     }
 }
@@ -565,4 +611,11 @@ vector<string> ASKGen::obtainTestData(string type, string value) {
     }
 
     return result;
+}
+
+ASKGen::~ASKGen() {
+	if(function_occurrences.empty()) {
+		llvm::outs() << "ASkeleTon has not found any function to generate tests for\n";
+		remove_all(getAskeletonHome() / getConfig()["route"]["generated"]);
+	}
 }
