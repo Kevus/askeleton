@@ -100,8 +100,7 @@ string convertExpressionToString(Expr *E, SourceManager &SM) {
 
     SourceLocation startLoc = E->getBeginLoc();
     SourceLocation _endLoc = E->getEndLoc();
-    SourceLocation endLoc =
-        Lexer::getLocForEndOfToken(_endLoc, 0, SM, langOpts);
+    SourceLocation endLoc = Lexer::getLocForEndOfToken(_endLoc, 0, SM, langOpts);
 
     try {
         string result =
@@ -114,16 +113,16 @@ string convertExpressionToString(Expr *E, SourceManager &SM) {
     }
 }
 
-void replaceTokensInText(
-    string &text, const std::map<std::string, std::string> &replacements) {
+void replaceTokensInText(string &text,
+                         const std::map<std::string, std::string> &replacements) {
 
     for (const auto &[key, value] : replacements)
         replaceAll(text, key, value);
 }
 
-void replaceTokensInFile(
-    const std::string &templateFilePath, const std::string &outputFilePath,
-    const std::map<std::string, std::string> &replacements) {
+void replaceTokensInFile(const std::string &templateFilePath,
+                         const std::string &outputFilePath,
+                         const std::map<std::string, std::string> &replacements) {
 
     string fileContent = readFromFile(templateFilePath);
     replaceTokensInText(fileContent, replacements);
@@ -152,26 +151,27 @@ string generateTestObjectForTarget(const string &target) {
 }
 
 map<string, string> readEquivalentTypes() {
-	const string filename = getConfig()["file"]["data"]["equivalent_types"];
-	map<string, string> equivalentTypes;
-	ifstream jsonFile(filename);
+    const fs::path filename =
+        getAskeletonHome() / getConfig()["file"]["data"]["equivalent_types"];
+    map<string, string> equivalentTypes;
+    ifstream jsonFile(filename);
 
-	if (!jsonFile.is_open()) 
-		showOpenFileError(filename);
-	else {
-		json j;
-		jsonFile >> j;
-		jsonFile.close();
+    if (!jsonFile.is_open())
+        showOpenFileError(filename);
+    else {
+        json j;
+        jsonFile >> j;
+        jsonFile.close();
 
-		for (auto &[key, value] : j.items()) {
-			equivalentTypes[key] = value;
-		}
-	}
-	return equivalentTypes;
+        for (auto &[key, value] : j.items()) {
+            equivalentTypes[key] = value;
+        }
+    }
+    return equivalentTypes;
 }
 
 optional<string> getEquivalentType(const string &type) {
-	static map<string, string> equivalentTypes = readEquivalentTypes();
-	auto it = equivalentTypes.find(type);
-	return it == equivalentTypes.end() ? nullopt : optional<string>(it->second);
+    static map<string, string> equivalentTypes = readEquivalentTypes();
+    auto it = equivalentTypes.find(type);
+    return it == equivalentTypes.end() ? nullopt : optional<string>(it->second);
 }

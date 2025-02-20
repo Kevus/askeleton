@@ -1,14 +1,15 @@
 #include "ASKGen.hpp"
 #include "ASKMatchers.hpp"
+#include "color.h"
 #include "framework/Generator.hpp"
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
-
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 #include "llvm/Support/CommandLine.h"
 
 #include <ctime>
+#include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
 
@@ -22,47 +23,36 @@ namespace fs = std::filesystem;
 
 json &config = getConfig();
 
-void exitIfFilesDoNotExit(const json &node, const fs::path &basePath) {
-	for (const auto &item : node.items()) {
-		if(item.value().is_string()) {
-			fs::path filePath = basePath / item.value().get<string>();
-			if (!fileExists(filePath))
-				exitWithError("ERROR: File not found. Check " + filePath.string());
-			else
-				cout << "File checked: " << filePath << endl;
-		}
-		else if(item.value().is_object()) {
-			exitIfFilesDoNotExit(item.value(), basePath);
-		}
-	}
-}
-
 void exitIfFilesDoNotExist() {
-	fs::path basePath = getAskeletonHome();
-	switch(getFramework()) {
-		case Framework::GTEST:
-			exitIfFilesDoNotExit(config["file"]["template"], basePath / config["route"]["gtest_templates"]);
-			break;
-		case Framework::BOOST:
-			exitIfFilesDoNotExit(config["file"]["template"], basePath / config["route"]["boost_templates"]);
-			break;
-		case Framework::CATCH:
-			exitIfFilesDoNotExit(config["file"]["template"], basePath / config["route"]["catch_templates"]);
-			break;
-	}
-	exitIfFilesDoNotExit(config["file"]["data"], basePath);
+    fs::path fileSystemPath = getAskeletonHome() / config["system_files"];
+    ifstream file(fileSystemPath);
+    json filesToCheck;
+
+    if (!fileExists(fileSystemPath))
+        exitWithError("ERROR: File not found. Check " + fileSystemPath.string());
+
+    if (!file.is_open())
+        exitWithError("Error opening file: " + fileSystemPath.string());
+
+    file >> filesToCheck;
+
+    for (auto &file : filesToCheck) {
+        string fileString = file;
+        if (!fileExists(fileString))
+            exitWithError("ERROR: File not found. Check " + fileString);
+        // else
+        //     cout << "File checked: " << fileString << endl;
+    }
 }
 
 std::optional<Framework> checkFramework(std::string framework) {
     framework = toLower(framework);
-    if (set<string>({"gtest", "googletest", "google test", "google"})
-            .contains(framework))
+    if (set<string>({"gtest", "googletest", "google test", "google"}).contains(framework))
         return Framework::GTEST;
     else if (set<string>({"boost", "boost.test", "boosttest", "boost test"})
                  .contains(framework))
         return Framework::BOOST;
-    else if (set<string>(
-                 {"catch", "catch2", "catch.test", "catchtest", "catch test"})
+    else if (set<string>({"catch", "catch2", "catch.test", "catchtest", "catch test"})
                  .contains(framework))
         return Framework::CATCH;
     else
@@ -78,17 +68,19 @@ void exitIfNotValidFramework(std::optional<Framework> framework) {
 
 void selectFrameworkFromOption(Framework framework) {
     setFramework(framework);
+    llvm::outs() << "Generating test for " << ANSI_BOLD;
     switch (framework) {
     case Framework::GTEST:
-        cout << "Generating test for Google Test framework" << endl;
+        llvm::outs() << "Google Test";
         break;
     case Framework::BOOST:
-        cout << "Generating test for Boost.Test framework" << endl;
+        llvm::outs() << "Boost.Test";
         break;
     case Framework::CATCH:
-        cout << "Generating test for Catch2 framework" << endl;
+        llvm::outs() << "Catch2";
         break;
     }
+    llvm::outs() << ANSI_RESET << " framework\n";
 }
 
 void exitIfFolderDoesNotExist(fs::path folder) {
@@ -102,13 +94,14 @@ void moveGeneratedFolderToLog() {
         fs::path logFolder = getAskeletonHome() / config["route"]["log"];
         if (!fs::exists(logFolder)) {
             create_directory(logFolder);
-            cout << "Log folder created at " << logFolder << endl;
+            llvm::outs() << ANSI_BLUE << "Log folder created at " << logFolder
+                         << ANSI_RESET << "\n";
         }
 
         logFolder /= (config["route"]["generated"].get<string>() + "_" +
                       getTodayString("%d%m%Y_%H%M%S"));
         rename(utFolder, logFolder);
-        cout << "Previous generated folder moved to " << logFolder << endl;
+        llvm::outs() << "Previous generated folder moved to " << logFolder << "\n";
     }
 }
 
@@ -117,32 +110,38 @@ static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 static cl::extrahelp
     MoreHelp("\nIf you are working with C++ headers use the option -xc++ at "
              "the end.\nAuthor: Kevin J. Valle-Gomez (kevin.valle@uca.es)\n");
-static llvm::cl::OptionCategory
-    OptC("ASkeleTon - Unit Test Generator for C/C++");
+static llvm::cl::OptionCategory OptC("ASkeleTon - Unit Test Generator for C/C++");
 
 cl::opt<std::string> FrameworkOption(
-    "framework",
-    cl::desc("Choose the testing framework (options: gtest, boost, catch)"),
+    "framework", cl::desc("Choose the testing framework (options: gtest, boost, catch)"),
     cl::value_desc("framework"), cl::init("gtest"), cl::cat(OptC));
 
-cl::opt<unsigned> DeepLevel("deep-level",
-                            cl::desc("Specify the maximum depth level"),
-                            cl::value_desc("level"), cl::init(1),
-                            cl::cat(OptC));
+cl::opt<unsigned> DeepLevel("deep-level", cl::desc("Specify the maximum depth level"),
+                            cl::value_desc("level"), cl::init(1), cl::cat(OptC));
 
 int main(int argc, const char **argv) {
-    Expected<CommonOptionsParser> options =
-        CommonOptionsParser::create(argc, argv, OptC);
+    system("");
 
-    std::optional<Framework> selectedFramework =
-        checkFramework(FrameworkOption);
+    if (argc == 1) {
+        llvm::outs() << "No arguments provided. Use --help for more information\n";
+        return 1;
+    }
+
+    Expected<CommonOptionsParser> options = CommonOptionsParser::create(argc, argv, OptC);
+
+    if (!options) {
+        llvm::errs() << options.takeError();
+        return 1;
+    }
+
+    std::optional<Framework> selectedFramework = checkFramework(FrameworkOption);
     exitIfNotValidFramework(selectedFramework);
     selectFrameworkFromOption(selectedFramework.value());
 
     exitIfFolderDoesNotExist(getAskeletonHome() / config["route"]["templates"]);
-	// llvm::outs() << "Checking ASkeleTon files...\n";
-	// exitIfFilesDoNotExist();
-	// llvm::outs() << "Files checked successfully\n";
+    llvm::outs() << "Checking ASkeleTon files...\n";
+    exitIfFilesDoNotExist();
+    llvm::outs() << ANSI_GREEN << "Files checked successfully\n" << ANSI_RESET;
 
     Generator::MAX_DEPTH = DeepLevel.getValue();
 
@@ -150,9 +149,10 @@ int main(int argc, const char **argv) {
 
     fs::create_directories(getAskeletonHome() / config["route"]["ut"]);
 
-	llvm::outs() << "-------------------------------------\n" 
-				 << "   Starting ASkeleTon UT Generator   \n"
-				 << "-------------------------------------\n";
+    llvm::outs() << ANSI_BOLD << "-------------------------------------\n"
+                 << ANSI_BOLD_BLUE << "   Starting ASkeleTon UT Generator   \n"
+                 << ANSI_RESET << ANSI_BOLD << "-------------------------------------\n"
+                 << ANSI_RESET;
 
     clang::ast_matchers::MatchFinder Finder;
     ASKGen Functionality;

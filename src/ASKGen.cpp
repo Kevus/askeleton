@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 
+#include "color.h"
 #include "framework/BoostGen.hpp"
 #include "framework/CatchGen.hpp"
 #include "framework/GTestGen.hpp"
@@ -18,17 +19,20 @@ using namespace clang;
 using namespace std;
 namespace fs = std::filesystem;
 
-void printDebugInfo(const vector<InfoVariable> &parameters,
-                    const InfoType &returnType) {
-    unsigned i = 0;
-    cout << "Params list: (";
-    for (const auto &param : parameters) {
-        cout << i++ << " - " << param.original << " " << param.name;
-        if (&param != &parameters.back())
-            cout << ", ";
+void printDebugInfo(const vector<InfoVariable> &parameters, const InfoType &returnType) {
+    cout << "Params list: ";
+    if (parameters.empty()) {
+        cout << "no params";
+    } else {
+        unsigned i = 1;
+        for (const auto &param : parameters) {
+            cout << i++ << " - " << param.original << " " << param.name;
+            if (&param != &parameters.back())
+                cout << ", ";
+        }
     }
 
-    cout << ")\nReturn type: " << returnType.original << "\n";
+    cout << "\nReturn type: " << returnType.original << "\n";
 }
 
 void ASKGen::run(const MatchFinder::MatchResult &Result) {
@@ -46,8 +50,7 @@ void ASKGen::run(const MatchFinder::MatchResult &Result) {
 void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
     ASTContext *Context = Result.Context;
 
-    if (const FunctionDecl *UT =
-            Result.Nodes.getNodeAs<clang::FunctionDecl>("FD1")) {
+    if (const FunctionDecl *UT = Result.Nodes.getNodeAs<clang::FunctionDecl>("FD1")) {
 
         FullSourceLoc FullLocation = Context->getFullLoc(UT->getBeginLoc());
 
@@ -58,39 +61,40 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
             if (!isa<CXXMethodDecl>(UT)) {
 
                 // Get the file name
-                fs::path filePath =
-                    fs::absolute(Context->getSourceManager()
-                                     .getFilename(UT->getBeginLoc())
-                                     .str());
+                fs::path filePath = fs::absolute(
+                    Context->getSourceManager().getFilename(UT->getBeginLoc()).str());
                 string fileName = extractFileName(filePath);
                 string target = fileName;
 
                 // Print auxiliary
                 // ======================================================================
-                llvm::outs() << "Found FunctionDecl at "
+                llvm::outs() << ANSI_BLUE << "Found FunctionDecl at "
                              << FullLocation.getSpellingLineNumber() << ":"
                              << FullLocation.getSpellingColumnNumber() << " - ";
 
-                llvm::outs() << UT->getNameInfo().getAsString() << " in file "
-                             << fileName << "\n";
+                llvm::outs() << UT->getNameInfo().getAsString() << " in file " << fileName
+                             << "\n"
+                             << ANSI_RESET;
                 // Print auxiliary
                 // ======================================================================
 
                 auto generator = getGenerator(target, filePath, false);
                 auto configGenerator = getConfigGenerator(target);
 
-				try {
-                	generateTest(*generator, *configGenerator, UT);
-					llvm::outs() << "Test for function " 
-								 << UT->getNameInfo().getAsString() 
-								 << " generated successfully\n";
-				} catch (const ComplexTypeException &e) {
-                    llvm::outs() << "Skipping test for function " 
-                                 << UT->getNameInfo().getAsString() 
-                                 << " due to complex type: " << e.type << "\n";
-				}
+                try {
+                    generateTest(*generator, *configGenerator, UT);
+                    llvm::outs()
+                        << ANSI_GREEN << "Test for function "
+                        << UT->getNameInfo().getAsString() << " generated successfully\n"
+                        << ANSI_RESET;
+                } catch (const ComplexTypeException &e) {
+                    llvm::outs() << ANSI_MAGENTA << "Skipping test for function "
+                                 << UT->getNameInfo().getAsString()
+                                 << " due to complex type: " << e.type << "\n"
+                                 << ANSI_RESET;
+                }
 
-				llvm::outs() << "--------------\n";
+                llvm::outs() << "--------------\n";
             }
         }
     }
@@ -99,47 +103,49 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
 void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
     ASTContext *Context = Result.Context;
 
-    if (const CXXMethodDecl *UT =
-            Result.Nodes.getNodeAs<clang::CXXMethodDecl>("MD1")) {
+    if (const CXXMethodDecl *UT = Result.Nodes.getNodeAs<clang::CXXMethodDecl>("MD1")) {
 
         FullSourceLoc FullLocation = Context->getFullLoc(UT->getBeginLoc());
 
         if (FullLocation.isValid() &&
             !Context->getSourceManager().isInSystemHeader(FullLocation)) {
 
-            // In this case, we do not want class constructors
-            if (!isa<CXXConstructorDecl>(UT)) {
-                string source_file = Context->getSourceManager()
-                                         .getFilename(UT->getBeginLoc())
-                                         .str();
+            // No constructor, destructor or operator
+            if (!isa<CXXConstructorDecl>(UT) && !isa<CXXDestructorDecl>(UT) &&
+                !UT->isOverloadedOperator()) {
+                string source_file =
+                    Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
                 string parentname = UT->getParent()->getName().str();
 
                 // Print auxiliary
                 // ======================================================================
-                llvm::outs() << "Found CxxMethodDecl at "
+                llvm::outs() << ANSI_BLUE << "Found CxxMethodDecl at "
                              << FullLocation.getSpellingLineNumber() << ":"
                              << FullLocation.getSpellingColumnNumber() << " - ";
 
-                llvm::outs() << UT->getNameInfo().getAsString()
-                             << " from class " << parentname << "\n";
+                llvm::outs() << UT->getNameInfo().getAsString() << " from class "
+                             << parentname << "\n"
+                             << ANSI_RESET;
                 // Print auxiliary
                 // ======================================================================
 
                 auto generator = getGenerator(parentname, source_file, true);
                 auto configGenerator = getConfigGenerator(parentname);
 
-				try {
-                	generateTest(*generator, *configGenerator, UT);
-					llvm::outs() << "Test for method " 
-								 << UT->getNameInfo().getAsString() 
-								 << " generated successfully\n";
-				} catch (const ComplexTypeException &e) {
-                    llvm::outs() << "Skipping test for method " 
-                                 << UT->getNameInfo().getAsString() 
-                                 << " due to complex type: " << e.type << "\n";
-				}
+                try {
+                    generateTest(*generator, *configGenerator, UT);
+                    llvm::outs()
+                        << ANSI_GREEN << "Test for method "
+                        << UT->getNameInfo().getAsString() << " generated successfully\n"
+                        << ANSI_RESET;
+                } catch (const ComplexTypeException &e) {
+                    llvm::outs() << ANSI_MAGENTA << "Skipping test for method "
+                                 << UT->getNameInfo().getAsString()
+                                 << " due to complex type: " << e.type << "\n"
+                                 << ANSI_RESET;
+                }
 
-				llvm::outs() << "--------------\n";
+                llvm::outs() << "--------------\n";
             }
         }
     }
@@ -148,8 +154,7 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
 void ASKGen::apply_CT1(const MatchFinder::MatchResult &Result) {
     ASTContext *Context = Result.Context;
 
-    if (const CXXRecordDecl *UT =
-            Result.Nodes.getNodeAs<clang::CXXRecordDecl>("CT1")) {
+    if (const CXXRecordDecl *UT = Result.Nodes.getNodeAs<clang::CXXRecordDecl>("CT1")) {
 
         FullSourceLoc FullLocation;
 
@@ -159,9 +164,8 @@ void ASKGen::apply_CT1(const MatchFinder::MatchResult &Result) {
             !Context->getSourceManager().isInSystemHeader(FullLocation)) {
 
             // Get the file name
-            string source_file = Context->getSourceManager()
-                                     .getFilename(UT->getBeginLoc())
-                                     .str();
+            string source_file =
+                Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
             unsigned first = source_file.find_last_of('/') + 1;
             unsigned last = source_file.find_last_of('.');
 
@@ -170,16 +174,14 @@ void ASKGen::apply_CT1(const MatchFinder::MatchResult &Result) {
             InfoType record(QualType(UT->getTypeForDecl(), 0));
             auto generator = getGenerator(filename, source_file, true);
 
-			try {
-				generateReadMethod(*generator, record);
-				llvm::outs() << "Read method for class "
-							 << UT->getName().str()
-							 << " generated successfully\n";
-			} catch (const ComplexTypeException &e) {
-				llvm::outs() << "Skipping read method for class " 
-							 << UT->getName().str() 
-							 << " due to complex type: " << e.type << "\n";
-			}
+            try {
+                generateReadMethod(*generator, record);
+                llvm::outs() << "Read method for class " << UT->getName().str()
+                             << " generated successfully\n";
+            } catch (const ComplexTypeException &e) {
+                llvm::outs() << "Skipping read method for class " << UT->getName().str()
+                             << " due to complex type: " << e.type << "\n";
+            }
 
             // Print auxiliary
             // ======================================================================
@@ -207,38 +209,38 @@ void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
         if (FullLocation.isValid() &&
             !Context->getSourceManager().isInSystemHeader(FullLocation)) {
 
-            string filePath = Context->getSourceManager()
-                                  .getFilename(UT->getBeginLoc())
-                                  .str();
+            string filePath =
+                Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
             string fileName = extractFileName(filePath);
             string target = UT->getParent()->getName().str();
 
             // Print auxiliary
             // ======================================================================
-            llvm::outs() << "Found CXXConstructorDecl at "
+            llvm::outs() << ANSI_BLUE << "Found CXXConstructorDecl at "
                          << FullLocation.getSpellingLineNumber() << ":"
                          << FullLocation.getSpellingColumnNumber() << " - ";
 
-            llvm::outs() << UT->getNameInfo().getAsString() << " from class "
-                         << target << "\n";
+            llvm::outs() << UT->getNameInfo().getAsString() << " from class " << target
+                         << "\n"
+                         << ANSI_RESET;
             // Print auxiliary
             // ======================================================================
 
             auto generator = getGenerator(target, filePath, true);
             auto configGenerator = getConfigGenerator(target);
 
-			try {
-            	generateTest(*generator, *configGenerator, UT);
-				llvm::outs() << "Test for method " 
-							 << UT->getNameInfo().getAsString() 
-							 << " generated successfully\n";
-			} catch (const ComplexTypeException &e) {
-				llvm::outs() << "Skipping test for method " 
-							 << UT->getNameInfo().getAsString() 
-							 << " due to complex type: " << e.type << "\n";
-			}
+            try {
+                generateTest(*generator, *configGenerator, UT);
+                llvm::outs() << ANSI_GREEN << "Test for method "
+                             << UT->getNameInfo().getAsString()
+                             << " generated successfully\n";
+            } catch (const ComplexTypeException &e) {
+                llvm::outs() << ANSI_MAGENTA << "Skipping test for method "
+                             << UT->getNameInfo().getAsString()
+                             << " due to complex type: " << e.type << "\n";
+            }
 
-			llvm::outs() << "--------------\n";
+            llvm::outs() << ANSI_RESET << "--------------\n";
         }
     }
 }
@@ -390,15 +392,13 @@ void ASKGen::generateReadMethod(Generator &testGen,
     }
 }
 
-void ASKGen::generateReadMethod(Generator &testGen,
-                                const std::vector<InfoType> &types) {
+void ASKGen::generateReadMethod(Generator &testGen, const std::vector<InfoType> &types) {
     for (const auto &type : types) {
         generateReadMethod(testGen, type);
     }
 }
 
-void ASKGen::generateReadMethod(Generator &testGen,
-                                const InfoVariable &variable) {
+void ASKGen::generateReadMethod(Generator &testGen, const InfoVariable &variable) {
     testGen.createTypeReadToFixture(variable);
 }
 
@@ -416,16 +416,13 @@ std::shared_ptr<Generator> ASKGen::getGenerator(const std::string &target,
 
         switch (getFramework()) {
         case CATCH:
-            generator =
-                std::make_shared<CatchGenerator>(target, filePath, isFromClass);
+            generator = std::make_shared<CatchGenerator>(target, filePath, isFromClass);
             break;
         case GTEST:
-            generator =
-                std::make_shared<GTestGenerator>(target, filePath, isFromClass);
+            generator = std::make_shared<GTestGenerator>(target, filePath, isFromClass);
             break;
         default:
-            generator =
-                std::make_shared<BoostGen>(target, filePath, isFromClass);
+            generator = std::make_shared<BoostGen>(target, filePath, isFromClass);
             break;
         }
         generators.insert({target, generator});
@@ -435,8 +432,7 @@ std::shared_ptr<Generator> ASKGen::getGenerator(const std::string &target,
     return pos->second;
 }
 
-std::shared_ptr<ConfigGenerator>
-ASKGen::getConfigGenerator(const std::string &target) {
+std::shared_ptr<ConfigGenerator> ASKGen::getConfigGenerator(const std::string &target) {
     auto pos = configGenerators.find(target);
 
     if (pos == configGenerators.end()) {
@@ -463,8 +459,7 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
 
     std::string functionName = UT->getName().str();
     if (function_occurrences[functionName]++ > 1) {
-        functionName +=
-            "_" + std::to_string(function_occurrences[functionName]);
+        functionName += "_" + std::to_string(function_occurrences[functionName]);
     }
 
 #ifdef FULL_DEBUG
@@ -483,10 +478,9 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
     InfoType returnType(UT->getReturnType());
     std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
 
-    std::string functionName = UT->getName().str();
+    std::string functionName = UT->getNameInfo().getAsString();
     if (function_occurrences[functionName]++ > 1) {
-        functionName +=
-            "_" + std::to_string(function_occurrences[functionName]);
+        functionName += "_" + std::to_string(function_occurrences[functionName]);
     }
 
 #ifdef FULL_DEBUG
@@ -506,8 +500,7 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
     std::string constructorName = UT->getParent()->getName().str();
 
     if (function_occurrences[constructorName]++ > 1) {
-        constructorName +=
-            "_" + std::to_string(function_occurrences[constructorName]);
+        constructorName += "_" + std::to_string(function_occurrences[constructorName]);
     }
 
 #ifdef FULL_DEBUG
@@ -547,13 +540,11 @@ void ASKGen::generateTestData(string source, string function_name, string param,
         }
 
         values.push_back(line);
-        function_values.insert(
-            std::pair<string, vector<string>>(fvalue, values));
+        function_values.insert(std::pair<string, vector<string>>(fvalue, values));
         values.clear();
     }
 
-    if (function_values.find(function_name + "." + param) !=
-        function_values.end()) {
+    if (function_values.find(function_name + "." + param) != function_values.end()) {
         values = function_values.at(function_name + "." + param);
     }
 
@@ -587,8 +578,7 @@ vector<string> ASKGen::obtainTestData(string type, string value) {
     replaceAll(value, "\"", "");
     result.push_back(value);
 
-    if (type.find("bool") != string::npos ||
-        type.find("_Bool") != string::npos) {
+    if (type.find("bool") != string::npos || type.find("_Bool") != string::npos) {
         result.push_back((value == "true") ? "false" : "true");
     } else if (type.find("string") != string::npos) {
         result.push_back(value + "_another");
@@ -614,8 +604,8 @@ vector<string> ASKGen::obtainTestData(string type, string value) {
 }
 
 ASKGen::~ASKGen() {
-	if(function_occurrences.empty()) {
-		llvm::outs() << "ASkeleTon has not found any function to generate tests for\n";
-		remove_all(getAskeletonHome() / getConfig()["route"]["generated"]);
-	}
+    if (function_occurrences.empty()) {
+        llvm::outs() << "ASkeleTon has not found any function to generate tests for\n";
+        remove_all(getAskeletonHome() / getConfig()["route"]["generated"]);
+    }
 }

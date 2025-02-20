@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 
+#include "color.h"
 #include "constants.hpp"
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
@@ -53,17 +54,23 @@ void Generator::setOutputFilesPath() {
     testPath = utPath / testFileName;
 }
 
-void Generator::setValuesToChange(
-    std::map<std::string, std::string> &valuesToChange) const {
+void Generator::setValuesToChange(std::map<std::string, std::string> &valuesToChange) {
     auto sourceFile = getSourceFile(targetFilePath);
     auto headerFile = getHeaderFile(targetFilePath);
 
-    if (!sourceFile)
-        std::cerr << "WARNING: Source file was not found for " << targetFilePath
-                  << "\n\tRemind to add it manually in the Makefile\n";
-    if (!headerFile)
-        std::cerr << "WARNING: Header file was not found for " << targetFilePath
-                  << "\n\tRemind to add it manually in the fixture\n";
+    if (!missingFilesWarn) {
+        if (!sourceFile)
+            llvm::outs() << ANSI_YELLOW << "WARNING: Source file was not found for "
+                         << targetFilePath
+                         << "\n\tRemind to add it manually in the Makefile\n"
+                         << ANSI_RESET;
+        if (!headerFile)
+            llvm::outs() << ANSI_YELLOW << "WARNING: Header file was not found for "
+                         << targetFilePath
+                         << "\n\tRemind to add it manually in the fixture\n"
+                         << ANSI_RESET;
+        missingFilesWarn = true;
+    }
 
     valuesToChange = {
         {templateItems["tplitem"]["file_path"], targetFilePath},
@@ -109,8 +116,8 @@ void Generator::setSupportedTypes() {
 void Generator::setOutputFiles(const map<string, string> &tokensToReplace) const {
     const fs::path templatePath = this->templateFrameworkPath;
 
-    createFileFromTemplate(templatePath / config["file"]["template"]["test_tpl"], testPath,
-                           tokensToReplace);
+    createFileFromTemplate(templatePath / config["file"]["template"]["test_tpl"],
+                           testPath, tokensToReplace);
     createFileFromTemplate(templatePath / config["file"]["template"]["fixture_tpl"],
                            fixturePath, tokensToReplace);
     createFileFromTemplate(templatePath / config["file"]["template"]["makefile_tpl"],
@@ -146,8 +153,8 @@ void Generator::createPointerReadToFixture(const InfoType &type) const {
 }
 
 void Generator::createEnumReadToFixture(const InfoType &type) const {
-    string method =
-        readFromFile(getMethodTemplatePath(config["file"]["template"]["method"]["enum_read"]));
+    string method = readFromFile(
+        getMethodTemplatePath(config["file"]["template"]["method"]["enum_read"]));
     replaceTokensInText(method,
                         {{templateItems["tplitem"]["type"], type.original},
                          {templateItems["tplitem"]["formatted"], type.formatted}});

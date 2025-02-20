@@ -1,6 +1,7 @@
 {
     "askeleton_varname": "ASKELETON_HOME",
-
+    "system_files": "data/system_files.json",
+    
     "file": {
         "template": {
             "fixture_tpl": "fixture.tpl",
@@ -13,10 +14,7 @@
                 "pointer_read": "methods/pointerRead.tpl",
                 "enum_read": "methods/enumRead.tpl",
                 "record_read": "methods/recordRead.tpl",
-                "record_overload": "methods/overloadOperators.tpl",
-                "record_field_assignment": "methods/fieldAssign.tpl",
-                "record_field_comparison": "methods/fieldComparison.tpl",
-                "record_field_insertion": "methods/fieldInsertion.tpl"
+                "record_overload": "methods/overloadOperators.tpl"
             },
 
             "case": {

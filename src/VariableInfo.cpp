@@ -1,6 +1,5 @@
 #include "VariableInfo.hpp"
 
-#include "EquivalentTypesManager.hpp"
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
 #include "utils/templating.hpp"
@@ -14,18 +13,18 @@ using namespace clang;
 using std::string;
 
 ComplexTypeException::ComplexTypeException(const string &complexType)
-	: std::runtime_error("Type is too complex for ASkeleTon: " + complexType), type(complexType) {}
+    : std::runtime_error("Type is too complex for ASkeleTon: " + complexType),
+      type(complexType) {}
 
 InfoType::InfoType(const clang::QualType &type)
     : original(type.getCanonicalType().getAsString()), formatted(), type(type),
       isRecord_(false), isEnum_(false), recordFields() {
 
-	if(typeIsComplex(original))
-		throw ComplexTypeException(original);
-
-	auto equivalent = getEquivalentType(original);
+    auto equivalent = getEquivalentType(original);
     if (equivalent.has_value()) {
         original = equivalent.value();
+    } else if (typeIsComplex(original)) {
+        throw ComplexTypeException(original);
     } else if (const CXXRecordDecl *record = type->getAsCXXRecordDecl()) {
         isRecord_ = true;
         string original = record->getQualifiedNameAsString();
@@ -130,7 +129,7 @@ string InfoType::formatType(const string &name) {
 }
 
 bool InfoType::typeIsComplex(const string &type) {
-	return containsAnySubstring(type, {"<", ">", "[", "]", "..."});
+    return containsAnySubstring(type, {"[", "]", "..."});
 }
 
 std::vector<InfoVariable> InfoType::getRecordFields() const { return recordFields; }

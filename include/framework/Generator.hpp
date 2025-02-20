@@ -33,14 +33,12 @@ public:
 
     static void setTemplateItems();
 
-    virtual void
-    generateFunctionAssert(const std::string &function,
-                           const std::vector<InfoVariable> &parameters,
-                           const InfoType &returnType) = 0;
-    virtual void
-    generateMethodAssert(const std::string &method,
-                         const std::vector<InfoVariable> &parameters,
-                         const InfoType &returnType) = 0;
+    virtual void generateFunctionAssert(const std::string &function,
+                                        const std::vector<InfoVariable> &parameters,
+                                        const InfoType &returnType) = 0;
+    virtual void generateMethodAssert(const std::string &method,
+                                      const std::vector<InfoVariable> &parameters,
+                                      const InfoType &returnType) = 0;
     virtual void
     generateConstructorAssert(const std::vector<InfoVariable> &parameters) = 0;
 
@@ -49,8 +47,7 @@ public:
     static unsigned MAX_DEPTH;
 
 protected:
-    void
-    setValuesToChange(std::map<std::string, std::string> &valuesToChange) const;
+    void setValuesToChange(std::map<std::string, std::string> &valuesToChange);
     void setOutputFiles(const std::map<std::string, std::string> &) const;
     void setFrameworkTemplatePath(const std::filesystem::path &frwPath);
 
@@ -60,20 +57,17 @@ protected:
     std::string
     generateParameterInitialization(const std::vector<InfoVariable> &parameters,
                                     const std::string &function) const;
-    std::string
-    generateParameterInitialization(const InfoType &type,
-                                    const std::string &function) const;
-    std::string
-    generateParameterInitialization(const InfoVariable &variable,
-                                    const std::string &function) const;
+    std::string generateParameterInitialization(const InfoType &type,
+                                                const std::string &function) const;
+    std::string generateParameterInitialization(const InfoVariable &variable,
+                                                const std::string &function) const;
 
     std::string generateReadInvocation(const InfoVariable &type,
                                        const std::string &function) const;
     std::string generateReturnTypeInvocation(const InfoType &type,
                                              const std::string &function) const;
 
-    std::string
-    generateParameterInvocation(const std::vector<InfoVariable> &) const;
+    std::string generateParameterInvocation(const std::vector<InfoVariable> &) const;
 
     virtual std::string
     generatePointersAsserts(const std::vector<InfoVariable> &parameters,
@@ -81,13 +75,11 @@ protected:
 
     void appendTestCaseToTestFile(const std::string &testCase) const;
 
-
     const std::string targetName, targetFilePath, targetFileName;
     const bool isFromClass;
 
     std::filesystem::path templateFrameworkPath, templateMethodPath;
-    std::filesystem::path utPath, fixturePath, makefilePath, supportedPath,
-        testPath;
+    std::filesystem::path utPath, fixturePath, makefilePath, supportedPath, testPath;
     static const nlohmann::json &config;
     static const nlohmann::json &templateItems;
 
@@ -103,9 +95,9 @@ private:
     void appendReadMethodToFixture(const std::string &method) const;
     void appendOverloadMethodsToFixture(const std::string &op) const;
 
-    static std::string
-    getMethodTemplatePath(const std::string &methodTemplate = "");
+    static std::string getMethodTemplatePath(const std::string &methodTemplate = "");
 
     std::set<std::string> supportedTypes;
     std::map<std::string, unsigned> functionCounter;
+    bool missingFilesWarn = false;
 };
