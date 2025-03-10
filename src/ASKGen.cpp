@@ -469,7 +469,6 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
     generateReadMethod(testGen, parameters);
     generateReadMethod(testGen, returnType);
 
-    configGenerator.generateTestCase(functionName, parameters, returnType);
     testGen.generateFunctionAssert(functionName, parameters, returnType);
 }
 
@@ -477,6 +476,7 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
                           const CXXMethodDecl *UT) {
     InfoType returnType(UT->getReturnType());
     std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
+    bool isStatic = UT->isStatic();
 
     std::string functionName = UT->getNameInfo().getAsString();
     if (function_occurrences[functionName]++ > 1) {
@@ -490,8 +490,7 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
     generateReadMethod(testGen, parameters);
     generateReadMethod(testGen, returnType);
 
-    configGenerator.generateTestCase(functionName, parameters, returnType);
-    testGen.generateMethodAssert(functionName, parameters, returnType);
+    testGen.generateMethodAssert(functionName, parameters, returnType, isStatic);
 }
 
 void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
@@ -509,7 +508,6 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
 
     generateReadMethod(testGen, parameters);
 
-    configGenerator.generateConstructorTest(constructorName, parameters);
     testGen.generateConstructorAssert(parameters);
 }
 

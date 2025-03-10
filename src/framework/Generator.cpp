@@ -22,7 +22,8 @@ const nlohmann::json &Generator::templateItems = getTemplateItems();
 Generator::Generator(const string &targetName, const string &filePath, bool isFromClass)
     : targetName(targetName), targetFilePath(filePath),
       targetFileName(extractFileName(filePath)), isFromClass(isFromClass),
-      utPath(getAskeletonHome() / config["route"]["ut"] / targetName) {
+      utPath(getAskeletonHome() / config["route"]["ut"] / targetName),
+      configGenerator{targetName} {
 
     setOutputFilesPath();
     setSupportedTypes();
@@ -262,13 +263,17 @@ void Generator::setFrameworkTemplatePath(const fs::path &frameworkPath) {
 
 std::string
 Generator::generateParameterInitialization(const std::vector<InfoVariable> &parameters,
-                                           const std::string &function) const {
+                                           const std::string &function,
+                                           unsigned invocation) const {
     std::stringstream ss;
     for (const auto &param : parameters) {
         pair<InfoVariable, InfoVariable> pointers = param.getPointers();
-        ss << "\t" << generateParameterInitialization(pointers.first, function) << ";";
+        ss << "\t"
+           << generateParameterInitialization(pointers.first, function, invocation)
+           << ";";
         if (param.isPointer() || param.isReference())
-            ss << "\n\t" << generateParameterInitialization(pointers.second, function)
+            ss << "\n\t"
+               << generateParameterInitialization(pointers.second, function, invocation)
                << ";";
         if (&param != &parameters.back())
             ss << "\n";
@@ -277,9 +282,9 @@ Generator::generateParameterInitialization(const std::vector<InfoVariable> &para
     return ss.str();
 }
 
-std::string
-Generator::generateParameterInitialization(const InfoVariable &variable,
-                                           const std::string &function) const {
+std::string Generator::generateParameterInitialization(const InfoVariable &variable,
+                                                       const std::string &function,
+                                                       unsigned invocation) const {
 
     std::string readInstructionContent =
         templateItems["templating"]["assign_instruction"];
@@ -290,6 +295,7 @@ Generator::generateParameterInitialization(const InfoVariable &variable,
         {templateItems["tplitem"]["underlying"], underlying.original},
         {templateItems["tplitem"]["name"], variable.name},
         {templateItems["tplitem"]["target"], function},
+        {templateItems["tplitem"]["number"], to_string(invocation)},
         {templateItems["tplitem"]["formatted"], variable.name},
         {templateItems["tplitem"]["underlying_formatted"], typeForReadMethod}};
 
@@ -297,21 +303,25 @@ Generator::generateParameterInitialization(const InfoVariable &variable,
     return readInstructionContent;
 }
 
-std::string
-Generator::generateParameterInitialization(const InfoType &type,
-                                           const std::string &function) const {
+std::string Generator::generateParameterInitialization(const InfoType &type,
+                                                       const std::string &function,
+                                                       unsigned invocation) const {
     InfoVariable variable{type.original, type.formatted, function + "_return"};
     return generateParameterInitialization(variable, function);
 }
 
 std::string Generator::generateReadInvocation(const InfoVariable &type,
-                                              const string &function) const {
+                                              const string &function,
+                                              unsigned invocation) const {
     string readInvocation = templateItems["templating"]["read_instruction"];
     replaceTokensInText(
         readInvocation,
-        {{templateItems["tplitem"]["underlying_formatted"], type.formatted},
-         {templateItems["tplitem"]["target"], function},
-         {templateItems["tplitem"]["name"], type.name}});
+        {
+            {templateItems["tplitem"]["underlying_formatted"], type.formatted},
+            {templateItems["tplitem"]["target"], function},
+            {templateItems["tplitem"]["name"], type.name},
+            {templateItems["tplitem"]["number"], to_string(invocation)},
+        });
 
     return readInvocation;
 }
@@ -349,6 +359,19 @@ int Generator::getFunctionCounter(const std::string &function) const {
 
 void Generator::incrementFunctionCounter(const std::string &function) {
     functionCounter[function]++;
+}
+
+void Generator::generateConfigFileTestCase(const std::string &functionName,
+                                           const std::vector<InfoVariable> &params,
+                                           const InfoType &returnType,
+                                           unsigned invocation) const {
+    configGenerator.generateTestCase(functionName, params, returnType, invocation);
+}
+
+void Generator::generateConfigFileTestCase(const std::string &functionName,
+                                           const std::vector<InfoVariable> &params,
+                                           unsigned invocation) const {
+    configGenerator.generateConstructorTest(functionName, params, invocation);
 }
 
 Generator::~Generator() {

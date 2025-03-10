@@ -18,21 +18,25 @@ CatchGenerator::CatchGenerator(const string &targetName, const string &filePath,
     copyMainFile();
 }
 
-void CatchGenerator::generateFunctionAssert(const string &function,
-                                            const vector<InfoVariable> &parameters,
-                                            const InfoType &returnType) {
+void CatchGenerator::generateFullAssert(const string &function,
+                                        const vector<InfoVariable> &parameters,
+                                        const InfoType &returnType, bool isStatic) {
     const static fs::path tplFunctionPath =
         templateFrameworkPath / config["file"]["template"]["case"]["function"];
     InfoType underlying = returnType.getUnderlyingType();
 
-    const string number = to_string(getFunctionCounter(function) + 1);
+    const unsigned number = getFunctionCounter(function) + 1;
     const string parametersInvocation = generateParameterInvocation(parameters);
     const string returnTypeOriginal = underlying.original;
     const string returnReadMethod =
         generateReadInvocation(underlying.getTypeAsReturn(), function);
-    const string invocation =
-        (returnType.isPointer() ? "*" : "") +
-        (isFromClass ? generateTestObjectForTarget(targetName) + "." : "") + function;
+
+    string invocation = returnType.isPointer() ? "*" : "";
+    if (isStatic)
+        invocation += targetName + "::";
+    else if (isFromClass)
+        invocation += generateTestObjectForTarget(targetName) + ".";
+    invocation += function;
 
     string pointers = generatePointersAsserts(parameters, function);
     if (!pointers.empty())
@@ -45,7 +49,7 @@ void CatchGenerator::generateFunctionAssert(const string &function,
     map<string, string> tokensToReplace = {
         {templateItems["tplitem"]["catch"]["target"], targetName},
         {templateItems["tplitem"]["catch"]["function"], function},
-        {templateItems["tplitem"]["catch"]["number"], number},
+        {templateItems["tplitem"]["catch"]["number"], to_string(number)},
         {templateItems["tplitem"]["catch"]["initializations"], initializations},
         {templateItems["tplitem"]["catch"]["return_type"], returnTypeOriginal},
         {templateItems["tplitem"]["catch"]["return_read_method"], returnReadMethod},
@@ -54,15 +58,22 @@ void CatchGenerator::generateFunctionAssert(const string &function,
         {templateItems["tplitem"]["catch"]["pointers"], pointers}};
 
     string testContent = replaceTokensInFile(tplFunctionPath, tokensToReplace);
-    appendTestCaseToTestFile(testContent);
 
+    appendTestCaseToTestFile(testContent);
+    generateConfigFileTestCase(function, parameters, returnType, number);
     incrementFunctionCounter(function);
 }
 
 void CatchGenerator::generateMethodAssert(const string &method,
                                           const vector<InfoVariable> &parameters,
-                                          const InfoType &returnType) {
-    generateFunctionAssert(method, parameters, returnType);
+                                          const InfoType &returnType, bool isStatic) {
+    generateFullAssert(method, parameters, returnType, isStatic);
+}
+
+void CatchGenerator::generateFunctionAssert(const string &function,
+                                            const vector<InfoVariable> &parameters,
+                                            const InfoType &returnType) {
+    generateFullAssert(function, parameters, returnType, false);
 }
 
 void CatchGenerator::generateConstructorAssert(const vector<InfoVariable> &parameters) {

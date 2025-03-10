@@ -33,14 +33,15 @@ ConfigGenerator::ConfigGenerator(const string &target)
 
 void ConfigGenerator::generateTestCase(const string &functionName,
                                        const vector<InfoVariable> &params,
-                                       const InfoType &returnType) const {
+                                       const InfoType &returnType,
+                                       unsigned invocationNumber) const {
     stringstream ss;
     const string returnVarName =
         returnType.getUnderlyingType().getFormattedNotParametrized();
     InfoVariable returnVar{returnVarName, returnType};
     const static string returnPrefix = tplItems["tplitem"]["return_prefix"];
 
-    ss << functionName << ":\n{\n";
+    ss << functionName << "_" << invocationNumber << ":\n{\n";
     ss << generateParam(params);
     ss << generateParam(returnVar, false, returnPrefix);
     ss << "\n};\n\n";
@@ -49,10 +50,11 @@ void ConfigGenerator::generateTestCase(const string &functionName,
 }
 
 void ConfigGenerator::generateConstructorTest(const string &ctorName,
-                                              const vector<InfoVariable> &params) const {
+                                              const vector<InfoVariable> &params,
+                                              unsigned invocationNumber) const {
     stringstream ss;
 
-    ss << ctorName << ":\n{\n";
+    ss << ctorName << "_" << invocationNumber << ":\n{\n";
     ss << generateParam(params);
     ss << "\n};\n\n";
 

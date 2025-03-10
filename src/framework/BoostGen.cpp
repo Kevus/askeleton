@@ -22,14 +22,14 @@ BoostGen::BoostGen(const std::string &targetName, const std::string &filePath,
     setOutputFiles(tokensToReplace);
 }
 
-void BoostGen::generateFunctionAssert(const std::string &function,
-                                      const std::vector<InfoVariable> &parameters,
-                                      const InfoType &returnType) {
+void BoostGen::generateFullAssert(const std::string &function,
+                                  const std::vector<InfoVariable> &parameters,
+                                  const InfoType &returnType, bool isStatic) {
     const static fs::path tplFunctionPath =
         templateFrameworkPath / config["file"]["template"]["case"]["function"];
     InfoType underlying = returnType.getUnderlyingType();
 
-    const string number = to_string(getFunctionCounter(function) + 1);
+    const unsigned number = getFunctionCounter(function) + 1;
     const string returnTypeOriginal = underlying.original;
     const string returnReadMethod =
         generateReadInvocation(underlying.getTypeAsReturn(), function);
@@ -42,12 +42,13 @@ void BoostGen::generateFunctionAssert(const std::string &function,
     if (!initializations.empty())
         initializations = "\n" + initializations;
 
-    const string assert = generateAssertForFunction(function, parameters, returnType);
+    const string assert =
+        generateAssertForFunction(function, parameters, returnType, isStatic);
 
     map<string, string> tokensToReplace = {
         {templateItems["tplitem"]["boost"]["target"], targetName},
         {templateItems["tplitem"]["boost"]["function"], function},
-        {templateItems["tplitem"]["boost"]["number"], number},
+        {templateItems["tplitem"]["boost"]["number"], to_string(number)},
         {templateItems["tplitem"]["boost"]["initializations"], initializations},
         {templateItems["tplitem"]["boost"]["return_type"], returnTypeOriginal},
         {templateItems["tplitem"]["boost"]["return_read_method"], returnReadMethod},
@@ -57,13 +58,20 @@ void BoostGen::generateFunctionAssert(const std::string &function,
     string testContent = replaceTokensInFile(tplFunctionPath, tokensToReplace);
 
     appendTestCaseToTestFile(testContent);
+    generateConfigFileTestCase(function, parameters, returnType, number);
     incrementFunctionCounter(function);
 }
 
 void BoostGen::generateMethodAssert(const std::string &method,
                                     const std::vector<InfoVariable> &parameters,
-                                    const InfoType &returnType) {
-    generateFunctionAssert(method, parameters, returnType);
+                                    const InfoType &returnType, bool isStatic) {
+    generateFullAssert(method, parameters, returnType, isStatic);
+}
+
+void BoostGen::generateFunctionAssert(const std::string &function,
+                                      const std::vector<InfoVariable> &parameters,
+                                      const InfoType &returnType) {
+    generateFullAssert(function, parameters, returnType, false);
 }
 
 void BoostGen::generateConstructorAssert(const std::vector<InfoVariable> &parameters) {}
@@ -96,7 +104,8 @@ std::string BoostGen::generatePointersAsserts(const std::vector<InfoVariable> &p
 
 string BoostGen::generateAssertForFunction(const string &function,
                                            const vector<InfoVariable> &params,
-                                           const InfoType &returnType) const {
+                                           const InfoType &returnType,
+                                           bool isStatic) const {
     const static string TPLITEM_FUNC =
                             templateItems["templating"]["boost"]["assert_function"],
                         TPLITEM_FUNC_LIST =
@@ -104,9 +113,13 @@ string BoostGen::generateAssertForFunction(const string &function,
                         TPLITEM_FUNC_MAP =
                             templateItems["templating"]["boost"]["assert_function_map"];
     const string paramsList = generateParameterInvocation(params);
-    const string invocation =
-        (returnType.isPointer() ? "*" : "") +
-        (isFromClass ? generateTestObjectForTarget(targetName) + "." : "") + function;
+    string invocation = (returnType.isPointer() ? "*" : "");
+    if (isStatic)
+        invocation = targetName + "::" + function;
+    else if (isFromClass)
+        invocation = generateTestObjectForTarget(targetName) + ".";
+    invocation += function;
+
     const map<string, string> tokensToReplace = {
         {templateItems["tplitem"]["boost"]["invocation"], invocation},
         {templateItems["tplitem"]["boost"]["parameters"], paramsList}};

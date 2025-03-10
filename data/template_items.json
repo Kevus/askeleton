@@ -18,6 +18,7 @@
         "name": "{name}",
         "namespaces": "{namespaces}",
         "new_methods": "{newMethods}",
+        "number": "{number}",
         "overload_operator": "//{overloadOperator}",
         "pointer_destroy_token": "{pointerDestroyToken}",
         "pointer_init_token": "{pointerInitToken}",
@@ -86,8 +87,8 @@
     },
 
     "templating": {
-        "assign_instruction": "{underlying} {name} = Read_{underlyingFormatted}(\"{target}.{formatted}\")",
-        "read_instruction": "Read_{underlyingFormatted}(\"{target}.{name}\")",
+        "assign_instruction": "{underlying} {name} = Read_{underlyingFormatted}(\"{target}_{number}.{formatted}\")",
+        "read_instruction": "Read_{underlyingFormatted}(\"{target}_{number}.{name}\")",
         "field_assign": "result.{field} = Read_{formatted}(objectKey + \".{field}\");",
         "field_comparison": "a.{field} == b.{field}",
         "field_insertion": "os << \"{field}:\" << object.{field} << \"\\n\";",

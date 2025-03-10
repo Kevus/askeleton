@@ -1,9 +1,9 @@
 #pragma once
 
 #include <map>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
-#include <nlohmann/json.hpp>
 
 #include "RandomValuesGenerator.hpp"
 #include "VariableInfo.hpp"
@@ -15,9 +15,11 @@ public:
 
     void generateTestCase(const std::string &functionName,
                           const std::vector<InfoVariable> &params,
-                          const InfoType &returnType) const;
+                          const InfoType &returnType,
+                          unsigned invocationNumber = 1) const;
     void generateConstructorTest(const std::string &ctorName,
-                                 const std::vector<InfoVariable> &params) const;
+                                 const std::vector<InfoVariable> &params,
+                                 unsigned invocationNumber = 1) const;
 
 private:
     const std::string target, testFolder, configFilePath;
