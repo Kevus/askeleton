@@ -73,6 +73,9 @@ private:
     void setRuleValuesForParamName(
         const clang::FunctionDecl *FD, const std::string &paramName,
         const std::vector<long long> &candidates);
+    void addAssignmentRuleValues(const clang::FunctionDecl *FD,
+                                 const clang::ParmVarDecl *param,
+                                 long long assignedValue);
 
     unsigned computeRuleInvocationLimit(
         const std::map<std::string, std::vector<long long>> &rulesForFunction) const;

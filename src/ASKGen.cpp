@@ -384,6 +384,18 @@ void ASKGen::addRuleValues(const FunctionDecl *FD, const ParmVarDecl *param,
     addRuleValuesForParamName(FD, param->getQualifiedNameAsString(), candidates);
 }
 
+void ASKGen::addAssignmentRuleValues(const FunctionDecl *FD,
+                                     const ParmVarDecl *param,
+                                     long long assignedValue) {
+    if (!param)
+        return;
+
+    std::vector<long long> candidates = {assignedValue - 1, assignedValue,
+                                         assignedValue + 1};
+    addRuleValuesForParamName(FD, param->getName().str(), candidates);
+    addRuleValuesForParamName(FD, param->getQualifiedNameAsString(), candidates);
+}
+
 void ASKGen::addRuleValuesForParamName(
     const FunctionDecl *FD, const std::string &paramName,
     const std::vector<long long> &candidates) {
@@ -432,7 +444,8 @@ void ASKGen::collectRuleValuesFromFunction(const FunctionDecl *FD) {
 
     class RuleVisitor : public RecursiveASTVisitor<RuleVisitor> {
     public:
-        RuleVisitor(ASKGen &owner, const FunctionDecl *fd) : owner(owner), fd(fd) {}
+        RuleVisitor(ASKGen &owner, const FunctionDecl *fd, ASTContext &context)
+            : owner(owner), fd(fd), context(context) {}
 
         struct ComparisonInfo {
             const ParmVarDecl *param = nullptr;
@@ -453,6 +466,10 @@ void ASKGen::collectRuleValuesFromFunction(const FunctionDecl *FD) {
 
             ComparisonInfo info;
             info.opcode = op->getOpcode();
+
+            if (auto moduloInfo = extractModuloComparison(lhs, rhs, info.opcode)) {
+                return moduloInfo;
+            }
 
             if (lhsRef && rhsValue.has_value()) {
                 info.param = dyn_cast<ParmVarDecl>(lhsRef->getDecl());
@@ -485,6 +502,44 @@ void ASKGen::collectRuleValuesFromFunction(const FunctionDecl *FD) {
             return std::nullopt;
         }
 
+        std::optional<ComparisonInfo> extractModuloComparison(
+            const Expr *lhs, const Expr *rhs, BinaryOperatorKind opcode) const {
+            const auto *lhsOp = dyn_cast<BinaryOperator>(lhs);
+            if (!lhsOp || lhsOp->getOpcode() != BO_Rem)
+                return std::nullopt;
+
+            const auto *lhsParamRef =
+                dyn_cast<DeclRefExpr>(lhsOp->getLHS()->IgnoreParenImpCasts());
+            if (!lhsParamRef)
+                return std::nullopt;
+
+            const auto divisor = extractIntegerValue(lhsOp->getRHS());
+            const auto rhsValue = extractIntegerValue(rhs);
+            if (!divisor.has_value() || !rhsValue.has_value())
+                return std::nullopt;
+
+            if (rhsValue.value() != 0)
+                return std::nullopt;
+
+            const auto *param = dyn_cast<ParmVarDecl>(lhsParamRef->getDecl());
+            if (!param)
+                return std::nullopt;
+
+            std::vector<long long> candidates;
+            if (opcode == BO_EQ) {
+                candidates = {0, divisor.value(), divisor.value() * 2};
+            } else if (opcode == BO_NE) {
+                candidates = {1, divisor.value() + 1};
+            } else {
+                return std::nullopt;
+            }
+
+            owner.addRuleValuesForParamName(fd, param->getName().str(), candidates);
+            owner.addRuleValuesForParamName(fd, param->getQualifiedNameAsString(),
+                                            candidates);
+            return std::nullopt;
+        }
+
         bool TraverseBinaryOperator(BinaryOperator *op) {
             if (!op)
                 return true;
@@ -499,13 +554,59 @@ void ASKGen::collectRuleValuesFromFunction(const FunctionDecl *FD) {
 
         bool VisitBinaryOperator(BinaryOperator *op) {
             if (!op || !op->isComparisonOp())
-                return true;
+                return handleNonComparison(op);
 
             auto comp = extractComparison(op);
             if (comp && comp->param) {
                 owner.addRuleValues(fd, comp->param, comp->opcode,
                                     comp->literalValue);
             }
+            return true;
+        }
+
+        bool handleNonComparison(BinaryOperator *op) {
+            if (!op)
+                return true;
+
+            if (op->isAssignmentOp()) {
+                const Expr *lhs = op->getLHS()->IgnoreParenImpCasts();
+                const Expr *rhs = op->getRHS()->IgnoreParenImpCasts();
+                const auto *lhsRef = dyn_cast<DeclRefExpr>(lhs);
+                if (!lhsRef)
+                    return true;
+
+                const auto *param = dyn_cast<ParmVarDecl>(lhsRef->getDecl());
+                if (!param)
+                    return true;
+
+                Expr::EvalResult result;
+                if (rhs && rhs->EvaluateAsInt(result, context)) {
+                    owner.addAssignmentRuleValues(
+                        fd, param, result.Val.getInt().getSExtValue());
+                } else if (auto rhsValue = extractIntegerValue(rhs)) {
+                    owner.addAssignmentRuleValues(fd, param, rhsValue.value());
+                }
+
+                return true;
+            }
+
+            if (op->getOpcode() == BO_Div || op->getOpcode() == BO_Rem) {
+                const Expr *rhs = op->getRHS()->IgnoreParenImpCasts();
+                const auto *rhsRef = dyn_cast<DeclRefExpr>(rhs);
+                if (!rhsRef)
+                    return true;
+
+                const auto *param = dyn_cast<ParmVarDecl>(rhsRef->getDecl());
+                if (!param)
+                    return true;
+
+                std::vector<long long> candidates = {1, 2, -1};
+                owner.addRuleValuesForParamName(fd, param->getName().str(),
+                                                candidates);
+                owner.addRuleValuesForParamName(
+                    fd, param->getQualifiedNameAsString(), candidates);
+            }
+
             return true;
         }
 
@@ -643,9 +744,10 @@ void ASKGen::collectRuleValuesFromFunction(const FunctionDecl *FD) {
     private:
         ASKGen &owner;
         const FunctionDecl *fd;
+        ASTContext &context;
     };
 
-    RuleVisitor visitor(*this, FD);
+    RuleVisitor visitor(*this, FD, FD->getASTContext());
     visitor.TraverseStmt(FD->getBody());
 }
 

@@ -66,9 +66,10 @@ function(a):
 	a = 1;
 	a = 2 + 2;
 ====================================
-Por cada operador, asignar dos posibles valores:
-a = 0;
-a = a + 1;
+Por cada asignacion de parametro a una expresion constante:
+a = valor
+a = valor + 1
+a = valor - 1;
 
 ----------------------------------------------------------
 Regla 4: Switch case
@@ -88,6 +89,19 @@ asignando ese valor y sin asignarlo.
 Regla 6: Constantes y enums
 Se aceptan comparaciones con valores de enum, constantes const/constexpr
 o macros que expandan a enteros.
+
+----------------------------------------------------------
+Regla 7: Operadores modulo y division
+
+function(a, b):
+	if (a % 2 == 0)
+	if (a % 3 != 0)
+	x = 10 / b
+====================================
+Para modulo con ==0: se generan multiplos del divisor (0, d, 2d).
+Para modulo con !=0: se generan valores no multiplos (1, d+1).
+Para division/modulo, si el divisor es un parametro, se evitan 0
+con candidatos {1, 2, -1}.
 
 
 ===================================
