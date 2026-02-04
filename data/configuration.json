@@ -1,0 +1,55 @@
+{
+    "askeleton_varname": "ASKELETON_HOME",
+    "system_files": "data/system_files.json",
+    
+    "file": {
+        "template": {
+            "fixture_tpl": "fixture.tpl",
+            "test_tpl": "test.tpl",
+            "makefile_tpl": "makefile.tpl",
+            "cfg_tpl": "cfgFile.tpl",
+			"main": "main.cpp",
+
+            "method": {
+                "pointer_read": "methods/pointerRead.tpl",
+                "enum_read": "methods/enumRead.tpl",
+                "record_read": "methods/recordRead.tpl",
+                "record_overload": "methods/overloadOperators.tpl"
+            },
+
+            "case": {
+                "constructor": "constructorCase.tpl",
+                "function": "functionCase.tpl",
+                "method": "methodCase.tpl"
+            }
+        },
+
+        "output": {
+            "supported_types": "{target}_supportedTypes.txt",
+            "makefile": "Makefile",
+            "test_fixture": "{target}_fixture.hpp",
+            "test_file": "{target}_test.cpp",
+            "cfg": "{target}.cfg",
+            "catch_main": "main.cpp",
+            "gtest_main": "main.cpp"
+        },
+
+        "data": {
+            "equivalent_types": "data/equivalent_types.json",
+            "default_values": "data/default_values.json",
+            "supported_types_json": "data/supported_types.json",
+            "template_items": "data/template_items.json"
+        }
+    },
+
+    "route": {
+        "generated": "Generated",
+        "ut": "Generated/UT",
+        "templates": "data/templates",
+        "log": "Generated_log",
+        "boost_templates": "data/templates/boost",
+        "catch_templates": "data/templates/catch2",
+        "gtest_templates": "data/templates/gtest"
+    }
+  }
+  

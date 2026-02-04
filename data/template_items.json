@@ -1,0 +1,113 @@
+{
+    "tplitem": {
+        "assert": "{assert}",
+        "class_name": "{className}",
+        "class_name_test": "{classNameTest}",
+        "comparisons": "//{comparisons}",
+        "cpp_path": "{cppPath}",
+        "date_of_generation": "{dateOfGeneration}",
+        "field": "{field}",
+        "field_formatted": "{fieldFormatted}",
+        "file_name": "{fileName}",
+        "file_path": "{filePath}",
+        "fields": "//{fields}",
+        "formatted": "{formatted}",
+        "header_path": "{headerPath}",
+        "includes": "{includes}",
+        "insertions": "//{insertions}",
+        "name": "{name}",
+        "namespaces": "{namespaces}",
+        "new_methods": "{newMethods}",
+        "number": "{number}",
+        "overload_operator": "//{overloadOperator}",
+        "pointer_destroy_token": "{pointerDestroyToken}",
+        "pointer_init_token": "{pointerInitToken}",
+        "prefix": "{prefix}",
+        "read_object": "//{readObject}",
+        "return_prefix": "return_",
+        "target": "{target}",
+        "type": "{type}",
+        "underlying": "{underlying}",
+        "underlying_formatted": "{underlyingFormatted}",
+        "value": "{value}",
+        "var_name": "{varName}",
+
+        "boost": {
+            "assert_ending": "{assertEnding}",
+            "function": "{function}",
+            "initializations": "{initializations}",
+            "invocation": "{invocation}",
+            "number": "{number}",
+            "parameters": "{parameters}",
+            "parameter": "{parameter}",
+            "expected": "{expected}",
+            "pointers": "{pointers}",
+            "return": "{return}",
+            "return_read_method": "{returnReadMethod}",
+            "return_type": "{returnType}",
+            "target": "{target}",
+            "class": "{class}",
+            "object": "{object}"
+        },
+
+        "catch": {
+            "function": "{function}",
+            "initializations": "{initializations}",
+            "invocation": "{invocation}",
+            "number": "{number}",
+            "parameters": "{parameters}",
+            "parameter": "{parameter}",
+            "expected": "{expected}",
+            "pointers": "{pointers}",
+            "return": "{return}",
+            "return_read_method": "{returnReadMethod}",
+            "return_type": "{returnType}",
+            "target": "{target}",
+            "class": "{class}",
+            "object": "{object}"
+        },
+
+        "gtest": {
+            "assert_ending": "{assertEnding}",
+            "function": "{function}",
+            "initializations": "{initializations}",
+            "invocation": "{invocation}",
+            "number": "{number}",
+            "parameters": "{parameters}",
+            "parameter": "{parameter}",
+            "expected": "{expected}",
+            "pointers": "{pointers}",
+            "return": "{return}",
+            "return_read_method": "{returnReadMethod}",
+            "return_type": "{returnType}",
+            "target": "{target}",
+            "class": "{class}",
+            "object": "{object}"
+        }
+    },
+
+    "templating": {
+        "assign_instruction": "{underlying} {name} = Read_{underlyingFormatted}(\"{target}_{number}.{formatted}\")",
+        "read_instruction": "Read_{underlyingFormatted}(\"{target}_{number}.{name}\")",
+        "field_assign": "result.{field} = Read_{formatted}(objectKey + \".{field}\");",
+        "field_comparison": "a.{field} == b.{field}",
+        "field_insertion": "os << \"{field}:\" << object.{field} << \"\\n\";",
+        "boost": {
+            "assert_pointer": "BOOST_CHECK_EQUAL({parameter}, {expected});",
+            "assert_pointer_list": "BOOST_TEST({parameter} == expected, tt::per_element());",
+            "assert_pointer_map": "BOOST_TEST({parameter} == expected);",
+            "assert_function": "BOOST_CHECK_EQUAL({invocation}({parameters}), expected);",
+            "assert_function_list": "BOOST_TEST({invocation}({parameters}) == expected, tt::per_element());",
+            "assert_function_map": "BOOST_TEST({invocation}({parameters}) == expected);"
+        },
+        "catch": {
+            "assert_pointer": "REQUIRE({parameter} == {expected});"
+        },
+        "gtest": {
+            "assert_pointer": "EXPECT_EQ({parameter}, {expected});"
+        },
+        "cfg": {
+            "param": "{prefix}{varName} = {value};#{type}"
+        }
+    }
+}

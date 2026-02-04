@@ -1,14 +1,19 @@
 #pragma once
 
-#include "auxiliary_functions.hpp"
+#include "clang/AST/Decl.h"
+#include "clang/AST/Type.h"
 
 #include <map>
+#include <stdexcept>
 #include <string>
-
-// A pair which represents the type and the name of a parameter
-typedef std::pair<std::string, std::string> Parameter;
-
+#include <vector>
 struct InfoVariable;
+
+class ComplexTypeException : public std::runtime_error {
+public:
+	explicit ComplexTypeException(const std::string &type);
+	const std::string type;
+};
 
 struct InfoType {
     InfoType() = default;
@@ -17,71 +22,46 @@ struct InfoType {
     InfoType(const std::string &original, const std::string &formatted);
 
     bool isContainer() const;
+    bool isList() const;
+    bool isMap() const;
+
     bool isPointer() const;
     bool isReference() const;
+
     bool isRecord() const;
     bool isEnum() const;
 
+    bool isTemplateParametrized() const;
+
     InfoType getUnderlyingType() const;
+    InfoVariable getTypeAsReturn() const;
     std::vector<InfoVariable> getRecordFields() const;
+    std::string getFormattedNotParametrized() const;
 
     std::string original, formatted;
-    const clang::QualType *type;
+    const clang::QualType type;
 
 protected:
-    static const std::map<std::string, std::string> excludedTypes;
-
     static std::string formatType(const std::string &);
-    static bool isExcludedType(const std::string &);
 
     bool isRecord_, isEnum_;
     std::vector<InfoVariable> recordFields;
+
+private:
+	static bool typeIsComplex(const std::string &);
 };
 
 struct InfoVariable : public InfoType {
     InfoVariable() = default;
     InfoVariable(const clang::ParmVarDecl *);
     InfoVariable(const clang::FieldDecl *);
+    InfoVariable(const std::string &varName, const InfoType &type);
     InfoVariable(const std::string &name, const std::string &original,
                  const std::string &formatted);
+
+    std::pair<InfoVariable, InfoVariable> getPointers() const;
+    std::pair<std::string, std::string> getPointersVarName() const;
 
     std::string name;
     static unsigned NO_NAME_COUNT;
 };
-
-// static const std::set<std::string> primitives = {"_Bool",
-//                                                  "bool",
-//                                                  "char",
-//                                                  "char *",
-//                                                  "double",
-//                                                  "float",
-//                                                  "int",
-//                                                  "long",
-//                                                  "long double",
-//                                                  "long int",
-//                                                  "long long",
-//                                                  "long long int",
-//                                                  "short",
-//                                                  "short int",
-//                                                  "signed",
-//                                                  "signed char",
-//                                                  "signed int",
-//                                                  "signed long",
-//                                                  "signed long int",
-//                                                  "signed long long",
-//                                                  "signed long long int",
-//                                                  "signed short",
-//                                                  "signed short int",
-//                                                  "size_t",
-//                                                  "std::__cxx11::string",
-//                                                  "std::string",
-//                                                  "string",
-//                                                  "unsigned",
-//                                                  "unsigned char",
-//                                                  "unsigned int",
-//                                                  "unsigned long",
-//                                                  "unsigned long int",
-//                                                  "unsigned long long",
-//                                                  "unsigned long long int"};
-
-// static const std::vector<std::string> containers = {"map", "list", "vector"};
