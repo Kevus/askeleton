@@ -1,5 +1,6 @@
 **/Generated
 *.o
+*.o.tmp
 *.d
 .vscode/
 Generated*/
