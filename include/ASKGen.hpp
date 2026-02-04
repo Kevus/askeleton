@@ -67,6 +67,12 @@ private:
                        const clang::ParmVarDecl *param,
                        clang::BinaryOperatorKind opcode,
                        long long literalValue);
+    void addRuleValuesForParamName(
+        const clang::FunctionDecl *FD, const std::string &paramName,
+        const std::vector<long long> &candidates);
+    void setRuleValuesForParamName(
+        const clang::FunctionDecl *FD, const std::string &paramName,
+        const std::vector<long long> &candidates);
 
     unsigned computeRuleInvocationLimit(
         const std::map<std::string, std::vector<long long>> &rulesForFunction) const;

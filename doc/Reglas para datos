@@ -50,7 +50,18 @@ a = segundo_operador + 1
 a = segundo_operador - 1
 
 ----------------------------------------------------------
-Regla 2: Asignaciones con valores
+Regla 2: Rangos con && o ||
+
+function(a):
+	if (a >= 10 && a < 20)
+	if (a <= -2 || a >= 6)
+====================================
+Para rangos con &&, se priorizan valores dentro del rango:
+limite_inferior, limite_inferior+1, limite_superior, limite_superior-1.
+Para || se combinan los candidatos de ambas comparaciones.
+
+----------------------------------------------------------
+Regla 3: Asignaciones con valores
 function(a):
 	a = 1;
 	a = 2 + 2;
@@ -60,7 +71,7 @@ a = 0;
 a = a + 1;
 
 ----------------------------------------------------------
-Regla 3: Switch case
+Regla 4: Switch case
 function(a):
 	switch(a){
 		case 1:{}
@@ -70,8 +81,13 @@ function(a):
 Asignar cada case + un valor extra que sea el último más uno
 
 ===================================
-Regla 4: Si tiene parámetros por defecto, comprobar la llamada
+Regla 5: Si tiene parámetros por defecto, comprobar la llamada
 asignando ese valor y sin asignarlo.
+
+----------------------------------------------------------
+Regla 6: Constantes y enums
+Se aceptan comparaciones con valores de enum, constantes const/constexpr
+o macros que expandan a enteros.
 
 
 ===================================

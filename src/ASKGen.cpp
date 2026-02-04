@@ -17,6 +17,7 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/Stmt.h"
+#include "clang/AST/Decl.h"
 
 using namespace clang::ast_matchers;
 using namespace clang;
@@ -31,6 +32,22 @@ std::optional<long long> extractIntegerValue(const Expr *expr) {
     const Expr *cleanExpr = expr->IgnoreParenImpCasts();
     if (const auto *intLiteral = dyn_cast<IntegerLiteral>(cleanExpr)) {
         return intLiteral->getValue().getSExtValue();
+    }
+
+    if (const auto *boolLiteral = dyn_cast<CXXBoolLiteralExpr>(cleanExpr)) {
+        return boolLiteral->getValue() ? 1 : 0;
+    }
+
+    if (const auto *declRef = dyn_cast<DeclRefExpr>(cleanExpr)) {
+        if (const auto *enumConstant = dyn_cast<EnumConstantDecl>(declRef->getDecl())) {
+            return enumConstant->getInitVal().getSExtValue();
+        }
+
+        if (const auto *varDecl = dyn_cast<VarDecl>(declRef->getDecl())) {
+            if (varDecl->hasInit()) {
+                return extractIntegerValue(varDecl->getInit());
+            }
+        }
     }
 
     if (const auto *unary = dyn_cast<UnaryOperator>(cleanExpr)) {
@@ -363,18 +380,36 @@ void ASKGen::addRuleValues(const FunctionDecl *FD, const ParmVarDecl *param,
         return;
     }
 
-    auto &perFunc = ruleValues[FD->getName().str()];
-    const std::string paramName = param->getName().str();
-    const std::string paramQualified = param->getQualifiedNameAsString();
+    addRuleValuesForParamName(FD, param->getName().str(), candidates);
+    addRuleValuesForParamName(FD, param->getQualifiedNameAsString(), candidates);
+}
 
-    for (const auto &key : {paramName, paramQualified}) {
-        if (key.empty())
-            continue;
-        auto &vals = perFunc[key];
-        for (long long v : candidates) {
-            if (std::find(vals.begin(), vals.end(), v) == vals.end())
-                vals.push_back(v);
-        }
+void ASKGen::addRuleValuesForParamName(
+    const FunctionDecl *FD, const std::string &paramName,
+    const std::vector<long long> &candidates) {
+    if (paramName.empty() || !FD)
+        return;
+
+    auto &perFunc = ruleValues[FD->getName().str()];
+    auto &vals = perFunc[paramName];
+    for (long long v : candidates) {
+        if (std::find(vals.begin(), vals.end(), v) == vals.end())
+            vals.push_back(v);
+    }
+}
+
+void ASKGen::setRuleValuesForParamName(
+    const FunctionDecl *FD, const std::string &paramName,
+    const std::vector<long long> &candidates) {
+    if (paramName.empty() || !FD)
+        return;
+
+    auto &perFunc = ruleValues[FD->getName().str()];
+    auto &vals = perFunc[paramName];
+    vals.clear();
+    for (long long v : candidates) {
+        if (std::find(vals.begin(), vals.end(), v) == vals.end())
+            vals.push_back(v);
     }
 }
 
@@ -399,9 +434,15 @@ void ASKGen::collectRuleValuesFromFunction(const FunctionDecl *FD) {
     public:
         RuleVisitor(ASKGen &owner, const FunctionDecl *fd) : owner(owner), fd(fd) {}
 
-        bool VisitBinaryOperator(BinaryOperator *op) {
-            if (!op)
-                return true;
+        struct ComparisonInfo {
+            const ParmVarDecl *param = nullptr;
+            long long literalValue = 0;
+            BinaryOperatorKind opcode = BO_EQ;
+        };
+
+        std::optional<ComparisonInfo> extractComparison(BinaryOperator *op) const {
+            if (!op || !op->isComparisonOp())
+                return std::nullopt;
 
             const Expr *lhs = op->getLHS()->IgnoreParenImpCasts();
             const Expr *rhs = op->getRHS()->IgnoreParenImpCasts();
@@ -410,36 +451,191 @@ void ASKGen::collectRuleValuesFromFunction(const FunctionDecl *FD) {
             const auto lhsValue = extractIntegerValue(lhs);
             const auto rhsValue = extractIntegerValue(rhs);
 
-            const ParmVarDecl *param = nullptr;
-            long long literalValue = 0;
-            BinaryOperatorKind opcode = op->getOpcode();
+            ComparisonInfo info;
+            info.opcode = op->getOpcode();
 
             if (lhsRef && rhsValue.has_value()) {
-                param = dyn_cast<ParmVarDecl>(lhsRef->getDecl());
-                literalValue = rhsValue.value();
-            } else if (rhsRef && lhsValue.has_value()) {
-                param = dyn_cast<ParmVarDecl>(rhsRef->getDecl());
-                literalValue = lhsValue.value();
-                switch (opcode) {
+                info.param = dyn_cast<ParmVarDecl>(lhsRef->getDecl());
+                info.literalValue = rhsValue.value();
+                return info;
+            }
+
+            if (rhsRef && lhsValue.has_value()) {
+                info.param = dyn_cast<ParmVarDecl>(rhsRef->getDecl());
+                info.literalValue = lhsValue.value();
+                switch (info.opcode) {
                 case BO_LT:
-                    opcode = BO_GT;
+                    info.opcode = BO_GT;
                     break;
                 case BO_LE:
-                    opcode = BO_GE;
+                    info.opcode = BO_GE;
                     break;
                 case BO_GT:
-                    opcode = BO_LT;
+                    info.opcode = BO_LT;
                     break;
                 case BO_GE:
-                    opcode = BO_LE;
+                    info.opcode = BO_LE;
                     break;
                 default:
                     break;
                 }
+                return info;
             }
 
-            if (param)
-                owner.addRuleValues(fd, param, opcode, literalValue);
+            return std::nullopt;
+        }
+
+        bool TraverseBinaryOperator(BinaryOperator *op) {
+            if (!op)
+                return true;
+
+            if (op->getOpcode() == BO_LAnd || op->getOpcode() == BO_LOr) {
+                handleLogicalOperator(op);
+                return true;
+            }
+
+            return RecursiveASTVisitor<RuleVisitor>::TraverseBinaryOperator(op);
+        }
+
+        bool VisitBinaryOperator(BinaryOperator *op) {
+            if (!op || !op->isComparisonOp())
+                return true;
+
+            auto comp = extractComparison(op);
+            if (comp && comp->param) {
+                owner.addRuleValues(fd, comp->param, comp->opcode,
+                                    comp->literalValue);
+            }
+            return true;
+        }
+
+        void handleLogicalOperator(BinaryOperator *op) {
+            auto *lhsOp = dyn_cast<BinaryOperator>(op->getLHS()->IgnoreParenImpCasts());
+            auto *rhsOp = dyn_cast<BinaryOperator>(op->getRHS()->IgnoreParenImpCasts());
+            auto lhsComp = extractComparison(lhsOp);
+            auto rhsComp = extractComparison(rhsOp);
+            if (!lhsComp || !rhsComp || lhsComp->param != rhsComp->param ||
+                !lhsComp->param) {
+                return;
+            }
+
+            if (op->getOpcode() == BO_LOr) {
+                owner.addRuleValues(fd, lhsComp->param, lhsComp->opcode,
+                                    lhsComp->literalValue);
+                owner.addRuleValues(fd, rhsComp->param, rhsComp->opcode,
+                                    rhsComp->literalValue);
+                return;
+            }
+
+            std::optional<long long> lowerBound;
+            std::optional<long long> upperBound;
+
+            auto applyBound = [&](const ComparisonInfo &info) {
+                switch (info.opcode) {
+                case BO_GT:
+                    if (!lowerBound || *lowerBound < info.literalValue + 1)
+                        lowerBound = info.literalValue + 1;
+                    break;
+                case BO_GE:
+                    if (!lowerBound || *lowerBound < info.literalValue)
+                        lowerBound = info.literalValue;
+                    break;
+                case BO_LT:
+                    if (!upperBound || *upperBound > info.literalValue - 1)
+                        upperBound = info.literalValue - 1;
+                    break;
+                case BO_LE:
+                    if (!upperBound || *upperBound > info.literalValue)
+                        upperBound = info.literalValue;
+                    break;
+                default:
+                    break;
+                }
+            };
+
+            applyBound(*lhsComp);
+            applyBound(*rhsComp);
+
+            if (lowerBound && upperBound && *lowerBound <= *upperBound) {
+                std::vector<long long> candidates;
+                candidates.push_back(*lowerBound);
+                if (*lowerBound + 1 <= *upperBound)
+                    candidates.push_back(*lowerBound + 1);
+                if (*upperBound >= *lowerBound) {
+                    long long highEdge = *upperBound;
+                    if (std::find(candidates.begin(), candidates.end(), highEdge) ==
+                        candidates.end())
+                        candidates.push_back(highEdge);
+                    long long nearHigh = highEdge - 1;
+                    if (nearHigh >= *lowerBound &&
+                        std::find(candidates.begin(), candidates.end(), nearHigh) ==
+                            candidates.end())
+                        candidates.push_back(nearHigh);
+                }
+
+                owner.setRuleValuesForParamName(
+                    fd, lhsComp->param->getName().str(), candidates);
+                owner.setRuleValuesForParamName(
+                    fd, lhsComp->param->getQualifiedNameAsString(), candidates);
+            } else {
+                owner.addRuleValues(fd, lhsComp->param, lhsComp->opcode,
+                                    lhsComp->literalValue);
+                owner.addRuleValues(fd, rhsComp->param, rhsComp->opcode,
+                                    rhsComp->literalValue);
+            }
+        }
+
+        bool VisitSwitchStmt(SwitchStmt *stmt) {
+            if (!stmt)
+                return true;
+
+            const Expr *cond = stmt->getCond();
+            if (!cond)
+                return true;
+
+            const Expr *condExpr = cond->IgnoreParenImpCasts();
+            const auto *condRef = dyn_cast<DeclRefExpr>(condExpr);
+            if (!condRef)
+                return true;
+
+            const auto *param = dyn_cast<ParmVarDecl>(condRef->getDecl());
+            if (!param)
+                return true;
+
+            std::vector<long long> candidates;
+            long long maxValue = 0;
+            bool hasValue = false;
+
+            for (SwitchCase *caseStmt = stmt->getSwitchCaseList(); caseStmt;
+                 caseStmt = caseStmt->getNextSwitchCase()) {
+                if (auto *caseClause = dyn_cast<CaseStmt>(caseStmt)) {
+                    if (auto value = extractIntegerValue(caseClause->getLHS())) {
+                        candidates.push_back(*value);
+                        if (!hasValue || *value > maxValue)
+                            maxValue = *value;
+                        hasValue = true;
+                    }
+                    if (caseClause->getRHS()) {
+                        if (auto rhsValue =
+                                extractIntegerValue(caseClause->getRHS())) {
+                            candidates.push_back(*rhsValue);
+                            if (!hasValue || *rhsValue > maxValue)
+                                maxValue = *rhsValue;
+                            hasValue = true;
+                        }
+                    }
+                }
+            }
+
+            if (!candidates.empty()) {
+                std::reverse(candidates.begin(), candidates.end());
+                if (hasValue)
+                    candidates.push_back(maxValue + 1);
+                owner.addRuleValuesForParamName(
+                    fd, param->getName().str(), candidates);
+                owner.addRuleValuesForParamName(
+                    fd, param->getQualifiedNameAsString(), candidates);
+            }
 
             return true;
         }
