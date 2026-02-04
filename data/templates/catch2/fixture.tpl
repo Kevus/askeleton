@@ -5,7 +5,7 @@
 //                                                                          ////
 ////////////////////////////////////////////////////////////////////////////////
 // File generated automatically by ASKELETON
-// Template originally created for LATEGEN
+// Template originally created for ASKELETON
 // File to test: {filePath}
 // DESCRIPTION: This file sets tests cases for {target}
 // DATE: {dateOfGeneration}

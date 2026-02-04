@@ -35,6 +35,7 @@ public:
 
     std::string getRandomValue(std::string type, int nparams = 5);
     void setSeed(uint32_t seed);
+    // Controls how values are selected for boundary, safe, or stress scenarios.
     void setProfile(RandomProfile profile);
 
 private:
