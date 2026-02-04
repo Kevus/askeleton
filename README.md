@@ -37,6 +37,16 @@ scripts/sanity_types.sh
 ASKELETON_HOME=$(pwd) ./askeleton -p examples examples/sut.cpp
 ```
 
+**Sample Output**
+Example snippet from `Generated/UT/sut/sut.cfg`:
+```cfg
+classify_1:
+{
+    a=9;#int
+    return_int=42;#int
+};
+```
+
 **Data Generation**
 Rule-based values from simple AST comparisons:
 ```bash
@@ -77,6 +87,9 @@ is omitted, ASkeleTon searches parent paths of the first input file.
 ASkeleTon focuses on generating compilable test scaffolding and data files. It
 does not validate business logic or automatically create assertions beyond the
 framework templates. Complex or opaque types may require manual fixture edits.
+
+**Compatibility**
+Validated with clang/llvm 15. Other versions may work, but are not guaranteed.
 
 **Troubleshooting**
 - `compile_commands.json` not found: pass `-p <build-path>` pointing to the build
