@@ -18,6 +18,9 @@ ASKELETON_HOME=$(pwd) ./askeleton --profile=stress -p examples examples/sut.cpp
 4) Determinismo
 ASKELETON_HOME=$(pwd) ./askeleton --seed=123 -p examples examples/sut.cpp
 
+Automatizado:
+scripts/check_all.sh
+
 Resultados esperados
 - Se generan archivos en Generated/UT/<target>/
 - El cfg contiene valores no vacios en perfiles random/safe.
