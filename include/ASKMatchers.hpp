@@ -12,4 +12,4 @@ using namespace clang::ast_matchers::internal;
 } // namespace clang
 
 std::map<std::string, clang::ast_matchers::DeclarationMatcher>
-createMapMatchers();
+createMapMatchers(bool includeDataMatchers);

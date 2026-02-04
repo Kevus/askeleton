@@ -186,7 +186,7 @@ int main(int argc, const char **argv) {
 
     clang::ast_matchers::MatchFinder Finder;
     ASKGen Functionality(RuleDataOption, RuleMaxCasesOption);
-    for (auto i : createMapMatchers())
+    for (auto i : createMapMatchers(RuleDataOption))
         Finder.addMatcher(i.second, &Functionality);
 
     ClangTool Tool(options->getCompilations(), options->getSourcePathList());

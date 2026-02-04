@@ -61,6 +61,34 @@ std::optional<long long> extractIntegerValue(const Expr *expr) {
 
     return std::nullopt;
 }
+
+std::optional<std::string> extractStringLiteral(const Expr *expr) {
+    if (!expr)
+        return std::nullopt;
+
+    const Expr *cleanExpr = expr->IgnoreParenImpCasts();
+    if (const auto *literal = dyn_cast<StringLiteral>(cleanExpr)) {
+        return literal->getString().str();
+    }
+
+    if (const auto *materialize = dyn_cast<MaterializeTemporaryExpr>(cleanExpr)) {
+        return extractStringLiteral(materialize->getSubExpr());
+    }
+
+    if (const auto *bindTemp = dyn_cast<CXXBindTemporaryExpr>(cleanExpr)) {
+        return extractStringLiteral(bindTemp->getSubExpr());
+    }
+
+    if (const auto *construct = dyn_cast<CXXConstructExpr>(cleanExpr)) {
+        for (const Expr *arg : construct->arguments()) {
+            if (auto value = extractStringLiteral(arg)) {
+                return value;
+            }
+        }
+    }
+
+    return std::nullopt;
+}
 } // namespace
 
 ASKGen::ASKGen(bool ruleDataEnabled, unsigned ruleMaxCases)
@@ -467,9 +495,8 @@ void ASKGen::collectRuleValuesFromFunction(const FunctionDecl *FD) {
             addAssignmentRuleValues(FD, param, result.Val.getInt().getSExtValue());
         } else if (auto value = extractIntegerValue(defaultExpr)) {
             addAssignmentRuleValues(FD, param, value.value());
-        } else if (const auto *literal =
-                       dyn_cast<StringLiteral>(defaultExpr->IgnoreParenImpCasts())) {
-            std::string rawValue = literal->getString().str();
+        } else if (auto strValue = extractStringLiteral(defaultExpr)) {
+            std::string rawValue = strValue.value();
             std::vector<std::string> candidates = {rawValue};
             if (!rawValue.empty()) {
                 candidates.push_back(rawValue + "_alt");
