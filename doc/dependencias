@@ -13,3 +13,6 @@ Opcional:
 Notas:
 - Las versiones de LLVM/Clang deben coincidir con las del Makefile.
 - Puede que no necesitemos instalar todos.
+
+Pruebas rápidas:
+- scripts/sanity_types.sh

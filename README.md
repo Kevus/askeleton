@@ -1,5 +1,31 @@
 Please set the enviromental variable ASKELETON_HOME to the source path.
 
+Requirements (Ubuntu/Debian):
+- clang-15
+- llvm-15
+- llvm-config-15
+- libclang-15-dev
+- (optional) g++-12 / gcc-12
+- (optional) libboost-dev
+
+Build (LLVM/Clang 15):
+```
+make
+```
+
+Optional sanitizer build (AddressSanitizer):
+```
+make clean
+make CXXFLAGS='-std=c++20 -Wall -Wextra -Wcast-qual -Wwrite-strings -Wno-unused-parameter -Wdelete-non-virtual-dtor -fPIC -ffunction-sections -fdata-sections -fsanitize=address -fno-omit-frame-pointer' \
+    DEBUG_FLAGS='' OPTIMIZATION_FLAGS='-O1' \
+    CLANGLIBS="$(llvm-config-15 --ldflags --system-libs --libs | tr '\n' ' ') -lclangFrontend -lclangSerialization -lclangDriver -lclangTooling -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangAST -lclangASTMatchers -lclangLex -lclangBasic -lclangRewrite -lclangRewriteFrontend -lclangSupport -fsanitize=address"
+```
+
+Quick sanity check:
+```
+scripts/sanity_types.sh
+```
+
 USAGE: askeleton [options] <source0> [... <sourceN>]
 
 OPTIONS:
@@ -38,4 +64,4 @@ Generic Options:
 
 If you are working with C++ headers use the option -xc++ at the end.
 Author: Kevin J. Valle-Gomez (kevin.valle@uca.es)
-
+Acknowledgements: José Manuel Heredia Bravo for his constant maintenance, support and help.
