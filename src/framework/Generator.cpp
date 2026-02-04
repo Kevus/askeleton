@@ -485,6 +485,12 @@ void Generator::setRuleValues(
     configGenerator.setRuleValues(rules);
 }
 
+void Generator::setStringRuleValues(
+    const std::map<std::string, std::map<std::string, std::vector<std::string>>>
+        &rules) {
+    configGenerator.setStringRuleValues(rules);
+}
+
 std::string Generator::getMethodTemplatePath(const std::string &methodTemplate) {
     const static fs::path methodsTplPath =
         getAskeletonHome() / config["route"]["templates"];

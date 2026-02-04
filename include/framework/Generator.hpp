@@ -48,6 +48,9 @@ public:
 
     void setRuleValues(const std::map<std::string,
                                       std::map<std::string, std::vector<long long>>> &rules);
+    void setStringRuleValues(
+        const std::map<std::string, std::map<std::string, std::vector<std::string>>>
+            &rules);
 
 protected:
     virtual void generateFullAssert(const std::string &function,

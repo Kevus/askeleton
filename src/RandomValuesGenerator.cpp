@@ -122,6 +122,10 @@ int RandomValuesGenerator::pickStringLength() {
 
 int RandomValuesGenerator::pickIntBoundary(int minVal, int maxVal) {
     vector<int> candidates = {minVal, minVal + 1, -1, 0, 1, maxVal - 1, maxVal};
+    candidates.erase(
+        remove_if(candidates.begin(), candidates.end(),
+                  [minVal, maxVal](int v) { return v < minVal || v > maxVal; }),
+        candidates.end());
     uniform_int_distribution<int> dis(0, static_cast<int>(candidates.size()) - 1);
     return candidates[dis(gen)];
 }
@@ -325,6 +329,10 @@ string RandomValuesGenerator::getRandomShort() {
     if (profile == RandomProfile::Boundary) {
         return to_string(pickIntBoundary(-100, 100));
     }
+    if (profile == RandomProfile::Safe) {
+        uniform_int_distribution<> dis(1, 100);
+        return to_string(dis(gen));
+    }
     uniform_int_distribution<> dis(-100, 100);
     return to_string(dis(gen));
 }
@@ -332,6 +340,10 @@ string RandomValuesGenerator::getRandomShort() {
 string RandomValuesGenerator::getRandomUnsignedShort() {
     if (profile == RandomProfile::Boundary) {
         return to_string(pickIntBoundary(0, 100));
+    }
+    if (profile == RandomProfile::Safe) {
+        uniform_int_distribution<> dis(1, 100);
+        return to_string(dis(gen));
     }
     uniform_int_distribution<> dis(0, 100);
     return to_string(dis(gen));
@@ -341,6 +353,10 @@ string RandomValuesGenerator::getRandomInt() {
     if (profile == RandomProfile::Boundary) {
         return to_string(pickIntBoundary(-100, 100));
     }
+    if (profile == RandomProfile::Safe) {
+        uniform_int_distribution<> dis(1, 100);
+        return to_string(dis(gen));
+    }
     uniform_int_distribution<> dis(-100, 100);
     return to_string(dis(gen));
 }
@@ -348,6 +364,10 @@ string RandomValuesGenerator::getRandomInt() {
 string RandomValuesGenerator::getRandomUnsigned() {
     if (profile == RandomProfile::Boundary) {
         return to_string(pickIntBoundary(0, 100));
+    }
+    if (profile == RandomProfile::Safe) {
+        uniform_int_distribution<> dis(1, 100);
+        return to_string(dis(gen));
     }
     uniform_int_distribution<> dis(0, 100);
     return to_string(dis(gen));
@@ -357,6 +377,10 @@ string RandomValuesGenerator::getRandomLong() {
     if (profile == RandomProfile::Boundary) {
         return to_string(pickLongBoundary(-100, 100));
     }
+    if (profile == RandomProfile::Safe) {
+        uniform_int_distribution<> dis(1, 100);
+        return to_string(dis(gen));
+    }
     uniform_int_distribution<> dis(-100, 100);
     return to_string(dis(gen));
 }
@@ -364,6 +388,10 @@ string RandomValuesGenerator::getRandomLong() {
 string RandomValuesGenerator::getRandomUnsignedLong() {
     if (profile == RandomProfile::Boundary) {
         return to_string(pickLongBoundary(0, 100));
+    }
+    if (profile == RandomProfile::Safe) {
+        uniform_int_distribution<> dis(1, 100);
+        return to_string(dis(gen));
     }
     uniform_int_distribution<> dis(0, 100);
     return to_string(dis(gen));
@@ -373,6 +401,10 @@ string RandomValuesGenerator::getRandomLongLong() {
     if (profile == RandomProfile::Boundary) {
         return to_string(pickLongBoundary(-100, 100));
     }
+    if (profile == RandomProfile::Safe) {
+        uniform_int_distribution<> dis(1, 100);
+        return to_string(dis(gen));
+    }
     uniform_int_distribution<> dis(-100, 100);
     return to_string(dis(gen));
 }
@@ -380,6 +412,10 @@ string RandomValuesGenerator::getRandomLongLong() {
 string RandomValuesGenerator::getRandomUnsignedLongLong() {
     if (profile == RandomProfile::Boundary) {
         return to_string(pickLongBoundary(0, 100));
+    }
+    if (profile == RandomProfile::Safe) {
+        uniform_int_distribution<> dis(1, 100);
+        return to_string(dis(gen));
     }
     uniform_int_distribution<> dis(0, 100);
     return to_string(dis(gen));

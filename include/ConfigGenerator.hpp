@@ -16,6 +16,9 @@ public:
 
     void setRuleValues(const std::map<std::string,
                                       std::map<std::string, std::vector<long long>>> &rules);
+    void setStringRuleValues(
+        const std::map<std::string, std::map<std::string, std::vector<std::string>>>
+            &rules);
     static void setSeed(uint32_t seed);
     static void setProfile(const std::string &profileName);
 
@@ -42,6 +45,7 @@ private:
     mutable std::string currentFunctionName;
     mutable unsigned currentInvocation = 1;
     std::map<std::string, std::map<std::string, std::vector<long long>>> ruleValues;
+    std::map<std::string, std::map<std::string, std::vector<std::string>>> ruleStringValues;
 
     static const nlohmann::json &config;
     static const nlohmann::json &tplItems;

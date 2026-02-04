@@ -396,6 +396,19 @@ void ASKGen::addAssignmentRuleValues(const FunctionDecl *FD,
     addRuleValuesForParamName(FD, param->getQualifiedNameAsString(), candidates);
 }
 
+void ASKGen::addStringRuleValuesForParamName(
+    const FunctionDecl *FD, const std::string &paramName,
+    const std::vector<std::string> &candidates) {
+    if (paramName.empty() || !FD)
+        return;
+
+    auto &perFunc = ruleStringValues[FD->getName().str()];
+    auto &vals = perFunc[paramName];
+    for (const auto &v : candidates) {
+        if (std::find(vals.begin(), vals.end(), v) == vals.end())
+            vals.push_back(v);
+    }
+}
 void ASKGen::addRuleValuesForParamName(
     const FunctionDecl *FD, const std::string &paramName,
     const std::vector<long long> &candidates) {
@@ -454,6 +467,19 @@ void ASKGen::collectRuleValuesFromFunction(const FunctionDecl *FD) {
             addAssignmentRuleValues(FD, param, result.Val.getInt().getSExtValue());
         } else if (auto value = extractIntegerValue(defaultExpr)) {
             addAssignmentRuleValues(FD, param, value.value());
+        } else if (const auto *literal =
+                       dyn_cast<StringLiteral>(defaultExpr->IgnoreParenImpCasts())) {
+            std::string rawValue = literal->getString().str();
+            std::vector<std::string> candidates = {rawValue};
+            if (!rawValue.empty()) {
+                candidates.push_back(rawValue + "_alt");
+            } else {
+                candidates.push_back("alt");
+            }
+            addStringRuleValuesForParamName(FD, param->getName().str(),
+                                            candidates);
+            addStringRuleValuesForParamName(
+                FD, param->getQualifiedNameAsString(), candidates);
         }
     }
 
@@ -922,6 +948,12 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
             configGenerator.setRuleValues({{UT->getName().str(), rulesForFunction}});
             ruleInvocations = computeRuleInvocationLimit(rulesForFunction);
         }
+        auto strIt = ruleStringValues.find(UT->getName().str());
+        if (strIt != ruleStringValues.end()) {
+            testGen.setStringRuleValues({{UT->getName().str(), strIt->second}});
+            configGenerator.setStringRuleValues(
+                {{UT->getName().str(), strIt->second}});
+        }
     }
     InfoType returnType(UT->getReturnType());
     std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
@@ -954,6 +986,12 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
             testGen.setRuleValues({{UT->getName().str(), rulesForFunction}});
             configGenerator.setRuleValues({{UT->getName().str(), rulesForFunction}});
             ruleInvocations = computeRuleInvocationLimit(rulesForFunction);
+        }
+        auto strIt = ruleStringValues.find(UT->getName().str());
+        if (strIt != ruleStringValues.end()) {
+            testGen.setStringRuleValues({{UT->getName().str(), strIt->second}});
+            configGenerator.setStringRuleValues(
+                {{UT->getName().str(), strIt->second}});
         }
     }
     InfoType returnType(UT->getReturnType());

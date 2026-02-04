@@ -46,6 +46,12 @@ void ConfigGenerator::setRuleValues(
     ruleValues = rules;
 }
 
+void ConfigGenerator::setStringRuleValues(
+    const std::map<std::string, std::map<std::string, std::vector<std::string>>>
+        &rules) {
+    ruleStringValues = rules;
+}
+
 void ConfigGenerator::setSeed(uint32_t seed) {
     rvg.setSeed(seed);
     seedValue = seed;
@@ -121,6 +127,17 @@ std::string ConfigGenerator::generateParam(const InfoVariable &param,
     }
 
     string value;
+    auto funcStrIt = ruleStringValues.find(currentFunctionName);
+    if (funcStrIt != ruleStringValues.end() &&
+        containsSubstring(underlying.original, "string")) {
+        const auto &paramRules = funcStrIt->second;
+        auto ruleIt = paramRules.find(param.name);
+        if (ruleIt != paramRules.end() && !ruleIt->second.empty()) {
+            const auto &vals = ruleIt->second;
+            value = vals[(currentInvocation - 1) % vals.size()];
+        }
+    }
+
     auto funcIt = ruleValues.find(currentFunctionName);
     if (funcIt != ruleValues.end()) {
         const auto &paramRules = funcIt->second;

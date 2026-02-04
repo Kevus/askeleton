@@ -78,6 +78,13 @@ ASkeleTon focuses on generating compilable test scaffolding and data files. It
 does not validate business logic or automatically create assertions beyond the
 framework templates. Complex or opaque types may require manual fixture edits.
 
+**Troubleshooting**
+- `compile_commands.json` not found: pass `-p <build-path>` pointing to the build
+  directory that contains it.
+- Headers not found in the fixture: add the correct include manually in the
+  generated `*_fixture.hpp`.
+- Empty containers: expected in `boundary` profile; use `random` or `safe` to avoid.
+
 Architecture overview: see `doc/Arquitectura.md`.
 Rule catalog: see `doc/Reglas para datos`.
 Release checklist: see `doc/Checklist.md`.

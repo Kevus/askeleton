@@ -76,6 +76,9 @@ private:
     void addAssignmentRuleValues(const clang::FunctionDecl *FD,
                                  const clang::ParmVarDecl *param,
                                  long long assignedValue);
+    void addStringRuleValuesForParamName(
+        const clang::FunctionDecl *FD, const std::string &paramName,
+        const std::vector<std::string> &candidates);
 
     unsigned computeRuleInvocationLimit(
         const std::map<std::string, std::vector<long long>> &rulesForFunction) const;
@@ -83,6 +86,8 @@ private:
     bool ruleDataEnabled = false;
     unsigned ruleMaxCases = 3;
     std::map<std::string, std::map<std::string, std::vector<long long>>> ruleValues;
+    std::map<std::string, std::map<std::string, std::vector<std::string>>>
+        ruleStringValues;
 
     std::map<std::string, int> function_occurrences;
 
