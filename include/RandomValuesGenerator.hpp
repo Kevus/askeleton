@@ -3,6 +3,7 @@
 #include <map>
 #include <random>
 #include <string>
+#include <vector>
 
 enum Options {
     Invalid_Type,
@@ -23,16 +24,20 @@ enum Options {
 
 class RandomValuesGenerator {
 public:
-    RandomValuesGenerator() {}
+    RandomValuesGenerator();
 
     std::string getRandomValue(std::string type, int nparams = 5);
+    void setSeed(uint32_t seed);
 
 private:
     std::random_device rd;
+    std::mt19937 gen;
 
     Options resolveOption(std::string type);
 
     static const std::map<std::string, Options> optionString;
+
+    int pickContainerSize();
 
     std::string getRandomList(std::string inner_type);
     std::string getRandomMap(std::string key_type, std::string value_type);

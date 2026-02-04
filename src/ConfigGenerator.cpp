@@ -37,6 +37,8 @@ void ConfigGenerator::setRuleValues(
     ruleValues = rules;
 }
 
+void ConfigGenerator::setSeed(uint32_t seed) { rvg.setSeed(seed); }
+
 void ConfigGenerator::generateTestCase(const string &functionName,
                                        const vector<InfoVariable> &params,
                                        const InfoType &returnType,

@@ -39,6 +39,10 @@ Limit to 2 cases:
 ```
 ASKELETON_HOME=$(pwd) ./askeleton --rule-data --rule-max-cases=2 -p examples examples/sut.cpp
 ```
+Deterministic data (seeded):
+```
+ASKELETON_HOME=$(pwd) ./askeleton --seed=123 -p examples examples/sut.cpp
+```
 
 USAGE: askeleton [options] <source0> [... <sourceN>]
 

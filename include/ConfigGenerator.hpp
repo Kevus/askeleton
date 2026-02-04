@@ -15,6 +15,7 @@ public:
 
     void setRuleValues(const std::map<std::string,
                                       std::map<std::string, std::vector<long long>>> &rules);
+    static void setSeed(uint32_t seed);
 
     void generateTestCase(const std::string &functionName,
                           const std::vector<InfoVariable> &params,

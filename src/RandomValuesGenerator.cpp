@@ -1,12 +1,15 @@
 #include "RandomValuesGenerator.hpp"
 
 #include <fstream>
+#include <iomanip>
 #include <sstream>
 #include <string>
 
 #include "utils/strings.hpp"
 
 using namespace std;
+
+RandomValuesGenerator::RandomValuesGenerator() : gen(rd()) {}
 
 const map<string, Options> RandomValuesGenerator::optionString{
     {"char", Char},
@@ -69,6 +72,14 @@ Options RandomValuesGenerator::resolveOption(string type) {
         return it->second;
     else
         return Invalid_Type;
+}
+
+void RandomValuesGenerator::setSeed(uint32_t seed) { gen.seed(seed); }
+
+int RandomValuesGenerator::pickContainerSize() {
+    const vector<int> sizes = {0, 1, 3, 5, 8};
+    uniform_int_distribution<int> dis(0, static_cast<int>(sizes.size()) - 1);
+    return sizes[dis(gen)];
 }
 
 string RandomValuesGenerator::getRandomValue(string type, int nparams) {
@@ -168,12 +179,12 @@ string RandomValuesGenerator::getRandomValue(string type, int nparams) {
             stringstream ss;
             ss << "{";
 
-            // int for_iterator = 5;
-            for (int i = 0; i < nparams; i++) {
+            const int mapSize = pickContainerSize();
+            for (int i = 0; i < mapSize; i++) {
                 ss << "(" << getRandomValue(firstType) << ","
                    << getRandomValue(secondType) << ")";
 
-                if (i < nparams - 1)
+                if (i < mapSize - 1)
                     ss << ",";
             }
 
@@ -203,10 +214,10 @@ string RandomValuesGenerator::getRandomValue(string type, int nparams) {
             stringstream ss;
             ss << "{";
 
-            // int for_iterator = 5;
-            for (int i = 0; i < nparams; i++) {
+            const int listSize = pickContainerSize();
+            for (int i = 0; i < listSize; i++) {
                 ss << getRandomValue(newType);
-                if (i < nparams - 1)
+                if (i < listSize - 1)
                     ss << ",";
             }
 
@@ -238,75 +249,79 @@ string RandomValuesGenerator::getRandomValue(string type, int nparams) {
 }
 
 string RandomValuesGenerator::getRandomChar() {
-    mt19937 gen(rd());
-    uniform_int_distribution<> dis(1, 9);
-    return to_string(dis(gen));
+    uniform_int_distribution<> dis(97, 122);
+    char value = static_cast<char>(dis(gen));
+    return string(1, value);
 }
 
 string RandomValuesGenerator::getRandomShort() {
-    mt19937 gen(rd());
     uniform_int_distribution<> dis(-100, 100);
     return to_string(dis(gen));
 }
 
 string RandomValuesGenerator::getRandomUnsignedShort() {
-    mt19937 gen(rd());
     uniform_int_distribution<> dis(0, 100);
     return to_string(dis(gen));
 }
 
 string RandomValuesGenerator::getRandomInt() {
-    mt19937 gen(rd());
     uniform_int_distribution<> dis(-100, 100);
     return to_string(dis(gen));
 }
 
 string RandomValuesGenerator::getRandomUnsigned() {
-    mt19937 gen(rd());
-    uniform_int_distribution<> dis(-100, 100);
+    uniform_int_distribution<> dis(0, 100);
     return to_string(dis(gen));
 }
 
 string RandomValuesGenerator::getRandomLong() {
-    mt19937 gen(rd());
     uniform_int_distribution<> dis(-100, 100);
     return to_string(dis(gen));
 }
 
 string RandomValuesGenerator::getRandomUnsignedLong() {
-    mt19937 gen(rd());
-    uniform_int_distribution<> dis(-100, 100);
+    uniform_int_distribution<> dis(0, 100);
     return to_string(dis(gen));
 }
 
 string RandomValuesGenerator::getRandomLongLong() {
-    mt19937 gen(rd());
     uniform_int_distribution<> dis(-100, 100);
     return to_string(dis(gen));
 }
 
 string RandomValuesGenerator::getRandomUnsignedLongLong() {
-    mt19937 gen(rd());
-    uniform_int_distribution<> dis(-100, 100);
+    uniform_int_distribution<> dis(0, 100);
     return to_string(dis(gen));
 }
 
 string RandomValuesGenerator::getRandomDouble() {
-    mt19937 gen(rd());
-    exponential_distribution<> dis(1);
-    return to_string(dis(gen));
+    uniform_real_distribution<double> dis(-100.0, 100.0);
+    ostringstream oss;
+    oss << fixed << setprecision(3) << dis(gen);
+    return oss.str();
 }
 
 string RandomValuesGenerator::getRandomFloat() {
-    mt19937 gen(rd());
-    exponential_distribution<> dis(1);
-    return to_string(dis(gen));
+    uniform_real_distribution<float> dis(-100.0f, 100.0f);
+    ostringstream oss;
+    oss << fixed << setprecision(3) << dis(gen);
+    return oss.str();
 }
 
 string RandomValuesGenerator::getRandomBool() {
-    mt19937 gen(rd());
     bernoulli_distribution dis(0.5);
     return dis(gen) ? "true" : "false";
 }
 
-string RandomValuesGenerator::getRandomString() { return "randomString"; }
+string RandomValuesGenerator::getRandomString() {
+    const vector<int> lengths = {1, 3, 8, 16};
+    uniform_int_distribution<int> lenDis(0, static_cast<int>(lengths.size()) - 1);
+    uniform_int_distribution<int> chDis(97, 122);
+    const int length = lengths[lenDis(gen)];
+    string result;
+    result.reserve(static_cast<size_t>(length));
+    for (int i = 0; i < length; ++i) {
+        result.push_back(static_cast<char>(chDis(gen)));
+    }
+    return result;
+}

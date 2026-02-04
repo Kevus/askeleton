@@ -2,6 +2,7 @@
 #include "ASKMatchers.hpp"
 #include "color.h"
 #include "framework/Generator.hpp"
+#include "ConfigGenerator.hpp"
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -128,6 +129,10 @@ cl::opt<unsigned> RuleMaxCasesOption(
     "rule-max-cases",
     cl::desc("Max number of rule-based cases to generate per function (default: 3)"),
     cl::init(3), cl::cat(OptC));
+cl::opt<int> SeedOption(
+    "seed",
+    cl::desc("Seed for deterministic data generation (>= 0 enables it)"),
+    cl::init(-1), cl::cat(OptC));
 
 int main(int argc, const char **argv) {
     system("");
@@ -154,6 +159,9 @@ int main(int argc, const char **argv) {
     llvm::outs() << ANSI_GREEN << "Files checked successfully\n" << ANSI_RESET;
 
     Generator::MAX_DEPTH = DeepLevel.getValue();
+    if (SeedOption.getValue() >= 0) {
+        ConfigGenerator::setSeed(static_cast<uint32_t>(SeedOption.getValue()));
+    }
 
     moveGeneratedFolderToLog();
 
