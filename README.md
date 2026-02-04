@@ -78,6 +78,9 @@ does not validate business logic or automatically create assertions beyond the
 framework templates. Complex or opaque types may require manual fixture edits.
 
 Architecture overview: see `doc/Arquitectura.md`.
+Rule catalog: see `doc/Reglas para datos`.
+Release checklist: see `doc/Checklist.md`.
+Examples: see `examples/README.md`.
 
 If you are working with C++ headers use the option `-xc++` at the end.
 

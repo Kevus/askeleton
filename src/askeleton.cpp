@@ -167,6 +167,10 @@ int main(int argc, const char **argv) {
     if (SeedOption.getValue() >= 0) {
         ConfigGenerator::setSeed(static_cast<uint32_t>(SeedOption.getValue()));
     }
+    llvm::outs() << "Data profile: " << ProfileOption.getValue() << "\n";
+    if (SeedOption.getValue() >= 0) {
+        llvm::outs() << "Seed: " << SeedOption.getValue() << "\n";
+    }
 
     moveGeneratedFolderToLog();
 
