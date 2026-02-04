@@ -442,6 +442,21 @@ void ASKGen::collectRuleValuesFromFunction(const FunctionDecl *FD) {
     if (!FD || !FD->hasBody())
         return;
 
+    ASTContext &context = FD->getASTContext();
+    for (const ParmVarDecl *param : FD->parameters()) {
+        if (!param || !param->hasDefaultArg())
+            continue;
+        const Expr *defaultExpr = param->getDefaultArg();
+        if (!defaultExpr)
+            continue;
+        Expr::EvalResult result;
+        if (defaultExpr->EvaluateAsInt(result, context)) {
+            addAssignmentRuleValues(FD, param, result.Val.getInt().getSExtValue());
+        } else if (auto value = extractIntegerValue(defaultExpr)) {
+            addAssignmentRuleValues(FD, param, value.value());
+        }
+    }
+
     class RuleVisitor : public RecursiveASTVisitor<RuleVisitor> {
     public:
         RuleVisitor(ASKGen &owner, const FunctionDecl *fd, ASTContext &context)
@@ -747,7 +762,7 @@ void ASKGen::collectRuleValuesFromFunction(const FunctionDecl *FD) {
         ASTContext &context;
     };
 
-    RuleVisitor visitor(*this, FD, FD->getASTContext());
+    RuleVisitor visitor(*this, FD, context);
     visitor.TraverseStmt(FD->getBody());
 }
 

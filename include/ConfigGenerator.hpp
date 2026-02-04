@@ -2,6 +2,7 @@
 
 #include <map>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -45,4 +46,6 @@ private:
     static const nlohmann::json &config;
     static const nlohmann::json &tplItems;
     static RandomValuesGenerator rvg;
+    static std::string dataProfile;
+    static std::optional<uint32_t> seedValue;
 };

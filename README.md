@@ -54,6 +54,7 @@ Profiles (random | boundary | safe | stress):
 ```bash
 ASKELETON_HOME=$(pwd) ./askeleton --profile=boundary -p examples examples/sut.cpp
 ```
+The generated `.cfg` header records the profile and optional seed used.
 
 **Usage**
 ```

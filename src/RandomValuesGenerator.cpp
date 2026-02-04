@@ -93,7 +93,7 @@ int RandomValuesGenerator::pickContainerSize() {
         sizes = {8, 16};
         break;
     default:
-        sizes = {0, 1, 3, 5, 8};
+        sizes = {1, 3, 5, 8};
         break;
     }
     uniform_int_distribution<int> dis(0, static_cast<int>(sizes.size()) - 1);

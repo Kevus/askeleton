@@ -40,7 +40,11 @@ Regla 5: Parametros por defecto (pendiente)
 Descripcion:
 Comprobar llamadas asignando el valor por defecto y sin asignarlo.
 Estado:
-Pendiente de implementacion.
+Implementado para valores numericos constantes.
+Ejemplo:
+int f(int a = 5)
+Salida (candidatos):
+4, 5, 6
 
 Regla 6: Constantes y enums
 Ejemplo:

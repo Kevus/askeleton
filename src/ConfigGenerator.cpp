@@ -16,6 +16,8 @@ namespace fs = std::filesystem;
 RandomValuesGenerator ConfigGenerator::rvg;
 const json &ConfigGenerator::config = getConfig();
 const json &ConfigGenerator::tplItems = getTemplateItems();
+std::string ConfigGenerator::dataProfile = "random";
+std::optional<uint32_t> ConfigGenerator::seedValue = std::nullopt;
 
 ConfigGenerator::ConfigGenerator(const string &target)
     : target(target), testFolder(getAskeletonHome() / config["route"]["ut"] / target),
@@ -30,6 +32,13 @@ ConfigGenerator::ConfigGenerator(const string &target)
         {tplItems["tplitem"]["date_of_generation"], getTodayString()}};
 
     replaceTokensInFile(configFileTemplate, configFilePath, replacements);
+
+    std::ostringstream meta;
+    meta << "//// DATA PROFILE: " << dataProfile << "\n";
+    if (seedValue.has_value()) {
+        meta << "//// SEED: " << seedValue.value() << "\n";
+    }
+    appendToConfigFile(meta.str());
 }
 
 void ConfigGenerator::setRuleValues(
@@ -37,9 +46,13 @@ void ConfigGenerator::setRuleValues(
     ruleValues = rules;
 }
 
-void ConfigGenerator::setSeed(uint32_t seed) { rvg.setSeed(seed); }
+void ConfigGenerator::setSeed(uint32_t seed) {
+    rvg.setSeed(seed);
+    seedValue = seed;
+}
 
 void ConfigGenerator::setProfile(const std::string &profileName) {
+    dataProfile = profileName;
     if (profileName == "boundary") {
         rvg.setProfile(RandomProfile::Boundary);
     } else if (profileName == "safe") {
