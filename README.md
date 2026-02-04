@@ -26,6 +26,11 @@ Quick sanity check:
 scripts/sanity_types.sh
 ```
 
+SUT showcase (example):
+```
+ASKELETON_HOME=$(pwd) ./askeleton -p examples examples/sut.cpp
+```
+
 USAGE: askeleton [options] <source0> [... <sourceN>]
 
 OPTIONS:
