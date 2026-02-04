@@ -78,28 +78,15 @@ void BoostGen::generateConstructorAssert(const std::vector<InfoVariable> &parame
 
 std::string BoostGen::generatePointersAsserts(const std::vector<InfoVariable> &parameters,
                                               const std::string &function) const {
-    std::stringstream ss;
     const static string TPLITEM_BOOST_PARAMETER =
                             templateItems["tplitem"]["boost"]["parameter"],
                         TPLITEM_BOOST_EXPECTED =
                             templateItems["tplitem"]["boost"]["expected"],
                         TPLITEM_BOOST_ASSERT =
                             templateItems["templating"]["boost"]["assert_pointer"];
-
-    for (const auto &param : parameters) {
-        if (param.isPointer() || param.isReference()) {
-            pair<string, string> pointers = param.getPointersVarName();
-            map<string, string> tokensToReplace = {
-                {TPLITEM_BOOST_PARAMETER, pointers.first},
-                {TPLITEM_BOOST_EXPECTED, pointers.second}};
-
-            string pointerAssert = TPLITEM_BOOST_ASSERT;
-            replaceTokensInText(pointerAssert, tokensToReplace);
-            ss << "\n\t" << pointerAssert;
-        }
-    }
-
-    return ss.str();
+    return generatePointersAssertsWithTemplate(
+        parameters, TPLITEM_BOOST_PARAMETER, TPLITEM_BOOST_EXPECTED,
+        TPLITEM_BOOST_ASSERT);
 }
 
 string BoostGen::generateAssertForFunction(const string &function,
@@ -113,12 +100,7 @@ string BoostGen::generateAssertForFunction(const string &function,
                         TPLITEM_FUNC_MAP =
                             templateItems["templating"]["boost"]["assert_function_map"];
     const string paramsList = generateParameterInvocation(params);
-    string invocation = (returnType.isPointer() ? "*" : "");
-    if (isStatic)
-        invocation = targetName + "::" + function;
-    else if (isFromClass)
-        invocation = generateTestObjectForTarget(targetName) + ".";
-    invocation += function;
+    string invocation = buildInvocation(function, isStatic, returnType.isPointer());
 
     const map<string, string> tokensToReplace = {
         {templateItems["tplitem"]["boost"]["invocation"], invocation},

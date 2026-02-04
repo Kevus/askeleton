@@ -12,21 +12,28 @@ const map<string, Options> RandomValuesGenerator::optionString{
     {"char", Char},
     {"signed_char", Char},
     {"unsigned_char", Char},
+    {"int8_t", Char},
+    {"uint8_t", Char},
     //--
     {"short", Short},
     {"short_int", Short},
     {"signed_short", Short},
     {"signed_short_int", Short},
+    {"int16_t", Short},
     //--
     {"unsigned_short", UnsignedShort},
     {"unsigned_short_int", UnsignedShort},
+    {"uint16_t", UnsignedShort},
     //--
     {"int", Int},
     {"signed", Int},
     {"signed_int", Int},
+    {"int32_t", Int},
     //--
     {"unsigned", Unsigned},
     {"unsigned_int", Unsigned},
+    {"uint32_t", Unsigned},
+    {"size_t", Unsigned},
     //--
     {"long", Long},
     {"long_int", Long},
@@ -40,9 +47,11 @@ const map<string, Options> RandomValuesGenerator::optionString{
     {"long_long_int", LongLong},
     {"signed_long_long", LongLong},
     {"signed_long_long_int", LongLong},
+    {"int64_t", LongLong},
     //--
     {"unsigned_long_long", UnsignedLongLong},
     {"unsigned_long_long_int", UnsignedLongLong},
+    {"uint64_t", UnsignedLongLong},
     //--
     {"double", Double},
     {"long_double", Double},
@@ -129,10 +138,19 @@ string RandomValuesGenerator::getRandomValue(string type, int nparams) {
     case Invalid_Type: {
         if (type.find("list") != string::npos ||
             type.find("vector") != string::npos) {
-            unsigned first = type.find("<") + 1;
-            unsigned last = type.find_last_of(">");
+            size_t left = type.find("<");
+            size_t right = type.find_last_of(">");
+            if (left == string::npos || right == string::npos || right <= left) {
+                return "0";
+            }
+            unsigned first = left + 1;
+            unsigned last = static_cast<unsigned>(right);
 
             string newType = type.substr(first, last - first);
+            size_t comma = newType.find(",");
+            if (comma != string::npos) {
+                newType = newType.substr(0, comma);
+            }
             // newType = newType.substr(first + 1);
 
             replaceAll(newType, " ", "_");
@@ -151,16 +169,30 @@ string RandomValuesGenerator::getRandomValue(string type, int nparams) {
 
             return ss.str();
         } else if (type.find("map") != string::npos) {
-            unsigned first = type.find("<") + 1;
-            unsigned last = type.find_last_of(">");
+            size_t left = type.find("<");
+            size_t right = type.find_last_of(">");
+            if (left == string::npos || right == string::npos || right <= left) {
+                return "0";
+            }
+            unsigned first = left + 1;
+            unsigned last = static_cast<unsigned>(right);
 
             string newType = type.substr(first, last - first);
             replaceAll(newType, ", ", ",");
-            replaceAll(newType, " ", "_");
 
-            unsigned splitter = newType.find(",");
+            size_t splitter = newType.find(",");
+            if (splitter == string::npos) {
+                return "0";
+            }
             string firstType = newType.substr(0, splitter);
-            string secondType = newType.substr(splitter + 1, last - splitter);
+            string rest = newType.substr(splitter + 1);
+            size_t second_split = rest.find(",");
+            string secondType = (second_split == string::npos)
+                                    ? rest
+                                    : rest.substr(0, second_split);
+
+            replaceAll(firstType, " ", "_");
+            replaceAll(secondType, " ", "_");
 
             // cout << "first: " << firstType << "\nsecond: " << secondType <<
             // "\n";

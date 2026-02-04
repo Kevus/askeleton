@@ -1,7 +1,15 @@
-g++-12 y gcc-12 (NO FUNCIONA CON 11)
-libboost-dev
-libclang-6.0-dev
-clang-6.0
-llvm-config-6.0
+Actualizado: 2026-02-04
 
-(puede que no necesitemos instalar todos)
+Recomendado (alineado con el Makefile actual):
+- clang-15
+- llvm-15
+- llvm-config-15
+- libclang-15-dev
+
+Opcional:
+- g++-12 y gcc-12 (NO FUNCIONA CON 11)
+- libboost-dev
+
+Notas:
+- Las versiones de LLVM/Clang deben coincidir con las del Makefile.
+- Puede que no necesitemos instalar todos.

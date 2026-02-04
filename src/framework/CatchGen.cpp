@@ -31,12 +31,7 @@ void CatchGenerator::generateFullAssert(const string &function,
     const string returnReadMethod =
         generateReadInvocation(underlying.getTypeAsReturn(), function);
 
-    string invocation = returnType.isPointer() ? "*" : "";
-    if (isStatic)
-        invocation += targetName + "::";
-    else if (isFromClass)
-        invocation += generateTestObjectForTarget(targetName) + ".";
-    invocation += function;
+    string invocation = buildInvocation(function, isStatic, returnType.isPointer());
 
     string pointers = generatePointersAsserts(parameters, function);
     if (!pointers.empty())
@@ -90,21 +85,9 @@ string CatchGenerator::generatePointersAsserts(const vector<InfoVariable> &param
                             templateItems["templating"]["catch"]["assert_pointer"]
                                 .get<string>();
 
-    stringstream ss;
-    for (const auto &param : parameters) {
-        if (param.isPointer() || param.isReference()) {
-            pair<string, string> pointers = param.getPointersVarName();
-
-            map<string, string> tokensToReplace = {
-                {TPLITEM_CATCH_PARAMETER, pointers.first},
-                {TPLITEM_CATCH_EXPECTED, pointers.second}};
-
-            string pointerAssert = TPLITEM_CATCH_POINTER;
-            replaceTokensInText(pointerAssert, tokensToReplace);
-            ss << "\n\t" << pointerAssert;
-        }
-    }
-    return ss.str();
+    return generatePointersAssertsWithTemplate(
+        parameters, TPLITEM_CATCH_PARAMETER, TPLITEM_CATCH_EXPECTED,
+        TPLITEM_CATCH_POINTER);
 }
 
 void CatchGenerator::copyMainFile() const {

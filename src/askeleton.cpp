@@ -12,6 +12,8 @@
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <optional>
+#include <set>
 
 using namespace llvm;
 using namespace clang;

@@ -39,12 +39,7 @@ void GTestGenerator::generateFullAssert(const string &function,
     if (!pointers.empty())
         pointers = pointers + "\n";
 
-    string invocation = returnType.isPointer() ? "*" : "";
-    if (isStatic)
-        invocation += targetName + "::";
-    else if (isFromClass)
-        invocation += generateTestObjectForTarget(targetName) + ".";
-    invocation += function;
+    string invocation = buildInvocation(function, isStatic, returnType.isPointer());
 
     map<string, string> tokensToReplace = {
         {templateItems["tplitem"]["gtest"]["target"], targetName},
@@ -89,22 +84,9 @@ GTestGenerator::generatePointersAsserts(const std::vector<InfoVariable> &paramet
                             templateItems["tplitem"]["gtest"]["expected"],
                         TPLITEM_GTEST_POINTER =
                             templateItems["templating"]["gtest"]["assert_pointer"];
-
-    std::stringstream ss;
-    for (const auto &param : parameters) {
-        if (param.isPointer() || param.isReference()) {
-            pair<string, string> pointers = param.getPointersVarName();
-            map<string, string> tokensToReplace = {
-                {TPLITEM_GTEST_PARAMETER, pointers.first},
-                {TPLITEM_GTEST_EXPECTED, pointers.second}};
-
-            string pointerAssert = TPLITEM_GTEST_POINTER;
-            replaceTokensInText(pointerAssert, tokensToReplace);
-            ss << "\n\t" << pointerAssert;
-        }
-    }
-
-    return ss.str();
+    return generatePointersAssertsWithTemplate(
+        parameters, TPLITEM_GTEST_PARAMETER, TPLITEM_GTEST_EXPECTED,
+        TPLITEM_GTEST_POINTER);
 }
 
 void GTestGenerator::copyMainFile() const {

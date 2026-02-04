@@ -4,7 +4,9 @@
 #include "clang/AST/Type.h"
 
 #include <map>
+#include <stdexcept>
 #include <string>
+#include <vector>
 struct InfoVariable;
 
 class ComplexTypeException : public std::runtime_error {

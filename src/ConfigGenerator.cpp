@@ -20,6 +20,7 @@ const json &ConfigGenerator::tplItems = getTemplateItems();
 ConfigGenerator::ConfigGenerator(const string &target)
     : target(target), testFolder(getAskeletonHome() / config["route"]["ut"] / target),
       configFilePath(fs::path(testFolder) / (target + ".cfg")) {
+    fs::create_directories(testFolder);
     fs::path configFileTemplate = getAskeletonHome() / config["route"]["templates"] /
                                   config["file"]["template"]["cfg_tpl"];
 

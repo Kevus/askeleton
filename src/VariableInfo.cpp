@@ -5,6 +5,8 @@
 #include "utils/templating.hpp"
 #include "clang/AST/DeclCXX.h"
 
+#include <algorithm>
+#include <iterator>
 #include <regex>
 #include <string>
 #include <vector>
@@ -27,9 +29,13 @@ InfoType::InfoType(const clang::QualType &type)
         throw ComplexTypeException(original);
     } else if (const CXXRecordDecl *record = type->getAsCXXRecordDecl()) {
         isRecord_ = true;
-        string original = record->getQualifiedNameAsString();
-        if (original.find("anonymous") != string::npos)
-            original = record->getTypedefNameForAnonDecl()->getNameAsString();
+        // Preserve the original type string (which may include template args),
+        // only overriding it for anonymous records with a typedef name.
+        if (this->original.find("anonymous") != string::npos) {
+            if (const auto *typedefDecl = record->getTypedefNameForAnonDecl()) {
+                this->original = typedefDecl->getNameAsString();
+            }
+        }
         copy_if(record->fields().begin(), record->fields().end(),
                 back_inserter(recordFields),
                 [](const FieldDecl *field) { return field->getAccess() == AS_public; });

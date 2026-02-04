@@ -1,3 +1,7 @@
-- Cuando se analiza un .h en vez de un .hpp, Clang lo lee como C y no como C++, lo que provoca errores. SOLUCIÓN: añadir bandera -xc++
-- Aunque en el main el directorio de generación es configurable, todavía no lo es en generator.
-- Tipos de datos como "int64_t" se convierten a "int64 t" y provocan errores.
+Actualizado: 2026-02-04
+
+- Cuando se analiza un .h en vez de un .hpp, Clang lo lee como C y no como C++, lo que provoca errores. SOLUCIÓN: añadir bandera -xc++. Estado: vigente.
+- Aunque en el main el directorio de generación es configurable, todavía no lo es en generator. Estado: por confirmar.
+- Error intermitente al abrir el .cfg cuando la carpeta de destino no existe. Estado: mitigado (se crea el directorio en ConfigGenerator, probado el 2026-02-04).
+- Crash al procesar tipos container sin parámetros de plantilla visibles (ej. std::vector sin <T>). Estado: mitigado (guardas en RandomValuesGenerator y se preservan argumentos de plantilla en InfoType, probado el 2026-02-04).
+- Tipos de datos como "int64_t" se convierten a "int64 t" y provocan errores. Estado: mitigado (equivalencias añadidas y probado con un caso mínimo el 2026-02-04).

@@ -230,10 +230,10 @@ void Generator::createTypeReadToFixture(const InfoType &type, unsigned level) {
         return;
 
     if (type.isPointer()) {
-        createTypeReadToFixture(type.getUnderlyingType());
+        createTypeReadToFixture(type.getUnderlyingType(), level + 1);
 
     } else if (type.isReference()) {
-        createTypeReadToFixture(type.getUnderlyingType());
+        createTypeReadToFixture(type.getUnderlyingType(), level + 1);
 
     } else if (type.isEnum()) {
         createEnumReadToFixture(type);
@@ -343,6 +343,38 @@ std::string Generator::generateParameterInvocation(
         ss << param.name;
         if (&param != &parameters.back())
             ss << ", ";
+    }
+
+    return ss.str();
+}
+
+std::string Generator::buildInvocation(const std::string &function, bool isStatic,
+                                       bool returnsPointer) const {
+    std::string invocation = returnsPointer ? "*" : "";
+    if (isStatic)
+        invocation += targetName + "::";
+    else if (isFromClass)
+        invocation += generateTestObjectForTarget(targetName) + ".";
+    invocation += function;
+    return invocation;
+}
+
+std::string Generator::generatePointersAssertsWithTemplate(
+    const std::vector<InfoVariable> &parameters, const std::string &paramToken,
+    const std::string &expectedToken, const std::string &assertTemplate) const {
+    std::stringstream ss;
+    for (const auto &param : parameters) {
+        if (param.isPointer() || param.isReference()) {
+            auto pointers = param.getPointersVarName();
+            std::map<std::string, std::string> tokens = {
+                {paramToken, pointers.first},
+                {expectedToken, pointers.second},
+            };
+
+            std::string pointerAssert = assertTemplate;
+            replaceTokensInText(pointerAssert, tokens);
+            ss << "\n\t" << pointerAssert;
+        }
     }
 
     return ss.str();

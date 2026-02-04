@@ -77,6 +77,13 @@ protected:
 
     std::string generateParameterInvocation(const std::vector<InfoVariable> &) const;
 
+    std::string buildInvocation(const std::string &function, bool isStatic,
+                                bool returnsPointer) const;
+
+    std::string generatePointersAssertsWithTemplate(
+        const std::vector<InfoVariable> &parameters, const std::string &paramToken,
+        const std::string &expectedToken, const std::string &assertTemplate) const;
+
     virtual std::string
     generatePointersAsserts(const std::vector<InfoVariable> &parameters,
                             const std::string &function) const = 0;

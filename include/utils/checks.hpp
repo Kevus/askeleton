@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include "llvm/ADT/ArrayRef.h"
+
 #include "clang/AST/Decl.h"
 
 /**

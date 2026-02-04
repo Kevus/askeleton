@@ -1,5 +1,8 @@
 #include "utils/strings.hpp"
 
+#include <algorithm>
+#include <cctype>
+#include <cstring>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -106,11 +109,11 @@ bool includes(const char *str1, const char *str2) {
 string toLower(const std::string &str) {
     string result = str;
     transform(str.begin(), str.end(), result.begin(), ::tolower);
-    return str;
+    return result;
 }
 
 string toUpper(const std::string &str) {
     string result = str;
     transform(str.begin(), str.end(), result.begin(), ::toupper);
-    return str;
+    return result;
 }

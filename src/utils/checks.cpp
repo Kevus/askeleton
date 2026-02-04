@@ -1,5 +1,6 @@
 #include "utils/checks.hpp"
 
+#include <stdexcept>
 #include <string>
 
 #include "clang/AST/Decl.h"
