@@ -76,10 +76,60 @@ Options RandomValuesGenerator::resolveOption(string type) {
 
 void RandomValuesGenerator::setSeed(uint32_t seed) { gen.seed(seed); }
 
+void RandomValuesGenerator::setProfile(RandomProfile newProfile) {
+    profile = newProfile;
+}
+
 int RandomValuesGenerator::pickContainerSize() {
-    const vector<int> sizes = {0, 1, 3, 5, 8};
+    vector<int> sizes;
+    switch (profile) {
+    case RandomProfile::Boundary:
+        sizes = {0, 1};
+        break;
+    case RandomProfile::Safe:
+        sizes = {1, 3};
+        break;
+    case RandomProfile::Stress:
+        sizes = {8, 16};
+        break;
+    default:
+        sizes = {0, 1, 3, 5, 8};
+        break;
+    }
     uniform_int_distribution<int> dis(0, static_cast<int>(sizes.size()) - 1);
     return sizes[dis(gen)];
+}
+
+int RandomValuesGenerator::pickStringLength() {
+    vector<int> lengths;
+    switch (profile) {
+    case RandomProfile::Boundary:
+        lengths = {0, 1};
+        break;
+    case RandomProfile::Safe:
+        lengths = {1, 4, 8};
+        break;
+    case RandomProfile::Stress:
+        lengths = {32, 64, 128};
+        break;
+    default:
+        lengths = {1, 3, 8, 16};
+        break;
+    }
+    uniform_int_distribution<int> dis(0, static_cast<int>(lengths.size()) - 1);
+    return lengths[dis(gen)];
+}
+
+int RandomValuesGenerator::pickIntBoundary(int minVal, int maxVal) {
+    vector<int> candidates = {minVal, minVal + 1, -1, 0, 1, maxVal - 1, maxVal};
+    uniform_int_distribution<int> dis(0, static_cast<int>(candidates.size()) - 1);
+    return candidates[dis(gen)];
+}
+
+long long RandomValuesGenerator::pickLongBoundary(long long minVal, long long maxVal) {
+    vector<long long> candidates = {minVal, minVal + 1, -1, 0, 1, maxVal - 1, maxVal};
+    uniform_int_distribution<int> dis(0, static_cast<int>(candidates.size()) - 1);
+    return candidates[dis(gen)];
 }
 
 string RandomValuesGenerator::getRandomValue(string type, int nparams) {
@@ -249,75 +299,152 @@ string RandomValuesGenerator::getRandomValue(string type, int nparams) {
 }
 
 string RandomValuesGenerator::getRandomChar() {
-    uniform_int_distribution<> dis(97, 122);
-    char value = static_cast<char>(dis(gen));
+    char value = 'a';
+    switch (profile) {
+    case RandomProfile::Boundary: {
+        const vector<char> candidates = {'\0', 'a', 'z'};
+        uniform_int_distribution<int> dis(0, static_cast<int>(candidates.size()) - 1);
+        value = candidates[dis(gen)];
+        break;
+    }
+    case RandomProfile::Safe:
+        value = 'a';
+        break;
+    case RandomProfile::Stress:
+    case RandomProfile::Random:
+    default: {
+        uniform_int_distribution<> dis(97, 122);
+        value = static_cast<char>(dis(gen));
+        break;
+    }
+    }
     return string(1, value);
 }
 
 string RandomValuesGenerator::getRandomShort() {
+    if (profile == RandomProfile::Boundary) {
+        return to_string(pickIntBoundary(-100, 100));
+    }
     uniform_int_distribution<> dis(-100, 100);
     return to_string(dis(gen));
 }
 
 string RandomValuesGenerator::getRandomUnsignedShort() {
+    if (profile == RandomProfile::Boundary) {
+        return to_string(pickIntBoundary(0, 100));
+    }
     uniform_int_distribution<> dis(0, 100);
     return to_string(dis(gen));
 }
 
 string RandomValuesGenerator::getRandomInt() {
+    if (profile == RandomProfile::Boundary) {
+        return to_string(pickIntBoundary(-100, 100));
+    }
     uniform_int_distribution<> dis(-100, 100);
     return to_string(dis(gen));
 }
 
 string RandomValuesGenerator::getRandomUnsigned() {
+    if (profile == RandomProfile::Boundary) {
+        return to_string(pickIntBoundary(0, 100));
+    }
     uniform_int_distribution<> dis(0, 100);
     return to_string(dis(gen));
 }
 
 string RandomValuesGenerator::getRandomLong() {
+    if (profile == RandomProfile::Boundary) {
+        return to_string(pickLongBoundary(-100, 100));
+    }
     uniform_int_distribution<> dis(-100, 100);
     return to_string(dis(gen));
 }
 
 string RandomValuesGenerator::getRandomUnsignedLong() {
+    if (profile == RandomProfile::Boundary) {
+        return to_string(pickLongBoundary(0, 100));
+    }
     uniform_int_distribution<> dis(0, 100);
     return to_string(dis(gen));
 }
 
 string RandomValuesGenerator::getRandomLongLong() {
+    if (profile == RandomProfile::Boundary) {
+        return to_string(pickLongBoundary(-100, 100));
+    }
     uniform_int_distribution<> dis(-100, 100);
     return to_string(dis(gen));
 }
 
 string RandomValuesGenerator::getRandomUnsignedLongLong() {
+    if (profile == RandomProfile::Boundary) {
+        return to_string(pickLongBoundary(0, 100));
+    }
     uniform_int_distribution<> dis(0, 100);
     return to_string(dis(gen));
 }
 
 string RandomValuesGenerator::getRandomDouble() {
-    uniform_real_distribution<double> dis(-100.0, 100.0);
+    double value = 0.0;
+    switch (profile) {
+    case RandomProfile::Boundary: {
+        const vector<double> candidates = {-100.0, -1.0, 0.0, 1.0, 100.0};
+        uniform_int_distribution<int> dis(0, static_cast<int>(candidates.size()) - 1);
+        value = candidates[dis(gen)];
+        break;
+    }
+    case RandomProfile::Safe:
+        value = 1.0;
+        break;
+    case RandomProfile::Stress:
+    case RandomProfile::Random:
+    default: {
+        uniform_real_distribution<double> dis(-100.0, 100.0);
+        value = dis(gen);
+        break;
+    }
+    }
     ostringstream oss;
-    oss << fixed << setprecision(3) << dis(gen);
+    oss << fixed << setprecision(3) << value;
     return oss.str();
 }
 
 string RandomValuesGenerator::getRandomFloat() {
-    uniform_real_distribution<float> dis(-100.0f, 100.0f);
+    float value = 0.0f;
+    switch (profile) {
+    case RandomProfile::Boundary: {
+        const vector<float> candidates = {-100.0f, -1.0f, 0.0f, 1.0f, 100.0f};
+        uniform_int_distribution<int> dis(0, static_cast<int>(candidates.size()) - 1);
+        value = candidates[dis(gen)];
+        break;
+    }
+    case RandomProfile::Safe:
+        value = 1.0f;
+        break;
+    case RandomProfile::Stress:
+    case RandomProfile::Random:
+    default: {
+        uniform_real_distribution<float> dis(-100.0f, 100.0f);
+        value = dis(gen);
+        break;
+    }
+    }
     ostringstream oss;
-    oss << fixed << setprecision(3) << dis(gen);
+    oss << fixed << setprecision(3) << value;
     return oss.str();
 }
 
 string RandomValuesGenerator::getRandomBool() {
+    if (profile == RandomProfile::Safe)
+        return "true";
     bernoulli_distribution dis(0.5);
     return dis(gen) ? "true" : "false";
 }
 
 string RandomValuesGenerator::getRandomString() {
-    const vector<int> lengths = {1, 3, 8, 16};
-    uniform_int_distribution<int> lenDis(0, static_cast<int>(lengths.size()) - 1);
     uniform_int_distribution<int> chDis(97, 122);
-    const int length = lengths[lenDis(gen)];
+    const int length = pickStringLength();
     string result;
     result.reserve(static_cast<size_t>(length));
     for (int i = 0; i < length; ++i) {

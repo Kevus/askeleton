@@ -133,6 +133,10 @@ cl::opt<int> SeedOption(
     "seed",
     cl::desc("Seed for deterministic data generation (>= 0 enables it)"),
     cl::init(-1), cl::cat(OptC));
+cl::opt<std::string> ProfileOption(
+    "profile",
+    cl::desc("Data generation profile (random, boundary, safe, stress)"),
+    cl::init("random"), cl::cat(OptC));
 
 int main(int argc, const char **argv) {
     system("");
@@ -159,6 +163,7 @@ int main(int argc, const char **argv) {
     llvm::outs() << ANSI_GREEN << "Files checked successfully\n" << ANSI_RESET;
 
     Generator::MAX_DEPTH = DeepLevel.getValue();
+    ConfigGenerator::setProfile(ProfileOption.getValue());
     if (SeedOption.getValue() >= 0) {
         ConfigGenerator::setSeed(static_cast<uint32_t>(SeedOption.getValue()));
     }

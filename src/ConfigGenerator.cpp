@@ -39,6 +39,18 @@ void ConfigGenerator::setRuleValues(
 
 void ConfigGenerator::setSeed(uint32_t seed) { rvg.setSeed(seed); }
 
+void ConfigGenerator::setProfile(const std::string &profileName) {
+    if (profileName == "boundary") {
+        rvg.setProfile(RandomProfile::Boundary);
+    } else if (profileName == "safe") {
+        rvg.setProfile(RandomProfile::Safe);
+    } else if (profileName == "stress") {
+        rvg.setProfile(RandomProfile::Stress);
+    } else {
+        rvg.setProfile(RandomProfile::Random);
+    }
+}
+
 void ConfigGenerator::generateTestCase(const string &functionName,
                                        const vector<InfoVariable> &params,
                                        const InfoType &returnType,

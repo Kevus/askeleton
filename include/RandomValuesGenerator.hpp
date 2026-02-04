@@ -22,22 +22,34 @@ enum Options {
     String
 };
 
+enum class RandomProfile {
+    Random,
+    Boundary,
+    Safe,
+    Stress
+};
+
 class RandomValuesGenerator {
 public:
     RandomValuesGenerator();
 
     std::string getRandomValue(std::string type, int nparams = 5);
     void setSeed(uint32_t seed);
+    void setProfile(RandomProfile profile);
 
 private:
     std::random_device rd;
     std::mt19937 gen;
+    RandomProfile profile = RandomProfile::Random;
 
     Options resolveOption(std::string type);
 
     static const std::map<std::string, Options> optionString;
 
     int pickContainerSize();
+    int pickStringLength();
+    int pickIntBoundary(int minVal, int maxVal);
+    long long pickLongBoundary(long long minVal, long long maxVal);
 
     std::string getRandomList(std::string inner_type);
     std::string getRandomMap(std::string key_type, std::string value_type);

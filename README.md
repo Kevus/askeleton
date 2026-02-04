@@ -43,6 +43,10 @@ Deterministic data (seeded):
 ```
 ASKELETON_HOME=$(pwd) ./askeleton --seed=123 -p examples examples/sut.cpp
 ```
+Profiles (random | boundary | safe | stress):
+```
+ASKELETON_HOME=$(pwd) ./askeleton --profile=boundary -p examples examples/sut.cpp
+```
 
 USAGE: askeleton [options] <source0> [... <sourceN>]
 
