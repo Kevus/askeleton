@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <sstream>
 
 #include "color.h"
@@ -13,11 +14,40 @@
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/Expr.h"
+#include "clang/AST/RecursiveASTVisitor.h"
+#include "clang/AST/Stmt.h"
 
 using namespace clang::ast_matchers;
 using namespace clang;
 using namespace std;
 namespace fs = std::filesystem;
+
+namespace {
+std::optional<long long> extractIntegerValue(const Expr *expr) {
+    if (!expr)
+        return std::nullopt;
+
+    const Expr *cleanExpr = expr->IgnoreParenImpCasts();
+    if (const auto *intLiteral = dyn_cast<IntegerLiteral>(cleanExpr)) {
+        return intLiteral->getValue().getSExtValue();
+    }
+
+    if (const auto *unary = dyn_cast<UnaryOperator>(cleanExpr)) {
+        if (unary->getOpcode() == UO_Minus) {
+            const Expr *subExpr = unary->getSubExpr()->IgnoreParenImpCasts();
+            if (const auto *subInt = dyn_cast<IntegerLiteral>(subExpr)) {
+                return -subInt->getValue().getSExtValue();
+            }
+        }
+    }
+
+    return std::nullopt;
+}
+} // namespace
+
+ASKGen::ASKGen(bool ruleDataEnabled, unsigned ruleMaxCases)
+    : ruleDataEnabled(ruleDataEnabled), ruleMaxCases(std::max(1u, ruleMaxCases)) {}
 
 void printDebugInfo(const vector<InfoVariable> &parameters, const InfoType &returnType) {
     cout << "Params list: ";
@@ -41,9 +71,8 @@ void ASKGen::run(const MatchFinder::MatchResult &Result) {
     // apply_CT1(Result); // Necessary for structs and classes
     apply_CC1(Result);
 
-    // Kevin: dejamos estos fuera, nos interesa ahora solo las funciones, los
-    // datos vendrán por KLEE
-    // apply_DG1(Result);
+    if (ruleDataEnabled)
+        apply_DG1(Result);
     // apply_DG2(Result);
 }
 
@@ -80,6 +109,10 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
 
                 auto generator = getGenerator(target, filePath, false);
                 auto configGenerator = getConfigGenerator(target);
+                if (ruleDataEnabled) {
+                    collectRuleValuesFromFunction(UT);
+                    configGenerator->setRuleValues(ruleValues);
+                }
 
                 try {
                     generateTest(*generator, *configGenerator, UT);
@@ -131,6 +164,10 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
 
                 auto generator = getGenerator(parentname, source_file, true);
                 auto configGenerator = getConfigGenerator(parentname);
+                if (ruleDataEnabled) {
+                    collectRuleValuesFromFunction(UT);
+                    configGenerator->setRuleValues(ruleValues);
+                }
 
                 try {
                     generateTest(*generator, *configGenerator, UT);
@@ -249,64 +286,172 @@ void ASKGen::apply_PD1(const MatchFinder::MatchResult &Result) {
     // TO-DO: make this SHOW when a private member is called
 }
 
-// void ASKGen::apply_DG1(const MatchFinder::MatchResult &Result) {
-//     ASTContext *Context = Result.Context;
+void ASKGen::apply_DG1(const MatchFinder::MatchResult &Result) {
+    ASTContext *Context = Result.Context;
 
-//     if (const BinaryOperator *UT =
-//             Result.Nodes.getNodeAs<clang::BinaryOperator>("DG1")) {
+    const auto *op = Result.Nodes.getNodeAs<clang::BinaryOperator>("DG1");
+    const auto *FD = Result.Nodes.getNodeAs<clang::FunctionDecl>("DG1b");
+    if (!op || !FD)
+        return;
 
-//         const FunctionDecl *FD =
-//             Result.Nodes.getNodeAs<clang::FunctionDecl>("DG1b");
-//         FullSourceLoc FullLocation;
+    FullSourceLoc FullLocation = Context->getFullLoc(op->getBeginLoc());
+    if (!FullLocation.isValid() ||
+        Context->getSourceManager().isInSystemHeader(FullLocation)) {
+        return;
+    }
 
-//         FullLocation = Context->getFullLoc(UT->getBeginLoc());
+    const Expr *lhs = op->getLHS()->IgnoreParenImpCasts();
+    const Expr *rhs = op->getRHS()->IgnoreParenImpCasts();
+    const auto *lhsRef = dyn_cast<DeclRefExpr>(lhs);
+    const auto *rhsRef = dyn_cast<DeclRefExpr>(rhs);
+    const auto lhsValue = extractIntegerValue(lhs);
+    const auto rhsValue = extractIntegerValue(rhs);
 
-//         if (FullLocation.isValid() &&
-//             !Context->getSourceManager().isInSystemHeader(FullLocation)) {
+    const ParmVarDecl *param = nullptr;
+    long long literalValue = 0;
+    BinaryOperatorKind opcode = op->getOpcode();
 
-//             string LHS_string = convertExpressionToString(
-//                 UT->getLHS(), Context->getSourceManager());
-//             string RHS_string = convertExpressionToString(
-//                 UT->getRHS(), Context->getSourceManager());
-//             string LHS_type = UT->getLHS()->getType().getAsString();
-//             string RHS_type = UT->getRHS()->getType().getAsString();
+    if (lhsRef && rhsValue.has_value()) {
+        param = dyn_cast<ParmVarDecl>(lhsRef->getDecl());
+        literalValue = rhsValue.value();
+    } else if (rhsRef && lhsValue.has_value()) {
+        param = dyn_cast<ParmVarDecl>(rhsRef->getDecl());
+        literalValue = lhsValue.value();
+        switch (opcode) {
+        case BO_LT:
+            opcode = BO_GT;
+            break;
+        case BO_LE:
+            opcode = BO_GE;
+            break;
+        case BO_GT:
+            opcode = BO_LT;
+            break;
+        case BO_GE:
+            opcode = BO_LE;
+            break;
+        default:
+            break;
+        }
+    } else {
+        return;
+    }
 
-//             string source_file = Context->getSourceManager()
-//                                      .getFilename(UT->getBeginLoc())
-//                                      .str();
-//             unsigned first = source_file.find_last_of('/') + 1;
-//             unsigned last = source_file.find_last_of('.');
-//             string filename = source_file.substr(first, last - first);
+    if (!param)
+        return;
 
-//             string type;
+    addRuleValues(FD, param, opcode, literalValue);
+}
 
-//             if (!isNumeric(LHS_string) && isNumeric(RHS_string) &&
-//                 isInParameters(LHS_string, FD->parameters(), type)) {
-//                 generateTestData(filename, FD->getName().str(), LHS_string,
-//                                  type, RHS_string);
-//             } else if (isNumeric(LHS_string) && !isNumeric(RHS_string) &&
-//                        isInParameters(RHS_string, FD->parameters(), type)) {
-//                 generateTestData(filename, FD->getName().str(), RHS_string,
-//                                  type, LHS_string);
-//             } else {
-//                 llvm::outs() << "non-numeric condition\n";
-//             }
+void ASKGen::addRuleValues(const FunctionDecl *FD, const ParmVarDecl *param,
+                           BinaryOperatorKind opcode, long long literalValue) {
+    std::vector<long long> candidates;
+    switch (opcode) {
+    case BO_EQ:
+        candidates = {literalValue};
+        break;
+    case BO_NE:
+        candidates = {literalValue - 1, literalValue + 1};
+        break;
+    case BO_GT:
+    case BO_GE:
+    case BO_LT:
+    case BO_LE:
+        candidates = {literalValue - 1, literalValue, literalValue + 1};
+        break;
+    default:
+        return;
+    }
 
-//             // Print auxiliary
-//             //
-//             ======================================================================
-//             /*llvm::outs() << "Found BinaryOperator at "
-//                          << FullLocation.getSpellingLineNumber() << ":"
-//                          << FullLocation.getSpellingColumnNumber() << " - ";
+    auto &perFunc = ruleValues[FD->getName().str()];
+    const std::string paramName = param->getName().str();
+    const std::string paramQualified = param->getQualifiedNameAsString();
 
-//             llvm::outs() << " from function " << FD->getName().str() <<
-//             "\n";*/
-//             // Print auxiliary
-//             //
-//             ======================================================================
-//         }
-//     }
-// }
+    for (const auto &key : {paramName, paramQualified}) {
+        if (key.empty())
+            continue;
+        auto &vals = perFunc[key];
+        for (long long v : candidates) {
+            if (std::find(vals.begin(), vals.end(), v) == vals.end())
+                vals.push_back(v);
+        }
+    }
+}
+
+unsigned ASKGen::computeRuleInvocationLimit(
+    const std::map<std::string, std::vector<long long>> &rulesForFunction) const {
+    unsigned maxCandidates = 0;
+    for (const auto &entry : rulesForFunction) {
+        maxCandidates = std::max<unsigned>(maxCandidates, entry.second.size());
+    }
+
+    if (maxCandidates == 0)
+        return 1;
+
+    return std::min(ruleMaxCases, maxCandidates);
+}
+
+void ASKGen::collectRuleValuesFromFunction(const FunctionDecl *FD) {
+    if (!FD || !FD->hasBody())
+        return;
+
+    class RuleVisitor : public RecursiveASTVisitor<RuleVisitor> {
+    public:
+        RuleVisitor(ASKGen &owner, const FunctionDecl *fd) : owner(owner), fd(fd) {}
+
+        bool VisitBinaryOperator(BinaryOperator *op) {
+            if (!op)
+                return true;
+
+            const Expr *lhs = op->getLHS()->IgnoreParenImpCasts();
+            const Expr *rhs = op->getRHS()->IgnoreParenImpCasts();
+            const auto *lhsRef = dyn_cast<DeclRefExpr>(lhs);
+            const auto *rhsRef = dyn_cast<DeclRefExpr>(rhs);
+            const auto lhsValue = extractIntegerValue(lhs);
+            const auto rhsValue = extractIntegerValue(rhs);
+
+            const ParmVarDecl *param = nullptr;
+            long long literalValue = 0;
+            BinaryOperatorKind opcode = op->getOpcode();
+
+            if (lhsRef && rhsValue.has_value()) {
+                param = dyn_cast<ParmVarDecl>(lhsRef->getDecl());
+                literalValue = rhsValue.value();
+            } else if (rhsRef && lhsValue.has_value()) {
+                param = dyn_cast<ParmVarDecl>(rhsRef->getDecl());
+                literalValue = lhsValue.value();
+                switch (opcode) {
+                case BO_LT:
+                    opcode = BO_GT;
+                    break;
+                case BO_LE:
+                    opcode = BO_GE;
+                    break;
+                case BO_GT:
+                    opcode = BO_LT;
+                    break;
+                case BO_GE:
+                    opcode = BO_LE;
+                    break;
+                default:
+                    break;
+                }
+            }
+
+            if (param)
+                owner.addRuleValues(fd, param, opcode, literalValue);
+
+            return true;
+        }
+
+    private:
+        ASKGen &owner;
+        const FunctionDecl *fd;
+    };
+
+    RuleVisitor visitor(*this, FD);
+    visitor.TraverseStmt(FD->getBody());
+}
 
 // void ASKGen::apply_DG2(const MatchFinder::MatchResult &Result) {
 //     ASTContext *Context = Result.Context;
@@ -454,6 +599,17 @@ ASKGen::getParameters(const std::vector<ParmVarDecl *> &params) {
 
 void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
                           const FunctionDecl *UT) {
+    unsigned ruleInvocations = 1;
+    if (ruleDataEnabled) {
+        collectRuleValuesFromFunction(UT);
+        auto it = ruleValues.find(UT->getName().str());
+        if (it != ruleValues.end()) {
+            const auto &rulesForFunction = it->second;
+            testGen.setRuleValues({{UT->getName().str(), rulesForFunction}});
+            configGenerator.setRuleValues({{UT->getName().str(), rulesForFunction}});
+            ruleInvocations = computeRuleInvocationLimit(rulesForFunction);
+        }
+    }
     InfoType returnType(UT->getReturnType());
     std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
 
@@ -469,11 +625,24 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
     generateReadMethod(testGen, parameters);
     generateReadMethod(testGen, returnType);
 
-    testGen.generateFunctionAssert(functionName, parameters, returnType);
+    for (unsigned i = 0; i < ruleInvocations; ++i) {
+        testGen.generateFunctionAssert(functionName, parameters, returnType);
+    }
 }
 
 void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
                           const CXXMethodDecl *UT) {
+    unsigned ruleInvocations = 1;
+    if (ruleDataEnabled) {
+        collectRuleValuesFromFunction(UT);
+        auto it = ruleValues.find(UT->getName().str());
+        if (it != ruleValues.end()) {
+            const auto &rulesForFunction = it->second;
+            testGen.setRuleValues({{UT->getName().str(), rulesForFunction}});
+            configGenerator.setRuleValues({{UT->getName().str(), rulesForFunction}});
+            ruleInvocations = computeRuleInvocationLimit(rulesForFunction);
+        }
+    }
     InfoType returnType(UT->getReturnType());
     std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
     bool isStatic = UT->isStatic();
@@ -490,7 +659,9 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
     generateReadMethod(testGen, parameters);
     generateReadMethod(testGen, returnType);
 
-    testGen.generateMethodAssert(functionName, parameters, returnType, isStatic);
+    for (unsigned i = 0; i < ruleInvocations; ++i) {
+        testGen.generateMethodAssert(functionName, parameters, returnType, isStatic);
+    }
 }
 
 void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,

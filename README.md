@@ -31,6 +31,15 @@ SUT showcase (example):
 ASKELETON_HOME=$(pwd) ./askeleton -p examples examples/sut.cpp
 ```
 
+Rule-based data (simple AST comparisons):
+```
+ASKELETON_HOME=$(pwd) ./askeleton --rule-data --rule-max-cases=3 -p examples examples/sut.cpp
+```
+Limit to 2 cases:
+```
+ASKELETON_HOME=$(pwd) ./askeleton --rule-data --rule-max-cases=2 -p examples examples/sut.cpp
+```
+
 USAGE: askeleton [options] <source0> [... <sourceN>]
 
 OPTIONS:

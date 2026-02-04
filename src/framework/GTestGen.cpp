@@ -26,13 +26,10 @@ void GTestGenerator::generateFullAssert(const string &function,
     InfoType underlying = returnType.getUnderlyingType();
     const unsigned number = getFunctionCounter(function) + 1;
 
-    string init = generateParameterInitialization(parameters, function, number);
-    if (!init.empty())
-        init = "\n" + init;
+    string init = buildInitializations(parameters, function, number);
 
     const string returnTypeOriginal = underlying.original;
-    const string returnReadMethod =
-        generateReadInvocation(underlying.getTypeAsReturn(), function, number);
+    const string returnReadMethod = buildReturnReadMethod(underlying, function, number);
 
     const string parametersInvocation = generateParameterInvocation(parameters);
     string pointers = generatePointersAsserts(parameters, function);

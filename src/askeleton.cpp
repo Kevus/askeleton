@@ -120,6 +120,14 @@ cl::opt<std::string> FrameworkOption(
 
 cl::opt<unsigned> DeepLevel("deep-level", cl::desc("Specify the maximum depth level"),
                             cl::value_desc("level"), cl::init(1), cl::cat(OptC));
+cl::opt<bool> RuleDataOption(
+    "rule-data",
+    cl::desc("Generate basic rule-based data from simple AST comparisons"),
+    cl::init(false), cl::cat(OptC));
+cl::opt<unsigned> RuleMaxCasesOption(
+    "rule-max-cases",
+    cl::desc("Max number of rule-based cases to generate per function (default: 3)"),
+    cl::init(3), cl::cat(OptC));
 
 int main(int argc, const char **argv) {
     system("");
@@ -157,7 +165,7 @@ int main(int argc, const char **argv) {
                  << ANSI_RESET;
 
     clang::ast_matchers::MatchFinder Finder;
-    ASKGen Functionality;
+    ASKGen Functionality(RuleDataOption, RuleMaxCasesOption);
     for (auto i : createMapMatchers())
         Finder.addMatcher(i.second, &Functionality);
 

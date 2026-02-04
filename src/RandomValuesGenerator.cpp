@@ -58,7 +58,10 @@ const map<string, Options> RandomValuesGenerator::optionString{
     //--
     {"float", Float},
     {"bool", Bool},
-    {"string", String}};
+    {"string", String},
+    {"std::string", String},
+    {"basic_string<char>", String},
+    {"std::basic_string<char>", String}};
 
 Options RandomValuesGenerator::resolveOption(string type) {
     auto it = optionString.find(type);
@@ -136,8 +139,50 @@ string RandomValuesGenerator::getRandomValue(string type, int nparams) {
     }
 
     case Invalid_Type: {
-        if (type.find("list") != string::npos ||
-            type.find("vector") != string::npos) {
+        if (type.find("map") != string::npos) {
+            size_t left = type.find("<");
+            size_t right = type.find_last_of(">");
+            if (left == string::npos || right == string::npos || right <= left) {
+                return "0";
+            }
+            unsigned first = left + 1;
+            unsigned last = static_cast<unsigned>(right);
+
+            string newType = type.substr(first, last - first);
+            replaceAll(newType, ", ", ",");
+
+            size_t splitter = newType.find(",");
+            if (splitter == string::npos) {
+                return "0";
+            }
+            string firstType = newType.substr(0, splitter);
+            string rest = newType.substr(splitter + 1);
+            size_t second_split = rest.find(",");
+            string secondType = (second_split == string::npos)
+                                    ? rest
+                                    : rest.substr(0, second_split);
+
+            replaceAll(firstType, " ", "_");
+            replaceAll(secondType, " ", "_");
+
+            stringstream ss;
+            ss << "{";
+
+            // int for_iterator = 5;
+            for (int i = 0; i < nparams; i++) {
+                ss << "(" << getRandomValue(firstType) << ","
+                   << getRandomValue(secondType) << ")";
+
+                if (i < nparams - 1)
+                    ss << ",";
+            }
+
+            ss << "}";
+
+            // Do something
+            return ss.str();
+        } else if (type.find("list") != string::npos ||
+                   type.find("vector") != string::npos) {
             size_t left = type.find("<");
             size_t right = type.find_last_of(">");
             if (left == string::npos || right == string::npos || right <= left) {
@@ -167,50 +212,6 @@ string RandomValuesGenerator::getRandomValue(string type, int nparams) {
 
             ss << "}";
 
-            return ss.str();
-        } else if (type.find("map") != string::npos) {
-            size_t left = type.find("<");
-            size_t right = type.find_last_of(">");
-            if (left == string::npos || right == string::npos || right <= left) {
-                return "0";
-            }
-            unsigned first = left + 1;
-            unsigned last = static_cast<unsigned>(right);
-
-            string newType = type.substr(first, last - first);
-            replaceAll(newType, ", ", ",");
-
-            size_t splitter = newType.find(",");
-            if (splitter == string::npos) {
-                return "0";
-            }
-            string firstType = newType.substr(0, splitter);
-            string rest = newType.substr(splitter + 1);
-            size_t second_split = rest.find(",");
-            string secondType = (second_split == string::npos)
-                                    ? rest
-                                    : rest.substr(0, second_split);
-
-            replaceAll(firstType, " ", "_");
-            replaceAll(secondType, " ", "_");
-
-            // cout << "first: " << firstType << "\nsecond: " << secondType <<
-            // "\n";
-            stringstream ss;
-            ss << "{";
-
-            // int for_iterator = 5;
-            for (int i = 0; i < nparams; i++) {
-                ss << "(" << getRandomValue(firstType) << ","
-                   << getRandomValue(secondType) << ")";
-
-                if (i < nparams - 1)
-                    ss << ",";
-            }
-
-            ss << "}";
-
-            // Do something
             return ss.str();
         } else if (type.find("struct") != string::npos) {
             stringstream ss;

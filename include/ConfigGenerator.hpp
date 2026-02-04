@@ -13,6 +13,9 @@ public:
     explicit ConfigGenerator(const std::string &target);
     ConfigGenerator(const ConfigGenerator &) = default;
 
+    void setRuleValues(const std::map<std::string,
+                                      std::map<std::string, std::vector<long long>>> &rules);
+
     void generateTestCase(const std::string &functionName,
                           const std::vector<InfoVariable> &params,
                           const InfoType &returnType,
@@ -32,6 +35,10 @@ private:
     std::string generateReturn(const InfoType &returnType) const;
 
     void appendToConfigFile(const std::string &content) const;
+
+    mutable std::string currentFunctionName;
+    mutable unsigned currentInvocation = 1;
+    std::map<std::string, std::map<std::string, std::vector<long long>>> ruleValues;
 
     static const nlohmann::json &config;
     static const nlohmann::json &tplItems;

@@ -23,6 +23,15 @@ CustomType read_CustomType(string objectKey)
 El CPP se leerá igual
 -----------------------------------------------
 
+Activacion:
+--rule-data habilita reglas basicas a partir del AST.
+--rule-max-cases=N limita el numero de casos generados por funcion
+cuando hay candidatos (por defecto 3).
+La seleccion de candidatos es determinista y sigue el orden detectado.
+
+Ejemplo:
+askeleton --rule-data --rule-max-cases=3 -p build src/foo.cpp
+
 
 
 Regla 1: Condicionales con valores

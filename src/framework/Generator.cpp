@@ -289,7 +289,7 @@ std::string Generator::generateParameterInitialization(const InfoVariable &varia
     std::string readInstructionContent =
         templateItems["templating"]["assign_instruction"];
     InfoType underlying = variable.getUnderlyingType();
-    std::string typeForReadMethod = underlying.formatted;
+    std::string typeForReadMethod = normalizeReadMethodType(underlying);
 
     std::map<std::string, std::string> replacements = {
         {templateItems["tplitem"]["underlying"], underlying.original},
@@ -317,7 +317,8 @@ std::string Generator::generateReadInvocation(const InfoVariable &type,
     replaceTokensInText(
         readInvocation,
         {
-            {templateItems["tplitem"]["underlying_formatted"], type.formatted},
+            {templateItems["tplitem"]["underlying_formatted"],
+             normalizeReadMethodType(type)},
             {templateItems["tplitem"]["target"], function},
             {templateItems["tplitem"]["name"], type.name},
             {templateItems["tplitem"]["number"], to_string(invocation)},
@@ -346,6 +347,66 @@ std::string Generator::generateParameterInvocation(
     }
 
     return ss.str();
+}
+
+std::string Generator::buildInitializations(
+    const std::vector<InfoVariable> &parameters, const std::string &function,
+    unsigned invocation) const {
+    std::string init = generateParameterInitialization(parameters, function, invocation);
+    if (!init.empty())
+        init = "\n" + init;
+    return init;
+}
+
+std::string Generator::buildReturnReadMethod(const InfoType &underlying,
+                                             const std::string &function,
+                                             unsigned invocation) const {
+    return generateReadInvocation(underlying.getTypeAsReturn(), function, invocation);
+}
+
+std::string Generator::normalizeReadMethodType(const InfoType &type) const {
+    if (!type.isMap()) {
+        return type.formatted;
+    }
+
+    const std::string &formatted = type.formatted;
+    size_t left = formatted.find('<');
+    size_t right = formatted.find_last_of('>');
+    if (left == std::string::npos || right == std::string::npos || right <= left) {
+        return type.formatted;
+    }
+
+    std::vector<std::string> args;
+    std::string current;
+    int depth = 0;
+    for (size_t i = left + 1; i < right; ++i) {
+        char c = formatted[i];
+        if (c == '<') {
+            depth++;
+            current.push_back(c);
+        } else if (c == '>') {
+            depth--;
+            current.push_back(c);
+        } else if (c == ',' && depth == 0) {
+            ltrim(current);
+            rtrim(current);
+            args.push_back(current);
+            current.clear();
+        } else {
+            current.push_back(c);
+        }
+    }
+    ltrim(current);
+    rtrim(current);
+    if (!current.empty()) {
+        args.push_back(current);
+    }
+
+    if (args.size() < 2) {
+        return type.formatted;
+    }
+
+    return "map<" + args[0] + ", " + args[1] + ">";
 }
 
 std::string Generator::buildInvocation(const std::string &function, bool isStatic,
@@ -417,6 +478,11 @@ Generator::~Generator() {
     writeToFile(supportedPath, supportedTypesContent.str());
 
     replaceTokensInFile(fixturePath, fixturePath, valuesToDelete);
+}
+
+void Generator::setRuleValues(
+    const std::map<std::string, std::map<std::string, std::vector<long long>>> &rules) {
+    configGenerator.setRuleValues(rules);
 }
 
 std::string Generator::getMethodTemplatePath(const std::string &methodTemplate) {

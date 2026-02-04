@@ -31,16 +31,13 @@ void BoostGen::generateFullAssert(const std::string &function,
 
     const unsigned number = getFunctionCounter(function) + 1;
     const string returnTypeOriginal = underlying.original;
-    const string returnReadMethod =
-        generateReadInvocation(underlying.getTypeAsReturn(), function);
+    const string returnReadMethod = buildReturnReadMethod(underlying, function, number);
 
     string pointers = generatePointersAsserts(parameters, function);
     if (!pointers.empty())
         pointers = pointers + "\n";
 
-    string initializations = generateParameterInitialization(parameters, function);
-    if (!initializations.empty())
-        initializations = "\n" + initializations;
+    string initializations = buildInitializations(parameters, function, number);
 
     const string assert =
         generateAssertForFunction(function, parameters, returnType, isStatic);

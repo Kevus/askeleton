@@ -39,6 +39,13 @@ Point translate(Point p, int dx, int dy) {
     return p;
 }
 
+int classify(int a) {
+    if (a > 10) return 1;
+    if (a == 0) return 2;
+    if (a < -5) return 3;
+    return 0;
+}
+
 class Accumulator {
 public:
     explicit Accumulator(int start) : total(start) {}

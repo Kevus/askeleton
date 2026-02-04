@@ -32,10 +32,17 @@ ConfigGenerator::ConfigGenerator(const string &target)
     replaceTokensInFile(configFileTemplate, configFilePath, replacements);
 }
 
+void ConfigGenerator::setRuleValues(
+    const std::map<std::string, std::map<std::string, std::vector<long long>>> &rules) {
+    ruleValues = rules;
+}
+
 void ConfigGenerator::generateTestCase(const string &functionName,
                                        const vector<InfoVariable> &params,
                                        const InfoType &returnType,
                                        unsigned invocationNumber) const {
+    currentFunctionName = functionName;
+    currentInvocation = invocationNumber;
     stringstream ss;
     const string returnVarName =
         returnType.getUnderlyingType().getFormattedNotParametrized();
@@ -53,6 +60,8 @@ void ConfigGenerator::generateTestCase(const string &functionName,
 void ConfigGenerator::generateConstructorTest(const string &ctorName,
                                               const vector<InfoVariable> &params,
                                               unsigned invocationNumber) const {
+    currentFunctionName = ctorName;
+    currentInvocation = invocationNumber;
     stringstream ss;
 
     ss << ctorName << "_" << invocationNumber << ":\n{\n";
@@ -78,10 +87,34 @@ std::string ConfigGenerator::generateParam(const InfoVariable &param,
                                            const string &prefix) const {
     pair<InfoVariable, InfoVariable> pointers = param.getPointers();
     InfoType underlying = param.getUnderlyingType();
-    string value = rvg.getRandomValue(underlying.formatted);
+
+    string typeForValue = underlying.formatted;
+    if (underlying.isMap() && typeForValue.find("<") == std::string::npos) {
+        typeForValue = underlying.original;
+    }
+
+    string value;
+    auto funcIt = ruleValues.find(currentFunctionName);
+    if (funcIt != ruleValues.end()) {
+        const auto &paramRules = funcIt->second;
+        auto ruleIt = paramRules.find(param.name);
+        const bool numericType = !underlying.isContainer() && !underlying.isRecord() &&
+                                 !containsSubstring(underlying.original, "string");
+        if (ruleIt != paramRules.end() && !ruleIt->second.empty() && numericType) {
+            const auto &vals = ruleIt->second;
+            long long selected = vals[(currentInvocation - 1) % vals.size()];
+            value = std::to_string(selected);
+        }
+    }
+    if (value.empty()) {
+        value = rvg.getRandomValue(typeForValue);
+    }
     stringstream ss;
 
-    if (underlying.isRecord() && !underlying.isContainer()) {
+    const bool isRecord = underlying.isRecord() && !underlying.isContainer();
+    const bool hasFields = !underlying.getRecordFields().empty();
+
+    if (isRecord && hasFields) {
         ss << generateParam(pointers.first.getRecordFields(), generatePointers,
                             prefix + pointers.first.name + ".");
         if (generatePointers && (param.isPointer() || param.isReference()))

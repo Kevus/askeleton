@@ -4,4 +4,6 @@ Actualizado: 2026-02-04
 - Aunque en el main el directorio de generación es configurable, todavía no lo es en generator. Estado: por confirmar.
 - Error intermitente al abrir el .cfg cuando la carpeta de destino no existe. Estado: mitigado (se crea el directorio en ConfigGenerator, probado el 2026-02-04).
 - Crash al procesar tipos container sin parámetros de plantilla visibles (ej. std::vector sin <T>). Estado: mitigado (guardas en RandomValuesGenerator y se preservan argumentos de plantilla en InfoType, probado el 2026-02-04).
+- Lecturas de map con comparators/allocators extra en los templates. Estado: mitigado (Read_map usa solo key/value, probado el 2026-02-04).
+- Generación de valores para map con valores vector. Estado: mitigado (detección de map antes de vector, probado el 2026-02-04).
 - Tipos de datos como "int64_t" se convierten a "int64 t" y provocan errores. Estado: mitigado (equivalencias añadidas y probado con un caso mínimo el 2026-02-04).

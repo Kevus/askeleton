@@ -13,7 +13,7 @@
 
 class ASKGen : public clang::ast_matchers::MatchFinder::MatchCallback {
 public:
-    ASKGen() = default;
+    explicit ASKGen(bool ruleDataEnabled = false, unsigned ruleMaxCases = 3);
 
     virtual void
     run(const clang::ast_matchers::MatchFinder::MatchResult &Result);
@@ -30,7 +30,7 @@ private:
     void apply_PD1(const clang::ast_matchers::MatchFinder::MatchResult &Result);
 
     // Generaing test data
-    // void apply_DG1(const MatchFinder::MatchResult &Result);
+    void apply_DG1(const clang::ast_matchers::MatchFinder::MatchResult &Result);
     // void apply_DG2(const MatchFinder::MatchResult &Result);
 
     void generateReadMethod(Generator &testGen,
@@ -61,6 +61,19 @@ private:
                           std::string value);
     std::vector<std::string> obtainTestData(std::string type,
                                             std::string value);
+
+    void collectRuleValuesFromFunction(const clang::FunctionDecl *FD);
+    void addRuleValues(const clang::FunctionDecl *FD,
+                       const clang::ParmVarDecl *param,
+                       clang::BinaryOperatorKind opcode,
+                       long long literalValue);
+
+    unsigned computeRuleInvocationLimit(
+        const std::map<std::string, std::vector<long long>> &rulesForFunction) const;
+
+    bool ruleDataEnabled = false;
+    unsigned ruleMaxCases = 3;
+    std::map<std::string, std::map<std::string, std::vector<long long>>> ruleValues;
 
     std::map<std::string, int> function_occurrences;
 

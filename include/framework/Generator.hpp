@@ -46,6 +46,9 @@ public:
 
     static unsigned MAX_DEPTH;
 
+    void setRuleValues(const std::map<std::string,
+                                      std::map<std::string, std::vector<long long>>> &rules);
+
 protected:
     virtual void generateFullAssert(const std::string &function,
                                     const std::vector<InfoVariable> &parameters,
@@ -76,6 +79,15 @@ protected:
                                              const std::string &function) const;
 
     std::string generateParameterInvocation(const std::vector<InfoVariable> &) const;
+
+    std::string buildInitializations(const std::vector<InfoVariable> &parameters,
+                                     const std::string &function,
+                                     unsigned invocation) const;
+    std::string buildReturnReadMethod(const InfoType &underlying,
+                                      const std::string &function,
+                                      unsigned invocation) const;
+
+    std::string normalizeReadMethodType(const InfoType &type) const;
 
     std::string buildInvocation(const std::string &function, bool isStatic,
                                 bool returnsPointer) const;
