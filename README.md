@@ -104,10 +104,15 @@ Key options:
 - `--rule-max-cases=<N>`: limit rule-based test cases per function.
 - `--seed=<N>`: deterministic data generation.
 - `--profile=<random|boundary|safe|stress>`: data generation profile.
+- `--out-dir=<path>`: output directory for generated tests.
 - `--report=<path>`: write a JSON report of generated/skipped tests.
-- `--report-json`: write a JSON report to `Generated/UT/askeleton_report.json`.
+- `--report-json`: write a JSON report to `<out-dir>/askeleton_report.json`.
 - `--no-system-files-refresh`: do not regenerate `data/system_files.json` before running.
 - `-extra-arg`, `-extra-arg-before`: pass extra compiler args to Clang tooling.
+
+**Default Output Directory**
+By default, ASkeleTon writes output under `tests/generated` relative to the first
+source file passed on the command line. Use `--out-dir` to override this.
 
 **How `-p` Works**
 `-p <build-path>` points to a directory containing `compile_commands.json`. If it

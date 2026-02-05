@@ -138,6 +138,10 @@ cl::opt<std::string> ProfileOption(
     "profile",
     cl::desc("Data generation profile (random, boundary, safe, stress)"),
     cl::init("random"), cl::cat(OptC));
+cl::opt<std::string> OutDirOption(
+    "out-dir",
+    cl::desc("Output directory for generated tests (overrides default)"),
+    cl::value_desc("path"), cl::init(""), cl::cat(OptC));
 cl::opt<bool> NoSystemFilesRefresh(
     "no-system-files-refresh",
     cl::desc("Do not refresh system_files.json before running"),
@@ -172,6 +176,34 @@ int main(int argc, const char **argv) {
     if (!NoSystemFilesRefresh.getValue()) {
         refreshSystemFiles(true);
     }
+
+    std::string outDir;
+    if (!OutDirOption.empty()) {
+        outDir = OutDirOption;
+    } else {
+        const auto &sources = options->getSourcePathList();
+        if (!sources.empty()) {
+            std::filesystem::path sourcePath = sources.front();
+            if (sourcePath.is_relative()) {
+                sourcePath = std::filesystem::absolute(sourcePath);
+            }
+            std::filesystem::path baseDir = sourcePath.parent_path();
+            outDir = (baseDir / "tests" / "generated").string();
+        } else {
+            outDir = (getAskeletonHome() / config["route"]["ut"]).string();
+        }
+    }
+
+    if (!outDir.empty()) {
+        std::filesystem::path outPath = outDir;
+        if (outPath.is_relative()) {
+            outPath = std::filesystem::absolute(outPath);
+        }
+        config["route"]["ut"] = outPath.string();
+        config["route"]["generated"] = outPath.string();
+        config["route"]["log"] = (outPath.parent_path() / "Generated_log").string();
+    }
+
     exitIfFolderDoesNotExist(getAskeletonHome() / config["route"]["templates"]);
     llvm::outs() << "Checking ASkeleTon files...\n";
     exitIfFilesDoNotExist();
