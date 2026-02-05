@@ -25,15 +25,9 @@ public:
 private:
     void apply_FD1(const clang::ast_matchers::MatchFinder::MatchResult &Result);
     void apply_MD1(const clang::ast_matchers::MatchFinder::MatchResult &Result);
-    void apply_CT1(const clang::ast_matchers::MatchFinder::MatchResult &Result);
     void apply_CC1(const clang::ast_matchers::MatchFinder::MatchResult &Result);
 
-    // experimental
-    void apply_PD1(const clang::ast_matchers::MatchFinder::MatchResult &Result);
-
-    // Generaing test data
     void apply_DG1(const clang::ast_matchers::MatchFinder::MatchResult &Result);
-    // void apply_DG2(const MatchFinder::MatchResult &Result);
 
     void generateReadMethod(Generator &testGen,
                             const std::vector<InfoVariable> &variables);
@@ -57,12 +51,6 @@ private:
                                             bool isFromClass = false);
     std::shared_ptr<ConfigGenerator>
     getConfigGenerator(const std::string &target);
-
-    void generateTestData(std::string source, std::string function_name,
-                          std::string param, std::string type,
-                          std::string value);
-    std::vector<std::string> obtainTestData(std::string type,
-                                            std::string value);
 
     void collectRuleValuesFromFunction(const clang::FunctionDecl *FD);
     void addRuleValues(const clang::FunctionDecl *FD,

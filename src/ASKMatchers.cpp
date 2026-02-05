@@ -59,11 +59,6 @@ DeclarationMatcher DG1 =
         unless(isImplicit()))
         .bind("DG1b");
 
-DeclarationMatcher DG2 =
-    functionDecl(isExpansionInMainFile(), forEachDescendant(switchStmt().bind("DG2")),
-                 unless(isImplicit()))
-        .bind("DG2b");
-
 // We will reunite and insert into the match map here
 map<string, DeclarationMatcher> createMapMatchers(bool includeDataMatchers) {
     map<string, DeclarationMatcher> matchs;
@@ -77,7 +72,6 @@ map<string, DeclarationMatcher> createMapMatchers(bool includeDataMatchers) {
 
     if (includeDataMatchers) {
         matchs.insert(pair<string, DeclarationMatcher>("DG1", DG1));
-        matchs.insert(pair<string, DeclarationMatcher>("DG2", DG2));
     }
 
     return matchs;

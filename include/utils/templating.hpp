@@ -66,18 +66,6 @@ std::string removeNamespaceQualifier(std::string sToReplace);
  */
 std::string removeTemplateArguments(std::string type);
 
-/**
- * @brief Convert a clang expression to a string.
- *
- * This function converts a clang expression to a string. It uses the provided
- * source manager to get the character data of the expression and return it as a
- * string.
- *
- * @param E The clang expression to convert.
- * @param SM The source manager to use to get the character data.
- * @return std::string The expression as a string.
- */
-std::string convertExpressionToString(clang::Expr *E, clang::SourceManager &SM);
 
 /**
  * @brief Replace all occurrences of a substring in a string.

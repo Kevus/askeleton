@@ -94,25 +94,6 @@ string removeTemplateArguments(string type) {
     return type;
 }
 
-string convertExpressionToString(Expr *E, SourceManager &SM) {
-
-    LangOptions langOpts;
-
-    SourceLocation startLoc = E->getBeginLoc();
-    SourceLocation _endLoc = E->getEndLoc();
-    SourceLocation endLoc = Lexer::getLocForEndOfToken(_endLoc, 0, SM, langOpts);
-
-    try {
-        string result =
-            string(SM.getCharacterData(startLoc),
-                   SM.getCharacterData(endLoc) - SM.getCharacterData(startLoc));
-
-        return result;
-    } catch (std::bad_alloc &ba) {
-        return "";
-    }
-}
-
 void replaceTokensInText(string &text,
                          const std::map<std::string, std::string> &replacements) {
 

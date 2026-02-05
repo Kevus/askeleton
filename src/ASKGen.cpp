@@ -49,12 +49,10 @@ void printDebugInfo(const vector<InfoVariable> &parameters, const InfoType &retu
 void ASKGen::run(const MatchFinder::MatchResult &Result) {
     apply_FD1(Result);
     apply_MD1(Result);
-    // apply_CT1(Result); // Necessary for structs and classes
     apply_CC1(Result);
 
     if (ruleDataEnabled)
         apply_DG1(Result);
-    // apply_DG2(Result);
 }
 
 void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
@@ -215,50 +213,6 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
     }
 }
 
-void ASKGen::apply_CT1(const MatchFinder::MatchResult &Result) {
-    ASTContext *Context = Result.Context;
-
-    if (const CXXRecordDecl *UT = Result.Nodes.getNodeAs<clang::CXXRecordDecl>("CT1")) {
-
-        FullSourceLoc FullLocation;
-
-        FullLocation = Context->getFullLoc(UT->getBeginLoc());
-
-        if (FullLocation.isValid() &&
-            !Context->getSourceManager().isInSystemHeader(FullLocation)) {
-
-            // Get the file name
-            string source_file =
-                Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
-            unsigned first = source_file.find_last_of('/') + 1;
-            unsigned last = source_file.find_last_of('.');
-
-            string filename = source_file.substr(first, last - first);
-
-            InfoType record(QualType(UT->getTypeForDecl(), 0));
-            auto generator = getGenerator(filename, source_file, true);
-
-            try {
-                generateReadMethod(*generator, record);
-                llvm::outs() << "Read method for class " << UT->getName().str()
-                             << " generated successfully\n";
-            } catch (const ComplexTypeException &e) {
-                llvm::outs() << "Skipping read method for class " << UT->getName().str()
-                             << " due to complex type: " << e.type << "\n";
-            }
-
-            // Print auxiliary
-            // ======================================================================
-            llvm::outs() << "Found CXXRecordDecl (struct-customtype) at "
-                         << FullLocation.getSpellingLineNumber() << ":"
-                         << FullLocation.getSpellingColumnNumber() << " - ";
-
-            llvm::outs() << record.original << " in file " << filename << "\n";
-            // Print auxiliary
-            // ======================================================================
-        }
-    }
-}
 
 void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
     ASTContext *Context = Result.Context;
@@ -332,9 +286,6 @@ void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
     }
 }
 
-void ASKGen::apply_PD1(const MatchFinder::MatchResult &Result) {
-    // TO-DO: make this SHOW when a private member is called
-}
 
 void ASKGen::apply_DG1(const MatchFinder::MatchResult &Result) {
     ASTContext *Context = Result.Context;
@@ -1068,95 +1019,6 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     return 1;
 }
 
-void ASKGen::generateTestData(string source, string function_name, string param,
-                              string type, string value) {
-    // function.value=a,b,c,d,e
-    map<string, vector<string>> function_values;
-    string outputPath = "Generated/UT/" + source + "/" + source + "_data.txt";
-    vector<string> values;
-    string fileContent;
-
-    ifstream tmp_output(outputPath);
-    for (string line; getline(tmp_output, line);) {
-        // for each line...
-        auto delimiter = line.find(":");
-
-        string fvalue = line.substr(0, delimiter);
-        line = line.substr(delimiter + 1);
-
-        delimiter = line.find(",");
-        while (delimiter != string::npos) {
-            auto key = line.substr(0, delimiter);
-            line = line.substr(delimiter + 1);
-
-            values.push_back(key);
-
-            delimiter = line.find(",");
-        }
-
-        values.push_back(line);
-        function_values.insert(std::pair<string, vector<string>>(fvalue, values));
-        values.clear();
-    }
-
-    if (function_values.find(function_name + "." + param) != function_values.end()) {
-        values = function_values.at(function_name + "." + param);
-    }
-
-    vector<string> realvalues = obtainTestData(type, value);
-    for (auto it : realvalues)
-        values.push_back(it);
-
-    function_values[(function_name + "." + param)] = values;
-
-    stringstream ss;
-
-    for (auto it : function_values) {
-        ss << it.first << ":";
-
-        for (unsigned long i = 0; i < it.second.size(); i++) {
-            ss << it.second[i];
-            if (i < it.second.size() - 1)
-                ss << ",";
-        }
-
-        ss << "\n";
-    }
-
-    ofstream outputFile(outputPath);
-    outputFile << ss.str();
-}
-
-vector<string> ASKGen::obtainTestData(string type, string value) {
-    vector<string> result;
-    replaceAll(value, "\'", "");
-    replaceAll(value, "\"", "");
-    result.push_back(value);
-
-    if (type.find("bool") != string::npos || type.find("_Bool") != string::npos) {
-        result.push_back((value == "true") ? "false" : "true");
-    } else if (type.find("string") != string::npos) {
-        result.push_back(value + "_another");
-    } else if (type.find("char") != string::npos) {
-        char res = value.c_str()[0];
-        result.push_back(to_string(res + 1));
-        result.push_back(to_string(res - 1));
-    } else if (type.find("int") != string::npos) {
-        int res = stoi(value);
-        result.push_back(to_string(res + 1));
-        result.push_back(to_string(res - 1));
-    } else if (type.find("double") != string::npos) {
-        double res = stod(value);
-        result.push_back(to_string(res + 1));
-        result.push_back(to_string(res - 1));
-    } else if (type.find("float") != string::npos) {
-        float res = stof(value);
-        result.push_back(to_string(res + 1));
-        result.push_back(to_string(res - 1));
-    }
-
-    return result;
-}
 
 ASKGen::~ASKGen() {
     if (function_occurrences.empty()) {
