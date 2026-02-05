@@ -138,6 +138,10 @@ cl::opt<std::string> ProfileOption(
     "profile",
     cl::desc("Data generation profile (random, boundary, safe, stress)"),
     cl::init("random"), cl::cat(OptC));
+cl::opt<bool> NoSystemFilesRefresh(
+    "no-system-files-refresh",
+    cl::desc("Do not refresh system_files.json before running"),
+    cl::init(false), cl::cat(OptC));
 cl::opt<std::string> ReportPathOption(
     "report",
     cl::desc("Write generation report to JSON file at the given path"),
@@ -165,6 +169,9 @@ int main(int argc, const char **argv) {
     exitIfNotValidFramework(selectedFramework);
     selectFrameworkFromOption(selectedFramework.value());
 
+    if (!NoSystemFilesRefresh.getValue()) {
+        refreshSystemFiles(true);
+    }
     exitIfFolderDoesNotExist(getAskeletonHome() / config["route"]["templates"]);
     llvm::outs() << "Checking ASkeleTon files...\n";
     exitIfFilesDoNotExist();

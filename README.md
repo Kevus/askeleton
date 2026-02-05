@@ -43,6 +43,8 @@ Set `ASKELETON_HOME` to the repository root.
 ```bash
 make
 ```
+`system_files.json` is refreshed automatically by the binary on each run.
+Use `--no-system-files-refresh` to disable it if you need a static list.
 
 **Optional Sanitizer Build (AddressSanitizer)**
 ```bash
@@ -104,6 +106,7 @@ Key options:
 - `--profile=<random|boundary|safe|stress>`: data generation profile.
 - `--report=<path>`: write a JSON report of generated/skipped tests.
 - `--report-json`: write a JSON report to `Generated/UT/askeleton_report.json`.
+- `--no-system-files-refresh`: do not regenerate `data/system_files.json` before running.
 - `-extra-arg`, `-extra-arg-before`: pass extra compiler args to Clang tooling.
 
 **How `-p` Works**

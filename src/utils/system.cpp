@@ -41,6 +41,84 @@ string getTodayString(const string &format) {
     return oss.str();
 }
 
+void refreshSystemFiles(bool force) {
+    const json &config = getConfig();
+    fs::path askeletonHome = getAskeletonHome();
+    fs::path outputPath = askeletonHome / config["system_files"].get<string>();
+
+    if (!force && fs::exists(outputPath)) {
+        return;
+    }
+
+    std::vector<std::string> frameworks;
+    if (config.contains("frameworks") && config["frameworks"].is_array()) {
+        for (const auto &fw : config["frameworks"]) {
+            frameworks.push_back(fw.get<std::string>());
+        }
+    }
+    if (frameworks.empty()) {
+        frameworks = {"boost", "catch2", "gtest"};
+    }
+
+    std::vector<std::string> files;
+
+    const auto &templateFiles = config["file"]["template"];
+    for (auto it = templateFiles.begin(); it != templateFiles.end(); ++it) {
+        const std::string key = it.key();
+        const auto &value = it.value();
+
+        if (key == "cfg_tpl") {
+            files.push_back(
+                (askeletonHome / "data" / "templates" / value.get<string>())
+                    .string());
+            continue;
+        }
+
+        if (key == "method" && value.is_object()) {
+            for (auto methodIt = value.begin(); methodIt != value.end(); ++methodIt) {
+                files.push_back(
+                    (askeletonHome / "data" / "templates" /
+                     methodIt.value().get<string>())
+                        .string());
+            }
+            continue;
+        }
+
+        if (value.is_object()) {
+            for (const auto &fw : frameworks) {
+                for (auto subIt = value.begin(); subIt != value.end(); ++subIt) {
+                    files.push_back(
+                        (askeletonHome / "data" / "templates" / fw /
+                         subIt.value().get<string>())
+                            .string());
+                }
+            }
+            continue;
+        }
+
+        if (value.is_string()) {
+            for (const auto &fw : frameworks) {
+                files.push_back(
+                    (askeletonHome / "data" / "templates" / fw /
+                     value.get<string>())
+                        .string());
+            }
+        }
+    }
+
+    const auto &dataFiles = config["file"]["data"];
+    for (auto it = dataFiles.begin(); it != dataFiles.end(); ++it) {
+        files.push_back((askeletonHome / it.value().get<string>()).string());
+    }
+
+    json output = files;
+    fs::create_directories(outputPath.parent_path());
+    std::ofstream file(outputPath);
+    if (file.is_open()) {
+        file << output.dump(4) << "\n";
+    }
+}
+
 std::string createPath(const std::vector<std::string> &parts, bool isFile) {
     fs::path result;
 

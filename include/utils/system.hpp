@@ -130,6 +130,7 @@ void showOpenFileError(const std::string &filePath);
  * @return path The path to the user's ASkeleTon path.
  */
 std::filesystem::path getAskeletonHome();
+void refreshSystemFiles(bool force = true);
 
 /**
  * @brief Searches for a file with one of the specified extensions.
