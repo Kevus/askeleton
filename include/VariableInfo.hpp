@@ -28,6 +28,7 @@ struct InfoType {
 
     bool isPointer() const;
     bool isReference() const;
+    bool isArray() const;
 
     bool isRecord() const;
     bool isEnum() const;
@@ -46,6 +47,7 @@ protected:
     static std::string formatType(const std::string &);
 
     bool isRecord_, isEnum_;
+    bool isArray_ = false;
     std::vector<InfoVariable> recordFields;
 
 private:

@@ -21,6 +21,11 @@ json Report::toJson() const {
     root["sources"] = metadata.sources;
 
     json items = json::array();
+    json summary;
+    json by_status = json::object();
+    json by_kind = json::object();
+    json by_target = json::object();
+
     for (const auto &entry : entries) {
         json e;
         e["kind"] = entry.kind;
@@ -36,11 +41,24 @@ json Report::toJson() const {
             e["reason"] = entry.reason;
         if (!entry.detail.empty())
             e["detail"] = entry.detail;
+        if (!entry.signature.empty())
+            e["signature"] = entry.signature;
         if (entry.test_cases > 0)
             e["test_cases"] = entry.test_cases;
         items.push_back(e);
+
+        if (!entry.status.empty())
+            by_status[entry.status] = by_status.value(entry.status, 0) + 1;
+        if (!entry.kind.empty())
+            by_kind[entry.kind] = by_kind.value(entry.kind, 0) + 1;
+        if (!entry.target.empty())
+            by_target[entry.target] = by_target.value(entry.target, 0) + 1;
     }
     root["items"] = items;
+    summary["by_status"] = by_status;
+    summary["by_kind"] = by_kind;
+    summary["by_target"] = by_target;
+    root["summary"] = summary;
     return root;
 }
 

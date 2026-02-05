@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <set>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
@@ -38,6 +39,12 @@ private:
     std::string generateParam(const std::vector<InfoVariable> &params,
                               bool generatePointers = true,
                               const std::string &prefix = "") const;
+    std::string generateParam(const InfoVariable &param, bool generatePointers,
+                              const std::string &prefix, unsigned depth,
+                              std::set<std::string> &stack) const;
+    std::string generateParam(const std::vector<InfoVariable> &params,
+                              bool generatePointers, const std::string &prefix,
+                              unsigned depth, std::set<std::string> &stack) const;
     std::string generateReturn(const InfoType &returnType) const;
 
     void appendToConfigFile(const std::string &content) const;

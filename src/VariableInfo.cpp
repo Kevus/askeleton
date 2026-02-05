@@ -26,6 +26,19 @@ InfoType::InfoType(const clang::QualType &type)
     auto equivalent = getEquivalentType(original);
     if (equivalent.has_value()) {
         original = equivalent.value();
+    } else if (type->isArrayType()) {
+        isArray_ = true;
+        if (const auto *arrayType = dyn_cast<clang::ArrayType>(type.getTypePtr())) {
+            QualType elemType = arrayType->getElementType();
+            std::string elemStr = elemType.getCanonicalType().getAsString();
+            if (containsSubstring(elemStr, "char")) {
+                original = elemStr + " *";
+            } else {
+                throw ComplexTypeException(original);
+            }
+        } else {
+            throw ComplexTypeException(original);
+        }
     } else if (typeIsComplex(original)) {
         throw ComplexTypeException(original);
     } else if (const CXXRecordDecl *record = type->getAsCXXRecordDecl()) {
@@ -92,9 +105,13 @@ bool InfoType::isList() const {
 
 bool InfoType::isMap() const { return containsSubstring(original, "map"); }
 
-bool InfoType::isPointer() const { return containsSubstring(original, "*"); }
+bool InfoType::isPointer() const {
+    return containsSubstring(original, "*") && !isArray_;
+}
 
 bool InfoType::isReference() const { return containsSubstring(original, "&"); }
+
+bool InfoType::isArray() const { return isArray_; }
 
 bool InfoType::isRecord() const { return isRecord_; }
 

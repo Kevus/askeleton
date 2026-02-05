@@ -18,6 +18,7 @@ struct ReportEntry {
     std::string status;
     std::string reason;
     std::string detail;
+    std::string signature;
     unsigned test_cases = 0;
 };
 

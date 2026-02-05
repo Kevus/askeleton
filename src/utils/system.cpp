@@ -224,7 +224,7 @@ optional<string> getSourceFile(const string &filePath) {
 }
 
 optional<string> getHeaderFile(const string &filePath) {
-    return getFileWithExtensions(filePath, {".hpp", ".h"});
+    return getFileWithExtensions(filePath, {".hpp", ".h", ".hh", ".hxx"});
 }
 
 json &getTemplateItems() {

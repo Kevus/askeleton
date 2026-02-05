@@ -46,6 +46,58 @@ void printDebugInfo(const vector<InfoVariable> &parameters, const InfoType &retu
     cout << "\nReturn type: " << returnType.original << "\n";
 }
 
+namespace {
+std::string buildSignature(const FunctionDecl *decl) {
+    if (!decl)
+        return "";
+    std::ostringstream ss;
+    ss << decl->getReturnType().getAsString() << " ";
+    ss << decl->getQualifiedNameAsString() << "(";
+    bool first = true;
+    for (const auto *param : decl->parameters()) {
+        if (!first)
+            ss << ", ";
+        first = false;
+        ss << param->getOriginalType().getAsString();
+    }
+    ss << ")";
+    return ss.str();
+}
+
+std::string buildSignature(const CXXMethodDecl *decl) {
+    if (!decl)
+        return "";
+    std::ostringstream ss;
+    ss << decl->getReturnType().getAsString() << " ";
+    ss << decl->getQualifiedNameAsString() << "(";
+    bool first = true;
+    for (const auto *param : decl->parameters()) {
+        if (!first)
+            ss << ", ";
+        first = false;
+        ss << param->getOriginalType().getAsString();
+    }
+    ss << ")";
+    return ss.str();
+}
+
+std::string buildSignature(const CXXConstructorDecl *decl) {
+    if (!decl)
+        return "";
+    std::ostringstream ss;
+    ss << decl->getQualifiedNameAsString() << "(";
+    bool first = true;
+    for (const auto *param : decl->parameters()) {
+        if (!first)
+            ss << ", ";
+        first = false;
+        ss << param->getOriginalType().getAsString();
+    }
+    ss << ")";
+    return ss.str();
+}
+} // namespace
+
 void ASKGen::run(const MatchFinder::MatchResult &Result) {
     apply_FD1(Result);
     apply_MD1(Result);
@@ -103,6 +155,7 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
                     entry.column = FullLocation.getSpellingColumnNumber();
                     entry.target = target;
                     entry.is_class = false;
+                    entry.signature = buildSignature(UT);
                 }
 
                 try {
@@ -181,6 +234,7 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
                     entry.column = FullLocation.getSpellingColumnNumber();
                     entry.target = parentname;
                     entry.is_class = true;
+                    entry.signature = buildSignature(UT);
                 }
 
                 try {
@@ -257,6 +311,7 @@ void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
                 entry.column = FullLocation.getSpellingColumnNumber();
                 entry.target = target;
                 entry.is_class = true;
+                entry.signature = buildSignature(UT);
             }
 
             try {

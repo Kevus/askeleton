@@ -111,8 +111,9 @@ std::string ConfigGenerator::generateParam(const vector<InfoVariable> &params,
                                            const string &prefix) const {
     stringstream ss;
 
+    std::set<std::string> stack;
     for (const InfoVariable &param : params)
-        ss << generateParam(param, generatePointers, prefix) << "\n";
+        ss << generateParam(param, generatePointers, prefix, 0, stack) << "\n";
 
     return ss.str();
 }
@@ -120,6 +121,25 @@ std::string ConfigGenerator::generateParam(const vector<InfoVariable> &params,
 std::string ConfigGenerator::generateParam(const InfoVariable &param,
                                            bool generatePointers,
                                            const string &prefix) const {
+    std::set<std::string> stack;
+    return generateParam(param, generatePointers, prefix, 0, stack);
+}
+
+std::string ConfigGenerator::generateParam(const std::vector<InfoVariable> &params,
+                                           bool generatePointers,
+                                           const std::string &prefix,
+                                           unsigned depth,
+                                           std::set<std::string> &stack) const {
+    stringstream ss;
+    for (const InfoVariable &param : params)
+        ss << generateParam(param, generatePointers, prefix, depth, stack) << "\n";
+    return ss.str();
+}
+
+std::string ConfigGenerator::generateParam(const InfoVariable &param,
+                                           bool generatePointers,
+                                           const std::string &prefix, unsigned depth,
+                                           std::set<std::string> &stack) const {
     pair<InfoVariable, InfoVariable> pointers = param.getPointers();
     InfoType underlying = param.getUnderlyingType();
     const auto factory = TypeFactoryRegistry::get().find(underlying);
@@ -182,11 +202,18 @@ std::string ConfigGenerator::generateParam(const InfoVariable &param,
     }
 
     if (isRecord && hasFields) {
+        const std::string key = underlying.original;
+        if (depth > 2 || stack.count(key) > 0) {
+            return "";
+        }
+        stack.insert(key);
         ss << generateParam(pointers.first.getRecordFields(), generatePointers,
-                            prefix + pointers.first.name + ".");
+                            prefix + pointers.first.name + ".", depth + 1, stack);
         if (generatePointers && (param.isPointer() || param.isReference()))
             ss << generateParam(pointers.second.getRecordFields(), generatePointers,
-                                prefix + pointers.second.name + ".");
+                                prefix + pointers.second.name + ".", depth + 1,
+                                stack);
+        stack.erase(key);
     } else {
         ss << "\t" << prefix + pointers.first.name << "=" << value << ";#"
            << param.original;
