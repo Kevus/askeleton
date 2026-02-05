@@ -8,6 +8,7 @@ Outputs fixtures, tests, Makefiles, and `.cfg` data files with deterministic or 
 - Rule-based values extracted from comparisons.
 - JSON report with per-target summary.
 - Output inside the SUT repo by default.
+- Clean, structured console output with optional JSON execution log.
 
 **Quick Start**
 ```bash
@@ -64,12 +65,23 @@ Key options:
 - `--include-impl-under-include`: allow compiling `.c/.cc/.cpp` under `include/`.
 - `--report=<path>`: write a JSON report of generated/skipped tests.
 - `--report-json`: write a JSON report to `<out-dir>/askeleton_report.json`.
+- `--log-json=<path>`: write an execution log with summary/warnings.
 - `--no-system-files-refresh`: do not regenerate `data/system_files.json`.
+- `--quiet`, `--verbose`, `--debug`: control console verbosity.
 - `-extra-arg`, `-extra-arg-before`: pass extra compiler args to Clang tooling.
 
 **Default Output**
 By default, ASkeleTon writes output under `tests/generated` relative to the first
 source file passed on the command line. Use `--out-dir` to override this.
+
+**Console Output**
+By default you get a concise progress view plus a final summary. Use:
+- `--quiet` to print only errors.
+- `--verbose` to include per-entity progress.
+- `--debug` to include detailed parameter/return signatures.
+
+To collect a machine-readable execution log (inputs, counts, warnings, timings),
+use `--log-json=<path>`.
 
 **Data Generation**
 Rule-based values:
@@ -127,6 +139,8 @@ Use `--report` or `--report-json` to generate a machine-readable summary with:
 
 **Troubleshooting**
 - `compile_commands.json` not found: pass `-p <build-path>` to its directory.
+- `compile_commands.json` uses relative paths: supported. ASkeleTon normalizes
+  entries internally so relative entries still match absolute source paths.
 - Headers not found in fixture: add the include manually in `*_fixture.hpp`.
 - Empty containers in `boundary` profile: use `random` or `safe`.
 - `llvm-config-18 not found`: install `llvm-18` and `llvm-18-tools`.

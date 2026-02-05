@@ -3,19 +3,23 @@
 #include "color.h"
 #include "framework/Generator.hpp"
 #include "ConfigGenerator.hpp"
+#include "Logging.hpp"
 #include "Report.hpp"
+#include "RunStats.hpp"
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 #include "llvm/Support/CommandLine.h"
 
+#include <chrono>
 #include <ctime>
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <set>
+#include <unordered_map>
 
 using namespace llvm;
 using namespace clang;
@@ -24,6 +28,56 @@ using namespace clang::tooling;
 using namespace std;
 using json = nlohmann::json;
 namespace fs = std::filesystem;
+
+namespace {
+
+class NormalizedCompilationDatabase : public CompilationDatabase {
+  public:
+    explicit NormalizedCompilationDatabase(const CompilationDatabase &base) {
+        const auto cmds = base.getAllCompileCommands();
+        commands_.reserve(cmds.size());
+        allCommands_.reserve(cmds.size());
+        allFiles_.reserve(cmds.size());
+
+        for (const auto &cmd : cmds) {
+            fs::path dir = cmd.Directory;
+            fs::path dirAbs = dir.is_relative() ? fs::absolute(dir) : dir;
+            fs::path file = cmd.Filename;
+            fs::path absFile = file.is_relative() ? (dirAbs / file) : file;
+            std::string absFileStr = fs::absolute(absFile).string();
+
+            CompileCommand normalized = cmd;
+            normalized.Directory = dirAbs.string();
+            normalized.Filename = absFileStr;
+
+            commands_[absFileStr].push_back(normalized);
+            allCommands_.push_back(normalized);
+            allFiles_.push_back(absFileStr);
+        }
+    }
+
+    std::vector<CompileCommand> getCompileCommands(StringRef filePath) const override {
+        fs::path abs = fs::absolute(filePath.str());
+        auto it = commands_.find(abs.string());
+        if (it != commands_.end()) {
+            return it->second;
+        }
+        return {};
+    }
+
+    std::vector<std::string> getAllFiles() const override { return allFiles_; }
+
+    std::vector<CompileCommand> getAllCompileCommands() const override {
+        return allCommands_;
+    }
+
+  private:
+    std::unordered_map<std::string, std::vector<CompileCommand>> commands_;
+    std::vector<CompileCommand> allCommands_;
+    std::vector<std::string> allFiles_;
+};
+
+} // namespace
 
 json &config = getConfig();
 
@@ -72,6 +126,8 @@ void exitIfNotValidFramework(std::optional<Framework> framework) {
 
 void selectFrameworkFromOption(Framework framework) {
     setFramework(framework);
+    if (Logger::instance().level() < LogLevel::Normal)
+        return;
     llvm::outs() << "Generating test for " << ANSI_BOLD;
     switch (framework) {
     case Framework::GTEST:
@@ -98,14 +154,17 @@ void moveGeneratedFolderToLog() {
         fs::path logFolder = getAskeletonHome() / config["route"]["log"];
         if (!fs::exists(logFolder)) {
             create_directory(logFolder);
-            llvm::outs() << ANSI_BLUE << "Log folder created at " << logFolder
-                         << ANSI_RESET << "\n";
+            if (Logger::instance().level() >= LogLevel::Normal) {
+                llvm::outs() << ANSI_BLUE << "Log folder created at " << logFolder
+                             << ANSI_RESET << "\n";
+            }
         }
 
         logFolder /= (config["route"]["generated"].get<string>() + "_" +
                       getTodayString("%d%m%Y_%H%M%S"));
         rename(utFolder, logFolder);
-        llvm::outs() << "Previous generated folder moved to " << logFolder << "\n";
+        if (Logger::instance().level() >= LogLevel::Normal)
+            llvm::outs() << "Previous generated folder moved to " << logFolder << "\n";
     }
 }
 
@@ -157,6 +216,15 @@ cl::opt<std::string> ReportPathOption(
 cl::opt<bool> ReportJsonOption(
     "report-json", cl::desc("Write generation report to a default JSON path"),
     cl::init(false), cl::cat(OptC));
+cl::opt<bool> QuietOption(
+    "quiet", cl::desc("Reduce output to errors only"), cl::init(false), cl::cat(OptC));
+cl::opt<bool> VerboseOption(
+    "verbose", cl::desc("Increase verbosity"), cl::init(false), cl::cat(OptC));
+cl::opt<bool> DebugOption(
+    "debug", cl::desc("Enable debug verbosity"), cl::init(false), cl::cat(OptC));
+cl::opt<std::string> LogJsonOption(
+    "log-json", cl::desc("Write execution log to JSON file at the given path"),
+    cl::value_desc("path"), cl::init(""), cl::cat(OptC));
 
 int main(int argc, const char **argv) {
     system("");
@@ -166,6 +234,8 @@ int main(int argc, const char **argv) {
         return 1;
     }
 
+    const auto time_start = std::chrono::steady_clock::now();
+
     Expected<CommonOptionsParser> options = CommonOptionsParser::create(argc, argv, OptC);
 
     if (!options) {
@@ -173,12 +243,26 @@ int main(int argc, const char **argv) {
         return 1;
     }
 
+    LogLevel level = LogLevel::Normal;
+    if (QuietOption)
+        level = LogLevel::Quiet;
+    if (VerboseOption)
+        level = LogLevel::Verbose;
+    if (DebugOption)
+        level = LogLevel::Debug;
+    Logger::instance().setLevel(level);
+
     std::optional<Framework> selectedFramework = checkFramework(FrameworkOption);
     exitIfNotValidFramework(selectedFramework);
     selectFrameworkFromOption(selectedFramework.value());
 
+    std::optional<long long> refresh_ms;
     if (!NoSystemFilesRefresh.getValue()) {
+        auto t0 = std::chrono::steady_clock::now();
         refreshSystemFiles(true);
+        auto t1 = std::chrono::steady_clock::now();
+        refresh_ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
     }
 
     std::string outDir;
@@ -209,31 +293,36 @@ int main(int argc, const char **argv) {
     }
 
     exitIfFolderDoesNotExist(getAskeletonHome() / config["route"]["templates"]);
-    llvm::outs() << "Checking ASkeleTon files...\n";
+    Logger::instance().info("Checking ASkeleTon files...");
     exitIfFilesDoNotExist();
-    llvm::outs() << ANSI_GREEN << "Files checked successfully\n" << ANSI_RESET;
+    if (Logger::instance().level() >= LogLevel::Normal)
+        llvm::outs() << ANSI_GREEN << "Files checked successfully\n" << ANSI_RESET;
 
     Generator::MAX_DEPTH = DeepLevel.getValue();
     ConfigGenerator::setProfile(ProfileOption.getValue());
     if (SeedOption.getValue() >= 0) {
         ConfigGenerator::setSeed(static_cast<uint32_t>(SeedOption.getValue()));
     }
-    if (SeedOption.getValue() >= 0) {
-        llvm::outs() << "Data generation: profile=" << ProfileOption.getValue()
-                     << " seed=" << SeedOption.getValue() << "\n";
-    } else {
-        llvm::outs() << "Data generation: profile=" << ProfileOption.getValue()
-                     << "\n";
+    if (Logger::instance().level() >= LogLevel::Normal) {
+        if (SeedOption.getValue() >= 0) {
+            llvm::outs() << "Data generation: profile=" << ProfileOption.getValue()
+                         << " seed=" << SeedOption.getValue() << "\n";
+        } else {
+            llvm::outs() << "Data generation: profile=" << ProfileOption.getValue()
+                         << "\n";
+        }
     }
 
     moveGeneratedFolderToLog();
 
     fs::create_directories(getAskeletonHome() / config["route"]["ut"]);
 
-    llvm::outs() << ANSI_BOLD << "-------------------------------------\n"
-                 << ANSI_BOLD_BLUE << "   Starting ASkeleTon UT Generator   \n"
-                 << ANSI_RESET << ANSI_BOLD << "-------------------------------------\n"
-                 << ANSI_RESET;
+    if (Logger::instance().level() >= LogLevel::Normal) {
+        llvm::outs() << ANSI_BOLD << "-------------------------------------\n"
+                     << ANSI_BOLD_BLUE << "   Starting ASkeleTon UT Generator   \n"
+                     << ANSI_RESET << ANSI_BOLD << "-------------------------------------\n"
+                     << ANSI_RESET;
+    }
 
     std::string reportPath;
     if (!ReportPathOption.empty()) {
@@ -244,6 +333,7 @@ int main(int argc, const char **argv) {
                          .string();
     }
 
+    RunStats stats;
     Report report;
     if (!reportPath.empty()) {
         ReportMetadata meta;
@@ -266,23 +356,26 @@ int main(int argc, const char **argv) {
     }
 
     std::vector<std::string> sources = options->getSourcePathList();
+    const auto &compdb = options->getCompilations();
+    NormalizedCompilationDatabase normalizedCompdb(compdb);
     if (!IncludeImplUnderInclude.getValue()) {
         std::vector<std::string> filtered;
         for (const auto &src : sources) {
             std::filesystem::path p = src;
-            if (p.is_relative()) {
-                p = std::filesystem::absolute(p);
+            std::filesystem::path absPath = p;
+            if (absPath.is_relative()) {
+                absPath = std::filesystem::absolute(absPath);
             }
             const std::string ext = p.extension().string();
             if ((ext == ".c" || ext == ".cc" || ext == ".cpp") &&
-                p.string().find("/include/") != std::string::npos) {
+                absPath.string().find("/include/") != std::string::npos) {
                 llvm::outs()
-                    << "Skipping " << p.string()
+                    << "Skipping " << absPath.string()
                     << " (implementation under include/). Use "
                        "--include-impl-under-include to force.\n";
                 continue;
             }
-            filtered.push_back(p.string());
+            filtered.push_back(src);
         }
         sources = std::move(filtered);
         if (!reportPath.empty()) {
@@ -306,18 +399,92 @@ int main(int argc, const char **argv) {
         }
     }
 
+    std::vector<std::string> sourcesForTool;
+    sourcesForTool.reserve(sources.size());
+    for (const auto &src : sources) {
+        fs::path abs = fs::path(src);
+        if (abs.is_relative())
+            abs = fs::absolute(abs);
+        sourcesForTool.push_back(abs.string());
+    }
+
     clang::ast_matchers::MatchFinder Finder;
     ASKGen Functionality(RuleDataOption, RuleMaxCasesOption,
-                         reportPath.empty() ? nullptr : &report);
+                         reportPath.empty() ? nullptr : &report, &stats);
     for (auto i : createMapMatchers(RuleDataOption))
         Finder.addMatcher(i.second, &Functionality);
 
-    ClangTool Tool(options->getCompilations(), sources);
+    ClangTool Tool(normalizedCompdb, sourcesForTool);
+    auto tool_start = std::chrono::steady_clock::now();
     int result = Tool.run(newFrontendActionFactory(&Finder).get());
+    auto tool_end = std::chrono::steady_clock::now();
     if (!reportPath.empty()) {
         std::filesystem::path outPath = reportPath;
         std::filesystem::create_directories(outPath.parent_path());
         report.write(reportPath);
+    }
+
+    Logger::instance().printWarningsSummary();
+
+    if (Logger::instance().level() >= LogLevel::Normal) {
+        llvm::outs() << "\nSummary:\n";
+        llvm::outs() << "  Found: " << stats.found << "\n";
+        llvm::outs() << "  Generated: " << stats.generated << "\n";
+        llvm::outs() << "  Skipped: " << stats.skipped << "\n";
+        if (!stats.skipped_by_reason.empty()) {
+            llvm::outs() << "  Skipped by reason:\n";
+            for (const auto &it : stats.skipped_by_reason) {
+                llvm::outs() << "    - " << it.first << ": " << it.second << "\n";
+            }
+        }
+        llvm::outs() << "  Output: " << config["route"]["ut"].get<std::string>() << "\n";
+        if (!reportPath.empty()) {
+            llvm::outs() << "  Report: " << reportPath << "\n";
+        }
+        auto tool_ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(tool_end - tool_start)
+                .count();
+        llvm::outs() << "  Time: " << tool_ms << " ms";
+        if (refresh_ms.has_value())
+            llvm::outs() << " (system files: " << refresh_ms.value() << " ms)";
+        llvm::outs() << "\n";
+    }
+
+    if (!LogJsonOption.empty()) {
+        json log;
+        log["summary"] = {
+            {"found", stats.found},
+            {"generated", stats.generated},
+            {"skipped", stats.skipped},
+            {"skipped_by_reason", stats.skipped_by_reason},
+        };
+        log["by_kind"] = stats.by_kind;
+        log["by_target"] = stats.by_target;
+        log["warnings"]["missing_source"] =
+            std::vector<std::string>(Logger::instance().missingSourceFiles().begin(),
+                                     Logger::instance().missingSourceFiles().end());
+        log["warnings"]["missing_header"] =
+            std::vector<std::string>(Logger::instance().missingHeaderFiles().begin(),
+                                     Logger::instance().missingHeaderFiles().end());
+        log["files_seen"] =
+            std::vector<std::string>(Logger::instance().filesSeen().begin(),
+                                     Logger::instance().filesSeen().end());
+        auto tool_ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(tool_end - tool_start)
+                .count();
+        log["timings_ms"]["tool_run"] = tool_ms;
+        if (refresh_ms.has_value())
+            log["timings_ms"]["system_files_refresh"] = refresh_ms.value();
+        auto total_ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(tool_end - time_start)
+                .count();
+        log["timings_ms"]["total"] = total_ms;
+
+        std::filesystem::path logPath = LogJsonOption.getValue();
+        std::filesystem::create_directories(logPath.parent_path());
+        std::ofstream out(logPath);
+        if (out.is_open())
+            out << log.dump(2) << "\n";
     }
     return result;
 }

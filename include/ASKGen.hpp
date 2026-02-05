@@ -8,6 +8,7 @@
 #include "ConfigGenerator.hpp"
 #include "framework/Generator.hpp"
 #include "Report.hpp"
+#include "RunStats.hpp"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
@@ -15,7 +16,7 @@
 class ASKGen : public clang::ast_matchers::MatchFinder::MatchCallback {
 public:
     explicit ASKGen(bool ruleDataEnabled = false, unsigned ruleMaxCases = 3,
-                    Report *reporter = nullptr);
+                    Report *reporter = nullptr, RunStats *stats = nullptr);
 
     virtual void
     run(const clang::ast_matchers::MatchFinder::MatchResult &Result);
@@ -85,4 +86,5 @@ private:
     std::map<std::string, std::shared_ptr<ConfigGenerator>> configGenerators;
 
     Report *reporter = nullptr;
+    RunStats *stats = nullptr;
 };

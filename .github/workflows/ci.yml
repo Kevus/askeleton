@@ -48,7 +48,7 @@ jobs:
           ]
           EOF
           ./askeleton --help
-          ASKELETON_HOME=$(pwd) ./askeleton -p examples examples/sut.cpp \
+          ASKELETON_HOME=$(pwd) ./askeleton -p examples ${GITHUB_WORKSPACE}/examples/sut.cpp \
             --seed=123 --profile=random \
             --out-dir=/tmp/askeleton_smoke \
             --report=/tmp/askeleton_smoke/askeleton_report.json

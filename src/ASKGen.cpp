@@ -11,6 +11,7 @@
 #include "framework/BoostGen.hpp"
 #include "framework/CatchGen.hpp"
 #include "framework/GTestGen.hpp"
+#include "Logging.hpp"
 #include "utils/ast_values.hpp"
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
@@ -26,24 +27,29 @@ using namespace std;
 namespace fs = std::filesystem;
 
 
-ASKGen::ASKGen(bool ruleDataEnabled, unsigned ruleMaxCases, Report *reporter)
+ASKGen::ASKGen(bool ruleDataEnabled, unsigned ruleMaxCases, Report *reporter,
+               RunStats *stats)
     : ruleDataEnabled(ruleDataEnabled), ruleMaxCases(std::max(1u, ruleMaxCases)),
-      reporter(reporter) {}
+      reporter(reporter), stats(stats) {}
 
 void printDebugInfo(const vector<InfoVariable> &parameters, const InfoType &returnType) {
-    cout << "Params list: ";
+    if (Logger::instance().level() < LogLevel::Debug)
+        return;
+
+    std::ostringstream ss;
+    ss << "Params list: ";
     if (parameters.empty()) {
-        cout << "no params";
+        ss << "no params";
     } else {
         unsigned i = 1;
         for (const auto &param : parameters) {
-            cout << i++ << " - " << param.original << " " << param.name;
+            ss << i++ << " - " << param.original << " " << param.name;
             if (&param != &parameters.back())
-                cout << ", ";
+                ss << ", ";
         }
     }
-
-    cout << "\nReturn type: " << returnType.original << "\n";
+    ss << "\nReturn type: " << returnType.original;
+    Logger::instance().debug(ss.str());
 }
 
 namespace {
@@ -134,17 +140,10 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
                 string fileName = extractFileName(filePath);
                 string target = fileName;
 
-                // Print auxiliary
-                // ======================================================================
-                llvm::outs() << ANSI_BLUE << "Found FunctionDecl at "
-                             << FullLocation.getSpellingLineNumber() << ":"
-                             << FullLocation.getSpellingColumnNumber() << " - ";
-
-                llvm::outs() << UT->getNameInfo().getAsString() << " in file " << fileName
-                             << "\n"
-                             << ANSI_RESET;
-                // Print auxiliary
-                // ======================================================================
+                Logger::instance().recordFileSeen(filePath.string());
+                Logger::instance().verbose(
+                    std::string("Found FunctionDecl: ") +
+                    UT->getNameInfo().getAsString() + " in " + fileName);
 
                 auto generator = getGenerator(target, filePath, false);
                 auto configGenerator = getConfigGenerator(target);
@@ -168,29 +167,43 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
 
                 try {
                     unsigned cases = generateTest(*generator, *configGenerator, UT);
-                    llvm::outs()
-                        << ANSI_GREEN << "Test for function "
-                        << UT->getNameInfo().getAsString() << " generated successfully\n"
-                        << ANSI_RESET;
+                    Logger::instance().verbose(
+                        std::string("Generated test for function ") +
+                        UT->getNameInfo().getAsString());
                     if (reporter) {
                         entry.status = "generated";
                         entry.test_cases = cases;
                         reporter->addEntry(entry);
                     }
+                    if (stats) {
+                        stats->found++;
+                        stats->generated++;
+                        stats->by_kind["function"]++;
+                        if (!entry.target.empty())
+                            stats->by_target[entry.target]++;
+                    }
                 } catch (const ComplexTypeException &e) {
-                    llvm::outs() << ANSI_MAGENTA << "Skipping test for function "
-                                 << UT->getNameInfo().getAsString()
-                                 << " due to complex type: " << e.type << "\n"
-                                 << ANSI_RESET;
+                    Logger::instance().verbose(
+                        std::string("Skipped function ") +
+                        UT->getNameInfo().getAsString() + " (complex type: " + e.type +
+                        ")");
                     if (reporter) {
                         entry.status = "skipped";
                         entry.reason = "complex_type";
                         entry.detail = e.type;
                         reporter->addEntry(entry);
                     }
+                    if (stats) {
+                        stats->found++;
+                        stats->skipped++;
+                        stats->by_kind["function"]++;
+                        stats->skipped_by_reason["complex_type"]++;
+                        if (!entry.target.empty())
+                            stats->by_target[entry.target]++;
+                    }
                 }
 
-                llvm::outs() << "--------------\n";
+                Logger::instance().debug("--------------");
             }
         }
     }
@@ -220,17 +233,10 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
                 }
                 string parentname = UT->getParent()->getName().str();
 
-                // Print auxiliary
-                // ======================================================================
-                llvm::outs() << ANSI_BLUE << "Found CxxMethodDecl at "
-                             << FullLocation.getSpellingLineNumber() << ":"
-                             << FullLocation.getSpellingColumnNumber() << " - ";
-
-                llvm::outs() << UT->getNameInfo().getAsString() << " from class "
-                             << parentname << "\n"
-                             << ANSI_RESET;
-                // Print auxiliary
-                // ======================================================================
+                Logger::instance().recordFileSeen(source_file);
+                Logger::instance().verbose(
+                    std::string("Found CxxMethodDecl: ") +
+                    UT->getNameInfo().getAsString() + " from class " + parentname);
 
                 auto generator = getGenerator(parentname, source_file, true);
                 auto configGenerator = getConfigGenerator(parentname);
@@ -254,29 +260,43 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
 
                 try {
                     unsigned cases = generateTest(*generator, *configGenerator, UT);
-                    llvm::outs()
-                        << ANSI_GREEN << "Test for method "
-                        << UT->getNameInfo().getAsString() << " generated successfully\n"
-                        << ANSI_RESET;
+                    Logger::instance().verbose(
+                        std::string("Generated test for method ") +
+                        UT->getNameInfo().getAsString());
                     if (reporter) {
                         entry.status = "generated";
                         entry.test_cases = cases;
                         reporter->addEntry(entry);
                     }
+                    if (stats) {
+                        stats->found++;
+                        stats->generated++;
+                        stats->by_kind["method"]++;
+                        if (!entry.target.empty())
+                            stats->by_target[entry.target]++;
+                    }
                 } catch (const ComplexTypeException &e) {
-                    llvm::outs() << ANSI_MAGENTA << "Skipping test for method "
-                                 << UT->getNameInfo().getAsString()
-                                 << " due to complex type: " << e.type << "\n"
-                                 << ANSI_RESET;
+                    Logger::instance().verbose(
+                        std::string("Skipped method ") +
+                        UT->getNameInfo().getAsString() + " (complex type: " + e.type +
+                        ")");
                     if (reporter) {
                         entry.status = "skipped";
                         entry.reason = "complex_type";
                         entry.detail = e.type;
                         reporter->addEntry(entry);
                     }
+                    if (stats) {
+                        stats->found++;
+                        stats->skipped++;
+                        stats->by_kind["method"]++;
+                        stats->skipped_by_reason["complex_type"]++;
+                        if (!entry.target.empty())
+                            stats->by_target[entry.target]++;
+                    }
                 }
 
-                llvm::outs() << "--------------\n";
+                Logger::instance().debug("--------------");
             }
         }
     }
@@ -308,17 +328,10 @@ void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
             string fileName = extractFileName(filePath);
             string target = UT->getParent()->getName().str();
 
-            // Print auxiliary
-            // ======================================================================
-            llvm::outs() << ANSI_BLUE << "Found CXXConstructorDecl at "
-                         << FullLocation.getSpellingLineNumber() << ":"
-                         << FullLocation.getSpellingColumnNumber() << " - ";
-
-            llvm::outs() << UT->getNameInfo().getAsString() << " from class " << target
-                         << "\n"
-                         << ANSI_RESET;
-            // Print auxiliary
-            // ======================================================================
+            Logger::instance().recordFileSeen(filePath);
+            Logger::instance().verbose(
+                std::string("Found CXXConstructorDecl: ") +
+                UT->getNameInfo().getAsString() + " from class " + target);
 
             auto generator = getGenerator(target, filePath, true);
             auto configGenerator = getConfigGenerator(target);
@@ -338,27 +351,43 @@ void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
 
             try {
                 unsigned cases = generateTest(*generator, *configGenerator, UT);
-                llvm::outs() << ANSI_GREEN << "Test for method "
-                             << UT->getNameInfo().getAsString()
-                             << " generated successfully\n";
+                Logger::instance().verbose(
+                    std::string("Generated test for constructor ") +
+                    UT->getNameInfo().getAsString());
                 if (reporter) {
                     entry.status = "generated";
                     entry.test_cases = cases;
                     reporter->addEntry(entry);
                 }
+                if (stats) {
+                    stats->found++;
+                    stats->generated++;
+                    stats->by_kind["constructor"]++;
+                    if (!entry.target.empty())
+                        stats->by_target[entry.target]++;
+                }
             } catch (const ComplexTypeException &e) {
-                llvm::outs() << ANSI_MAGENTA << "Skipping test for method "
-                             << UT->getNameInfo().getAsString()
-                             << " due to complex type: " << e.type << "\n";
+                Logger::instance().verbose(
+                    std::string("Skipped constructor ") +
+                    UT->getNameInfo().getAsString() + " (complex type: " + e.type +
+                    ")");
                 if (reporter) {
                     entry.status = "skipped";
                     entry.reason = "complex_type";
                     entry.detail = e.type;
                     reporter->addEntry(entry);
                 }
+                if (stats) {
+                    stats->found++;
+                    stats->skipped++;
+                    stats->by_kind["constructor"]++;
+                    stats->skipped_by_reason["complex_type"]++;
+                    if (!entry.target.empty())
+                        stats->by_target[entry.target]++;
+                }
             }
 
-            llvm::outs() << ANSI_RESET << "--------------\n";
+            Logger::instance().debug("--------------");
         }
     }
 }
@@ -1099,7 +1128,8 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
 
 ASKGen::~ASKGen() {
     if (function_occurrences.empty()) {
-        llvm::outs() << "ASkeleTon has not found any function to generate tests for\n";
+        Logger::instance().info(
+            "ASkeleTon has not found any function to generate tests for");
         remove_all(getAskeletonHome() / getConfig()["route"]["generated"]);
     }
 }

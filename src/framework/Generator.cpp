@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "color.h"
+#include "Logging.hpp"
 #include "constants.hpp"
 #include "TypeFactoryRegistry.hpp"
 #include "utils/default_values.hpp"
@@ -102,16 +103,17 @@ void Generator::setValuesToChange(std::map<std::string, std::string> &valuesToCh
     auto headerFile = getHeaderFile(targetFilePath);
 
     if (!missingFilesWarn) {
-        if (!sourceFile)
-            llvm::outs() << ANSI_YELLOW << "WARNING: Source file was not found for "
-                         << targetFilePath
-                         << "\n\tRemind to add it manually in the Makefile\n"
-                         << ANSI_RESET;
-        if (!headerFile)
-            llvm::outs() << ANSI_YELLOW << "WARNING: Header file was not found for "
-                         << targetFilePath
-                         << "\n\tRemind to add it manually in the fixture\n"
-                         << ANSI_RESET;
+        std::string ext = fs::path(targetFilePath).extension().string();
+        std::transform(ext.begin(), ext.end(), ext.begin(),
+                       [](unsigned char c) { return std::tolower(c); });
+        const bool isHeaderInput =
+            (ext == ".h" || ext == ".hpp" || ext == ".hh" || ext == ".hxx");
+        const bool isSourceInput = (ext == ".c" || ext == ".cc" || ext == ".cpp");
+
+        if (!sourceFile && (isHeaderInput || (!isHeaderInput && !isSourceInput)))
+            Logger::instance().recordMissingSource(targetFilePath);
+        if (!headerFile && (!isHeaderInput && !isSourceInput))
+            Logger::instance().recordMissingHeader(targetFilePath);
         missingFilesWarn = true;
     }
 
