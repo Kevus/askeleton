@@ -121,6 +121,16 @@ Configure `data/type_factories.json` to control how complex types are initialize
   }
 }
 ```
+Quick example:
+```json
+{
+  "types": {
+    "User": { "strategy": "factory", "expr": "MakeUser(\"guest\")" },
+    "Session": { "strategy": "zeroed" },
+    "Address": { "strategy": "dummy" }
+  }
+}
+```
 Notes:
 - `factory`: uses the given expression in the generated fixture `Read_<Type>()`.
 - `zeroed`: returns `{}` for record types.
