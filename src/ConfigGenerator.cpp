@@ -5,6 +5,8 @@
 #include <iostream>
 
 #include "constants.hpp"
+#include "TypeFactoryRegistry.hpp"
+#include "utils/default_values.hpp"
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
 #include "utils/templating.hpp"
@@ -120,6 +122,9 @@ std::string ConfigGenerator::generateParam(const InfoVariable &param,
                                            const string &prefix) const {
     pair<InfoVariable, InfoVariable> pointers = param.getPointers();
     InfoType underlying = param.getUnderlyingType();
+    const auto factory = TypeFactoryRegistry::get().find(underlying);
+    const bool hasFactory = factory.has_value() &&
+                            factory->strategy != TypeInitStrategy::Random;
 
     string typeForValue = underlying.formatted;
     if (underlying.isMap() && typeForValue.find("<") == std::string::npos) {
@@ -150,6 +155,20 @@ std::string ConfigGenerator::generateParam(const InfoVariable &param,
             value = std::to_string(selected);
         }
     }
+
+    if (value.empty() && hasFactory) {
+        if (factory->strategy == TypeInitStrategy::Dummy) {
+            value = getDefaultValueForType(underlying).value_or(
+                getZeroValueForType(underlying));
+        } else if (factory->strategy == TypeInitStrategy::Zeroed) {
+            value = getZeroValueForType(underlying);
+        }
+    }
+
+    if (value.empty() && param.defaultValue.has_value()) {
+        value = param.defaultValue.value();
+    }
+
     if (value.empty()) {
         value = rvg.getRandomValue(typeForValue);
     }
@@ -157,6 +176,10 @@ std::string ConfigGenerator::generateParam(const InfoVariable &param,
 
     const bool isRecord = underlying.isRecord() && !underlying.isContainer();
     const bool hasFields = !underlying.getRecordFields().empty();
+
+    if (hasFactory && isRecord) {
+        return "";
+    }
 
     if (isRecord && hasFields) {
         ss << generateParam(pointers.first.getRecordFields(), generatePointers,

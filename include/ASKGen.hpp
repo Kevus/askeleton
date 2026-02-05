@@ -7,13 +7,15 @@
 
 #include "ConfigGenerator.hpp"
 #include "framework/Generator.hpp"
+#include "Report.hpp"
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 
 class ASKGen : public clang::ast_matchers::MatchFinder::MatchCallback {
 public:
-    explicit ASKGen(bool ruleDataEnabled = false, unsigned ruleMaxCases = 3);
+    explicit ASKGen(bool ruleDataEnabled = false, unsigned ruleMaxCases = 3,
+                    Report *reporter = nullptr);
 
     virtual void
     run(const clang::ast_matchers::MatchFinder::MatchResult &Result);
@@ -43,11 +45,11 @@ private:
     std::vector<InfoVariable>
     getParameters(const std::vector<clang::ParmVarDecl *> &params);
 
-    void generateTest(Generator &, ConfigGenerator &,
+    unsigned generateTest(Generator &, ConfigGenerator &,
                       const clang::FunctionDecl *UT);
-    void generateTest(Generator &, ConfigGenerator &,
+    unsigned generateTest(Generator &, ConfigGenerator &,
                       const clang::CXXMethodDecl *UT);
-    void generateTest(Generator &, ConfigGenerator &,
+    unsigned generateTest(Generator &, ConfigGenerator &,
                       const clang::CXXConstructorDecl *UT);
 
     std::shared_ptr<Generator> getGenerator(const std::string &target,
@@ -93,4 +95,6 @@ private:
 
     std::map<std::string, std::shared_ptr<Generator>> generators;
     std::map<std::string, std::shared_ptr<ConfigGenerator>> configGenerators;
+
+    Report *reporter = nullptr;
 };

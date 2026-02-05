@@ -4,6 +4,7 @@
 #include "clang/AST/Type.h"
 
 #include <map>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -63,5 +64,6 @@ struct InfoVariable : public InfoType {
     std::pair<std::string, std::string> getPointersVarName() const;
 
     std::string name;
+    std::optional<std::string> defaultValue;
     static unsigned NO_NAME_COUNT;
 };

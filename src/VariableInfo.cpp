@@ -3,6 +3,7 @@
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
 #include "utils/templating.hpp"
+#include "utils/ast_values.hpp"
 #include "clang/AST/DeclCXX.h"
 
 #include <algorithm>
@@ -147,7 +148,11 @@ InfoVariable::InfoVariable(const clang::ParmVarDecl *param)
 }
 
 InfoVariable::InfoVariable(const clang::FieldDecl *field)
-    : InfoType(field->getType()), name(field->getNameAsString()) {}
+    : InfoType(field->getType()), name(field->getNameAsString()) {
+    if (field && field->hasInClassInitializer()) {
+        defaultValue = extractLiteralValue(field->getInClassInitializer());
+    }
+}
 
 InfoVariable::InfoVariable(const string &name, const string &original,
                            const string &formatted)

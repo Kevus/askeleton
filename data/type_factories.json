@@ -1,0 +1,7 @@
+{
+    "types": {
+        "MyType": { "strategy": "factory", "expr": "MakeMyType()" },
+        "OtherType": { "strategy": "zeroed" },
+        "ThirdType": { "strategy": "dummy" }
+    }
+}

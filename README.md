@@ -102,11 +102,30 @@ Key options:
 - `--rule-max-cases=<N>`: limit rule-based test cases per function.
 - `--seed=<N>`: deterministic data generation.
 - `--profile=<random|boundary|safe|stress>`: data generation profile.
+- `--report=<path>`: write a JSON report of generated/skipped tests.
+- `--report-json`: write a JSON report to `Generated/UT/askeleton_report.json`.
 - `-extra-arg`, `-extra-arg-before`: pass extra compiler args to Clang tooling.
 
 **How `-p` Works**
 `-p <build-path>` points to a directory containing `compile_commands.json`. If it
 is omitted, ASkeleTon searches parent paths of the first input file.
+
+**Type Factories and Stubs**
+Configure `data/type_factories.json` to control how complex types are initialized:
+```json
+{
+  "types": {
+    "MyType": { "strategy": "factory", "expr": "MakeMyType()" },
+    "OtherType": { "strategy": "zeroed" },
+    "ThirdType": { "strategy": "dummy" }
+  }
+}
+```
+Notes:
+- `factory`: uses the given expression in the generated fixture `Read_<Type>()`.
+- `zeroed`: returns `{}` for record types.
+- `dummy`: uses in-class default initializers when available; otherwise uses
+  `data/default_values.json` for primitive fields (falls back to zero values).
 
 **Scope and Limitations**
 ASkeleTon focuses on generating compilable test scaffolding and data files. It

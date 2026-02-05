@@ -3,6 +3,7 @@
 #include "color.h"
 #include "framework/Generator.hpp"
 #include "ConfigGenerator.hpp"
+#include "Report.hpp"
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -137,6 +138,13 @@ cl::opt<std::string> ProfileOption(
     "profile",
     cl::desc("Data generation profile (random, boundary, safe, stress)"),
     cl::init("random"), cl::cat(OptC));
+cl::opt<std::string> ReportPathOption(
+    "report",
+    cl::desc("Write generation report to JSON file at the given path"),
+    cl::value_desc("path"), cl::init(""), cl::cat(OptC));
+cl::opt<bool> ReportJsonOption(
+    "report-json", cl::desc("Write generation report to a default JSON path"),
+    cl::init(false), cl::cat(OptC));
 
 int main(int argc, const char **argv) {
     system("");
@@ -184,11 +192,48 @@ int main(int argc, const char **argv) {
                  << ANSI_RESET << ANSI_BOLD << "-------------------------------------\n"
                  << ANSI_RESET;
 
+    std::string reportPath;
+    if (!ReportPathOption.empty()) {
+        reportPath = ReportPathOption;
+    } else if (ReportJsonOption) {
+        reportPath = (getAskeletonHome() / config["route"]["ut"] /
+                      "askeleton_report.json")
+                         .string();
+    }
+
+    Report report;
+    if (!reportPath.empty()) {
+        ReportMetadata meta;
+        meta.generated_at = getTodayString("%Y-%m-%d %H:%M:%S");
+        meta.profile = ProfileOption.getValue();
+        if (SeedOption.getValue() >= 0) {
+            meta.seed = static_cast<uint32_t>(SeedOption.getValue());
+        }
+        meta.rule_data = RuleDataOption.getValue();
+        meta.rule_max_cases = RuleMaxCasesOption.getValue();
+        if (selectedFramework.value() == Framework::GTEST) {
+            meta.framework = "gtest";
+        } else if (selectedFramework.value() == Framework::BOOST) {
+            meta.framework = "boost";
+        } else {
+            meta.framework = "catch";
+        }
+        meta.sources = options->getSourcePathList();
+        report.setMetadata(meta);
+    }
+
     clang::ast_matchers::MatchFinder Finder;
-    ASKGen Functionality(RuleDataOption, RuleMaxCasesOption);
+    ASKGen Functionality(RuleDataOption, RuleMaxCasesOption,
+                         reportPath.empty() ? nullptr : &report);
     for (auto i : createMapMatchers(RuleDataOption))
         Finder.addMatcher(i.second, &Functionality);
 
     ClangTool Tool(options->getCompilations(), options->getSourcePathList());
-    return Tool.run(newFrontendActionFactory(&Finder).get());
+    int result = Tool.run(newFrontendActionFactory(&Finder).get());
+    if (!reportPath.empty()) {
+        std::filesystem::path outPath = reportPath;
+        std::filesystem::create_directories(outPath.parent_path());
+        report.write(reportPath);
+    }
+    return result;
 }

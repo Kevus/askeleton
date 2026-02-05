@@ -6,6 +6,8 @@
 
 #include "color.h"
 #include "constants.hpp"
+#include "TypeFactoryRegistry.hpp"
+#include "utils/default_values.hpp"
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
 #include "utils/templating.hpp"
@@ -14,6 +16,46 @@ using namespace askeleton;
 using namespace std;
 using json = nlohmann::json;
 namespace fs = std::filesystem;
+
+namespace {
+std::string buildFactoryReadMethod(const InfoType &type, const std::string &expr) {
+    std::ostringstream ss;
+    ss << "    " << type.original << " Read_" << type.formatted
+       << "(string objectKey) {\n";
+    ss << "        (void)objectKey;\n";
+    ss << "        return " << expr << ";\n";
+    ss << "    }\n";
+    return ss.str();
+}
+
+std::string buildDummyRecordReadMethod(const InfoType &type) {
+    std::ostringstream ss;
+    ss << "    " << type.original << " Read_" << type.formatted
+       << "(string objectKey) {\n";
+    ss << "        (void)objectKey;\n";
+    ss << "        " << type.original << " result{};\n";
+
+    for (const auto &field : type.getRecordFields()) {
+        InfoType fieldType = field.getUnderlyingType();
+        std::string value;
+        if (field.defaultValue.has_value()) {
+            value = formatLiteralForType(field.defaultValue.value(), fieldType);
+        } else if (auto def = getDefaultValueForType(fieldType)) {
+            value = formatLiteralForType(def.value(), fieldType);
+        } else {
+            value = formatLiteralForType(getZeroValueForType(fieldType), fieldType);
+        }
+        if (fieldType.isRecord()) {
+            value = "{}";
+        }
+        ss << "        result." << field.name << " = " << value << ";\n";
+    }
+
+    ss << "        return result;\n";
+    ss << "    }\n";
+    return ss.str();
+}
+} // namespace
 
 unsigned Generator::MAX_DEPTH;
 const json &Generator::config = getConfig();
@@ -228,6 +270,22 @@ void Generator::createRecordOverloadToFixture(const InfoType &type) const {
 void Generator::createTypeReadToFixture(const InfoType &type, unsigned level) {
     if (level > 1 || isTypeSupported(type))
         return;
+
+    if (type.isRecord()) {
+        const auto factory = TypeFactoryRegistry::get().find(type);
+        if (factory && factory->strategy != TypeInitStrategy::Random) {
+            if (factory->strategy == TypeInitStrategy::Factory) {
+                appendReadMethodToFixture(buildFactoryReadMethod(
+                    type, factory->expr.empty() ? "{}" : factory->expr));
+            } else if (factory->strategy == TypeInitStrategy::Zeroed) {
+                appendReadMethodToFixture(buildFactoryReadMethod(type, "{}"));
+            } else if (factory->strategy == TypeInitStrategy::Dummy) {
+                appendReadMethodToFixture(buildDummyRecordReadMethod(type));
+            }
+            markTypeAsSupported(type);
+            return;
+        }
+    }
 
     if (type.isPointer()) {
         createTypeReadToFixture(type.getUnderlyingType(), level + 1);

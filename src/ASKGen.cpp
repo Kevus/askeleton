@@ -11,6 +11,7 @@
 #include "framework/BoostGen.hpp"
 #include "framework/CatchGen.hpp"
 #include "framework/GTestGen.hpp"
+#include "utils/ast_values.hpp"
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
 #include "clang/AST/ASTContext.h"
@@ -24,75 +25,10 @@ using namespace clang;
 using namespace std;
 namespace fs = std::filesystem;
 
-namespace {
-std::optional<long long> extractIntegerValue(const Expr *expr) {
-    if (!expr)
-        return std::nullopt;
 
-    const Expr *cleanExpr = expr->IgnoreParenImpCasts();
-    if (const auto *intLiteral = dyn_cast<IntegerLiteral>(cleanExpr)) {
-        return intLiteral->getValue().getSExtValue();
-    }
-
-    if (const auto *boolLiteral = dyn_cast<CXXBoolLiteralExpr>(cleanExpr)) {
-        return boolLiteral->getValue() ? 1 : 0;
-    }
-
-    if (const auto *declRef = dyn_cast<DeclRefExpr>(cleanExpr)) {
-        if (const auto *enumConstant = dyn_cast<EnumConstantDecl>(declRef->getDecl())) {
-            return enumConstant->getInitVal().getSExtValue();
-        }
-
-        if (const auto *varDecl = dyn_cast<VarDecl>(declRef->getDecl())) {
-            if (varDecl->hasInit()) {
-                return extractIntegerValue(varDecl->getInit());
-            }
-        }
-    }
-
-    if (const auto *unary = dyn_cast<UnaryOperator>(cleanExpr)) {
-        if (unary->getOpcode() == UO_Minus) {
-            const Expr *subExpr = unary->getSubExpr()->IgnoreParenImpCasts();
-            if (const auto *subInt = dyn_cast<IntegerLiteral>(subExpr)) {
-                return -subInt->getValue().getSExtValue();
-            }
-        }
-    }
-
-    return std::nullopt;
-}
-
-std::optional<std::string> extractStringLiteral(const Expr *expr) {
-    if (!expr)
-        return std::nullopt;
-
-    const Expr *cleanExpr = expr->IgnoreParenImpCasts();
-    if (const auto *literal = dyn_cast<StringLiteral>(cleanExpr)) {
-        return literal->getString().str();
-    }
-
-    if (const auto *materialize = dyn_cast<MaterializeTemporaryExpr>(cleanExpr)) {
-        return extractStringLiteral(materialize->getSubExpr());
-    }
-
-    if (const auto *bindTemp = dyn_cast<CXXBindTemporaryExpr>(cleanExpr)) {
-        return extractStringLiteral(bindTemp->getSubExpr());
-    }
-
-    if (const auto *construct = dyn_cast<CXXConstructExpr>(cleanExpr)) {
-        for (const Expr *arg : construct->arguments()) {
-            if (auto value = extractStringLiteral(arg)) {
-                return value;
-            }
-        }
-    }
-
-    return std::nullopt;
-}
-} // namespace
-
-ASKGen::ASKGen(bool ruleDataEnabled, unsigned ruleMaxCases)
-    : ruleDataEnabled(ruleDataEnabled), ruleMaxCases(std::max(1u, ruleMaxCases)) {}
+ASKGen::ASKGen(bool ruleDataEnabled, unsigned ruleMaxCases, Report *reporter)
+    : ruleDataEnabled(ruleDataEnabled), ruleMaxCases(std::max(1u, ruleMaxCases)),
+      reporter(reporter) {}
 
 void printDebugInfo(const vector<InfoVariable> &parameters, const InfoType &returnType) {
     cout << "Params list: ";
@@ -159,17 +95,40 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
                     configGenerator->setRuleValues(ruleValues);
                 }
 
+                ReportEntry entry;
+                if (reporter) {
+                    entry.kind = "function";
+                    entry.name = UT->getNameInfo().getAsString();
+                    entry.qualified_name = UT->getQualifiedNameAsString();
+                    entry.file = filePath.string();
+                    entry.line = FullLocation.getSpellingLineNumber();
+                    entry.column = FullLocation.getSpellingColumnNumber();
+                    entry.target = target;
+                    entry.is_class = false;
+                }
+
                 try {
-                    generateTest(*generator, *configGenerator, UT);
+                    unsigned cases = generateTest(*generator, *configGenerator, UT);
                     llvm::outs()
                         << ANSI_GREEN << "Test for function "
                         << UT->getNameInfo().getAsString() << " generated successfully\n"
                         << ANSI_RESET;
+                    if (reporter) {
+                        entry.status = "generated";
+                        entry.test_cases = cases;
+                        reporter->addEntry(entry);
+                    }
                 } catch (const ComplexTypeException &e) {
                     llvm::outs() << ANSI_MAGENTA << "Skipping test for function "
                                  << UT->getNameInfo().getAsString()
                                  << " due to complex type: " << e.type << "\n"
                                  << ANSI_RESET;
+                    if (reporter) {
+                        entry.status = "skipped";
+                        entry.reason = "complex_type";
+                        entry.detail = e.type;
+                        reporter->addEntry(entry);
+                    }
                 }
 
                 llvm::outs() << "--------------\n";
@@ -214,17 +173,40 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
                     configGenerator->setRuleValues(ruleValues);
                 }
 
+                ReportEntry entry;
+                if (reporter) {
+                    entry.kind = "method";
+                    entry.name = UT->getNameInfo().getAsString();
+                    entry.qualified_name = UT->getQualifiedNameAsString();
+                    entry.file = source_file;
+                    entry.line = FullLocation.getSpellingLineNumber();
+                    entry.column = FullLocation.getSpellingColumnNumber();
+                    entry.target = parentname;
+                    entry.is_class = true;
+                }
+
                 try {
-                    generateTest(*generator, *configGenerator, UT);
+                    unsigned cases = generateTest(*generator, *configGenerator, UT);
                     llvm::outs()
                         << ANSI_GREEN << "Test for method "
                         << UT->getNameInfo().getAsString() << " generated successfully\n"
                         << ANSI_RESET;
+                    if (reporter) {
+                        entry.status = "generated";
+                        entry.test_cases = cases;
+                        reporter->addEntry(entry);
+                    }
                 } catch (const ComplexTypeException &e) {
                     llvm::outs() << ANSI_MAGENTA << "Skipping test for method "
                                  << UT->getNameInfo().getAsString()
                                  << " due to complex type: " << e.type << "\n"
                                  << ANSI_RESET;
+                    if (reporter) {
+                        entry.status = "skipped";
+                        entry.reason = "complex_type";
+                        entry.detail = e.type;
+                        reporter->addEntry(entry);
+                    }
                 }
 
                 llvm::outs() << "--------------\n";
@@ -311,15 +293,38 @@ void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
             auto generator = getGenerator(target, filePath, true);
             auto configGenerator = getConfigGenerator(target);
 
+            ReportEntry entry;
+            if (reporter) {
+                entry.kind = "constructor";
+                entry.name = UT->getNameInfo().getAsString();
+                entry.qualified_name = UT->getQualifiedNameAsString();
+                entry.file = filePath;
+                entry.line = FullLocation.getSpellingLineNumber();
+                entry.column = FullLocation.getSpellingColumnNumber();
+                entry.target = target;
+                entry.is_class = true;
+            }
+
             try {
-                generateTest(*generator, *configGenerator, UT);
+                unsigned cases = generateTest(*generator, *configGenerator, UT);
                 llvm::outs() << ANSI_GREEN << "Test for method "
                              << UT->getNameInfo().getAsString()
                              << " generated successfully\n";
+                if (reporter) {
+                    entry.status = "generated";
+                    entry.test_cases = cases;
+                    reporter->addEntry(entry);
+                }
             } catch (const ComplexTypeException &e) {
                 llvm::outs() << ANSI_MAGENTA << "Skipping test for method "
                              << UT->getNameInfo().getAsString()
                              << " due to complex type: " << e.type << "\n";
+                if (reporter) {
+                    entry.status = "skipped";
+                    entry.reason = "complex_type";
+                    entry.detail = e.type;
+                    reporter->addEntry(entry);
+                }
             }
 
             llvm::outs() << ANSI_RESET << "--------------\n";
@@ -963,8 +968,8 @@ ASKGen::getParameters(const std::vector<ParmVarDecl *> &params) {
     return parameters;
 }
 
-void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
-                          const FunctionDecl *UT) {
+unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
+                              const FunctionDecl *UT) {
     unsigned ruleInvocations = 1;
     if (ruleDataEnabled) {
         collectRuleValuesFromFunction(UT);
@@ -1000,10 +1005,11 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
     for (unsigned i = 0; i < ruleInvocations; ++i) {
         testGen.generateFunctionAssert(functionName, parameters, returnType);
     }
+    return ruleInvocations;
 }
 
-void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
-                          const CXXMethodDecl *UT) {
+unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
+                              const CXXMethodDecl *UT) {
     unsigned ruleInvocations = 1;
     if (ruleDataEnabled) {
         collectRuleValuesFromFunction(UT);
@@ -1040,10 +1046,11 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
     for (unsigned i = 0; i < ruleInvocations; ++i) {
         testGen.generateMethodAssert(functionName, parameters, returnType, isStatic);
     }
+    return ruleInvocations;
 }
 
-void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
-                          const CXXConstructorDecl *UT) {
+unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
+                              const CXXConstructorDecl *UT) {
     std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
     std::string constructorName = UT->getParent()->getName().str();
 
@@ -1058,6 +1065,7 @@ void ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
     generateReadMethod(testGen, parameters);
 
     testGen.generateConstructorAssert(parameters);
+    return 1;
 }
 
 void ASKGen::generateTestData(string source, string function_name, string param,

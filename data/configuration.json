@@ -37,6 +37,7 @@
         "data": {
             "equivalent_types": "data/equivalent_types.json",
             "default_values": "data/default_values.json",
+            "type_factories": "data/type_factories.json",
             "supported_types_json": "data/supported_types.json",
             "template_items": "data/template_items.json"
         }

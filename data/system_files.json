@@ -27,6 +27,7 @@
     "/home/kevus/astutmatcher/data/templates/gtest/methodCase.tpl",
     "/home/kevus/astutmatcher/data/equivalent_types.json",
     "/home/kevus/astutmatcher/data/default_values.json",
+    "/home/kevus/astutmatcher/data/type_factories.json",
     "/home/kevus/astutmatcher/data/supported_types.json",
     "/home/kevus/astutmatcher/data/template_items.json"
 ]
