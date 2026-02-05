@@ -142,6 +142,10 @@ cl::opt<std::string> OutDirOption(
     "out-dir",
     cl::desc("Output directory for generated tests (overrides default)"),
     cl::value_desc("path"), cl::init(""), cl::cat(OptC));
+cl::opt<bool> IncludeImplUnderInclude(
+    "include-impl-under-include",
+    cl::desc("Allow compiling .c/.cc/.cpp files under include/ directories"),
+    cl::init(false), cl::cat(OptC));
 cl::opt<bool> NoSystemFilesRefresh(
     "no-system-files-refresh",
     cl::desc("Do not refresh system_files.json before running"),
@@ -261,13 +265,54 @@ int main(int argc, const char **argv) {
         report.setMetadata(meta);
     }
 
+    std::vector<std::string> sources = options->getSourcePathList();
+    if (!IncludeImplUnderInclude.getValue()) {
+        std::vector<std::string> filtered;
+        for (const auto &src : sources) {
+            std::filesystem::path p = src;
+            if (p.is_relative()) {
+                p = std::filesystem::absolute(p);
+            }
+            const std::string ext = p.extension().string();
+            if ((ext == ".c" || ext == ".cc" || ext == ".cpp") &&
+                p.string().find("/include/") != std::string::npos) {
+                llvm::outs()
+                    << "Skipping " << p.string()
+                    << " (implementation under include/). Use "
+                       "--include-impl-under-include to force.\n";
+                continue;
+            }
+            filtered.push_back(p.string());
+        }
+        sources = std::move(filtered);
+        if (!reportPath.empty()) {
+            ReportMetadata meta;
+            meta.generated_at = getTodayString("%Y-%m-%d %H:%M:%S");
+            meta.profile = ProfileOption.getValue();
+            if (SeedOption.getValue() >= 0) {
+                meta.seed = static_cast<uint32_t>(SeedOption.getValue());
+            }
+            meta.rule_data = RuleDataOption.getValue();
+            meta.rule_max_cases = RuleMaxCasesOption.getValue();
+            if (selectedFramework.value() == Framework::GTEST) {
+                meta.framework = "gtest";
+            } else if (selectedFramework.value() == Framework::BOOST) {
+                meta.framework = "boost";
+            } else {
+                meta.framework = "catch";
+            }
+            meta.sources = sources;
+            report.setMetadata(meta);
+        }
+    }
+
     clang::ast_matchers::MatchFinder Finder;
     ASKGen Functionality(RuleDataOption, RuleMaxCasesOption,
                          reportPath.empty() ? nullptr : &report);
     for (auto i : createMapMatchers(RuleDataOption))
         Finder.addMatcher(i.second, &Functionality);
 
-    ClangTool Tool(options->getCompilations(), options->getSourcePathList());
+    ClangTool Tool(options->getCompilations(), sources);
     int result = Tool.run(newFrontendActionFactory(&Finder).get());
     if (!reportPath.empty()) {
         std::filesystem::path outPath = reportPath;

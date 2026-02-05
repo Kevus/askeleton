@@ -48,6 +48,7 @@ Key options:
 - `--rule-data`: enable rule-based values from AST.
 - `--rule-max-cases=<N>`: limit rule-based test cases per function.
 - `--out-dir=<path>`: output directory for generated tests.
+- `--include-impl-under-include`: allow compiling `.c/.cc/.cpp` under `include/`.
 - `--report=<path>`: write a JSON report of generated/skipped tests.
 - `--report-json`: write a JSON report to `<out-dir>/askeleton_report.json`.
 - `--no-system-files-refresh`: do not regenerate `data/system_files.json`.
