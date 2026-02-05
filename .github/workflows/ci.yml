@@ -38,6 +38,15 @@ jobs:
 
       - name: Smoke test
         run: |
+          cat > examples/compile_commands.json <<EOF
+          [
+            {
+              "directory": "${GITHUB_WORKSPACE}/examples",
+              "command": "clang++-18 -std=c++20 -c ${GITHUB_WORKSPACE}/examples/sut.cpp",
+              "file": "${GITHUB_WORKSPACE}/examples/sut.cpp"
+            }
+          ]
+          EOF
           ./askeleton --help
           ASKELETON_HOME=$(pwd) ./askeleton -p examples examples/sut.cpp \
             --seed=123 --profile=random \
