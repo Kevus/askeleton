@@ -9,7 +9,32 @@ data files with configurable data generation (random, rule-based, or profiled).
 - llvm-config-18
 - libclang-18-dev
 - Optional: g++-12 / gcc-12
-- Optional: libboost-dev
+- Optional: libboost-dev (Boost.Test)
+- Optional: libgtest-dev (GoogleTest)
+- Optional: catch2 (Catch2)
+
+**Install Dependencies (Ubuntu 24.04)**
+```bash
+sudo apt update
+sudo apt install -y clang-18 llvm-18 llvm-18-dev llvm-18-tools libclang-18-dev build-essential
+```
+Optional (Boost.Test framework):
+```bash
+sudo apt install -y libboost-dev
+```
+Optional (GoogleTest/Catch2 frameworks):
+```bash
+sudo apt install -y libgtest-dev catch2
+```
+Quick verify:
+```bash
+clang++-18 --version
+llvm-config-18 --version
+```
+**Troubleshooting (Ubuntu 24.04)**
+- `llvm-config-18: command not found`: ensure `llvm-18` and `llvm-18-tools` are installed.
+- Link errors mentioning `APINotesManager` or `libclangAPINotes`: confirm `libclang-18-dev` is installed.
+- `clang++-18: command not found`: install `clang-18` (or set `CXX=clang++-18`).
 
 **Environment**
 Set `ASKELETON_HOME` to the repository root.
