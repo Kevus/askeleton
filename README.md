@@ -4,10 +4,10 @@ ASkeleTon generates C/C++ unit test skeletons (GoogleTest, Boost.Test, Catch2) f
 data files with configurable data generation (random, rule-based, or profiled).
 
 **Requirements (Ubuntu/Debian)**
-- clang-15
-- llvm-15
-- llvm-config-15
-- libclang-15-dev
+- clang-18
+- llvm-18
+- llvm-config-18
+- libclang-18-dev
 - Optional: g++-12 / gcc-12
 - Optional: libboost-dev
 
@@ -24,7 +24,7 @@ make
 make clean
 make CXXFLAGS='-std=c++20 -Wall -Wextra -Wcast-qual -Wwrite-strings -Wno-unused-parameter -Wdelete-non-virtual-dtor -fPIC -ffunction-sections -fdata-sections -fsanitize=address -fno-omit-frame-pointer' \
     DEBUG_FLAGS='' OPTIMIZATION_FLAGS='-O1' \
-    CLANGLIBS="$(llvm-config-15 --ldflags --system-libs --libs | tr '\n' ' ') -lclangFrontend -lclangSerialization -lclangDriver -lclangTooling -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangAST -lclangASTMatchers -lclangLex -lclangBasic -lclangRewrite -lclangRewriteFrontend -lclangSupport -fsanitize=address"
+    CLANGLIBS="$(llvm-config-18 --ldflags --system-libs --libs | tr '\n' ' ') -lclangFrontend -lclangAPINotes -lclangSerialization -lclangDriver -lclangTooling -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangAST -lclangASTMatchers -lclangLex -lclangBasic -lclangRewrite -lclangRewriteFrontend -lclangSupport -fsanitize=address"
 ```
 
 **Quick Sanity Check**
@@ -89,7 +89,7 @@ does not validate business logic or automatically create assertions beyond the
 framework templates. Complex or opaque types may require manual fixture edits.
 
 **Compatibility**
-Validated with clang/llvm 15. Other versions may work, but are not guaranteed.
+Validated with clang/llvm 18. Other versions may work, but are not guaranteed.
 
 **Troubleshooting**
 - `compile_commands.json` not found: pass `-p <build-path>` pointing to the build

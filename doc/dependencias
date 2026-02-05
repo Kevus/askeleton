@@ -1,10 +1,10 @@
 Actualizado: 2026-02-04
 
 Recomendado (alineado con el Makefile actual):
-- clang-15
-- llvm-15
-- llvm-config-15
-- libclang-15-dev
+- clang-18
+- llvm-18
+- llvm-config-18
+- libclang-18-dev
 
 Opcional:
 - g++-12 y gcc-12 (NO FUNCIONA CON 11)

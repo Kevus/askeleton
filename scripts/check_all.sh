@@ -15,7 +15,7 @@ cat > /tmp/ask_sut/compile_commands.json <<'EOF'
 [
   {
     "directory": "/tmp/ask_sut",
-    "command": "clang++-15 -std=c++20 -c /tmp/ask_sut/sut.cpp",
+    "command": "clang++-18 -std=c++20 -c /tmp/ask_sut/sut.cpp",
     "file": "/tmp/ask_sut/sut.cpp"
   }
 ]

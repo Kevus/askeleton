@@ -22,7 +22,7 @@ cat > "${TMP_DIR}/compile_commands.json" <<EOF
 [
   {
     "directory": "${TMP_DIR}",
-    "command": "clang++-15 -std=c++20 -c ${TMP_DIR}/sample.cpp",
+    "command": "clang++-18 -std=c++20 -c ${TMP_DIR}/sample.cpp",
     "file": "${TMP_DIR}/sample.cpp"
   }
 ]
