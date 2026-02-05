@@ -121,8 +121,16 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
             if (!isa<CXXMethodDecl>(UT)) {
 
                 // Get the file name
-                fs::path filePath = fs::absolute(
-                    Context->getSourceManager().getFilename(UT->getBeginLoc()).str());
+                const std::string rawFilePath =
+                    Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
+                if (rawFilePath.empty()) {
+                    llvm::outs() << ANSI_YELLOW
+                                 << "Skipping function with empty source path: "
+                                 << UT->getNameInfo().getAsString() << "\n"
+                                 << ANSI_RESET;
+                    return;
+                }
+                fs::path filePath = fs::absolute(rawFilePath);
                 string fileName = extractFileName(filePath);
                 string target = fileName;
 
@@ -203,6 +211,13 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
                 !UT->isOverloadedOperator()) {
                 string source_file =
                     Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
+                if (source_file.empty()) {
+                    llvm::outs() << ANSI_YELLOW
+                                 << "Skipping method with empty source path: "
+                                 << UT->getNameInfo().getAsString() << "\n"
+                                 << ANSI_RESET;
+                    return;
+                }
                 string parentname = UT->getParent()->getName().str();
 
                 // Print auxiliary
@@ -283,6 +298,13 @@ void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
 
             string filePath =
                 Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
+            if (filePath.empty()) {
+                llvm::outs() << ANSI_YELLOW
+                             << "Skipping constructor with empty source path: "
+                             << UT->getNameInfo().getAsString() << "\n"
+                             << ANSI_RESET;
+                return;
+            }
             string fileName = extractFileName(filePath);
             string target = UT->getParent()->getName().str();
 
