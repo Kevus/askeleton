@@ -1,6 +1,9 @@
 # Examples
 
 This folder contains small, self-contained inputs to demonstrate ASKELETON.
+External projects used for evaluation (e.g., third-party libraries) are not
+distributed as part of ASkeleTon. If they exist in your local tree, they are
+for internal testing only.
 
 Quick run:
 ```bash

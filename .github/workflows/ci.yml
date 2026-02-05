@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install LLVM/Clang 18 (Ubuntu 22.04)
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget ca-certificates
+          wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh
+          sudo bash /tmp/llvm.sh 18
+          sudo apt-get install -y clang-18 llvm-18 llvm-18-dev llvm-18-tools libclang-18-dev build-essential
+
+      - name: Install LLVM/Clang 18 (Ubuntu 24.04)
+        if: matrix.os == 'ubuntu-24.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-18 llvm-18 llvm-18-dev llvm-18-tools libclang-18-dev build-essential
+
+      - name: Build
+        run: |
+          make -s clean CXX=clang++-18
+          make -s CXX=clang++-18
+
+      - name: Smoke test
+        run: |
+          ./askeleton --help
+          ASKELETON_HOME=$(pwd) ./askeleton -p examples examples/sut.cpp \
+            --seed=123 --profile=random \
+            --out-dir=/tmp/askeleton_smoke \
+            --report=/tmp/askeleton_smoke/askeleton_report.json

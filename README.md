@@ -29,6 +29,19 @@ clang++-18 --version
 llvm-config-18 --version
 ```
 
+**Install (Ubuntu 22.04)**
+Ubuntu 22.04 ships older LLVM by default. Install LLVM/Clang 18 using the
+official LLVM APT repo, then run the same package list as above:
+```bash
+sudo apt update
+sudo apt install -y clang-18 llvm-18 llvm-18-dev llvm-18-tools libclang-18-dev build-essential
+```
+
+**Other distros**
+Install LLVM/Clang 18 plus libclang development headers and a C++ toolchain.
+Package names vary by distro; look for equivalents of:
+`clang-18`, `llvm-18`, `llvm-18-dev`, `libclang-18-dev`, `build-essential`.
+
 **Build**
 ```bash
 make
@@ -71,6 +84,14 @@ Profiled data:
 ```bash
 ASKELETON_HOME=$(pwd) ./askeleton --profile=boundary -p examples examples/sut.cpp
 ```
+
+**Reproducible Runs**
+Use `--seed` to make data generation deterministic. For fully reproducible
+outputs across machines, keep these inputs identical:
+- LLVM/Clang major version (e.g., 18).
+- The exact `compile_commands.json`.
+- `data/type_factories.json` and `data/default_values.json`.
+- `data/system_files.json` (or disable refresh with `--no-system-files-refresh`).
 
 **Type Factories and Stubs**
 Configure `data/type_factories.json` to control how complex types are initialized.
