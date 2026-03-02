@@ -48,6 +48,7 @@ private:
                       const clang::CXXConstructorDecl *UT);
 
     std::shared_ptr<Generator> getGenerator(const std::string &target,
+                                            const std::string &targetQualifiedName,
                                             const std::string &filePath,
                                             bool isFromClass = false);
     std::shared_ptr<ConfigGenerator>

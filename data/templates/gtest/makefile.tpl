@@ -1,6 +1,6 @@
 CXX=clang++ --std=c++17
 LIBS = -lgtest -lgtest_main -pthread
-OBJS = {target}.o tests.o main.o
+OBJS = {objectFiles}
 TARGET = {target}_test
 
 all: $(TARGET)
@@ -8,8 +8,7 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CXX) -o $@ $^ $(LIBS)
 
-{target}.o: {cppPath}
-	$(CXX) -c $< -o $@
+{sourceBuildRule}
 
 tests.o: $(TARGET).cpp
 	$(CXX) -c $< -o $@

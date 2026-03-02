@@ -53,6 +53,11 @@ void printDebugInfo(const vector<InfoVariable> &parameters, const InfoType &retu
 }
 
 namespace {
+struct ConstructorSelection {
+    std::vector<InfoVariable> params;
+    bool useDefaultConstructor = false;
+};
+
 std::string buildSignature(const FunctionDecl *decl) {
     if (!decl)
         return "";
@@ -102,6 +107,55 @@ std::string buildSignature(const CXXConstructorDecl *decl) {
     ss << ")";
     return ss.str();
 }
+
+std::optional<ConstructorSelection>
+selectConstructorForInstantiation(const CXXRecordDecl *record) {
+    if (!record) {
+        return std::nullopt;
+    }
+
+    std::optional<ConstructorSelection> best;
+    for (const auto *ctor : record->ctors()) {
+        if (!ctor || ctor->isImplicit() || ctor->isDeleted() || ctor->isCopyOrMoveConstructor()) {
+            continue;
+        }
+        if (ctor->getAccess() != AS_public) {
+            continue;
+        }
+
+        ConstructorSelection candidate;
+        candidate.useDefaultConstructor = ctor->isDefaultConstructor();
+        bool usable = true;
+        for (const auto *param : ctor->parameters()) {
+            InfoVariable info(param);
+            if (info.isReference()) {
+                usable = false;
+                break;
+            }
+            candidate.params.push_back(info);
+        }
+        if (!usable) {
+            continue;
+        }
+
+        if (candidate.useDefaultConstructor) {
+            return candidate;
+        }
+        if (!best.has_value() || candidate.params.size() < best->params.size()) {
+            best.emplace(std::move(candidate));
+        }
+    }
+
+    if (best.has_value()) {
+        return best;
+    }
+
+    if (record->hasDefaultConstructor()) {
+        return ConstructorSelection{};
+    }
+
+    return std::nullopt;
+}
 } // namespace
 
 void ASKGen::run(const MatchFinder::MatchResult &Result) {
@@ -145,7 +199,7 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
                     std::string("Found FunctionDecl: ") +
                     UT->getNameInfo().getAsString() + " in " + fileName);
 
-                auto generator = getGenerator(target, filePath, false);
+                auto generator = getGenerator(target, target, filePath, false);
                 auto configGenerator = getConfigGenerator(target);
                 if (ruleDataEnabled) {
                     collectRuleValuesFromFunction(UT);
@@ -238,7 +292,10 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
                     std::string("Found CxxMethodDecl: ") +
                     UT->getNameInfo().getAsString() + " from class " + parentname);
 
-                auto generator = getGenerator(parentname, source_file, true);
+                const std::string qualifiedParent =
+                    UT->getParent()->getQualifiedNameAsString();
+                auto generator =
+                    getGenerator(parentname, qualifiedParent, source_file, true);
                 auto configGenerator = getConfigGenerator(parentname);
                 if (ruleDataEnabled) {
                     collectRuleValuesFromFunction(UT);
@@ -333,7 +390,9 @@ void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
                 std::string("Found CXXConstructorDecl: ") +
                 UT->getNameInfo().getAsString() + " from class " + target);
 
-            auto generator = getGenerator(target, filePath, true);
+                const std::string qualifiedTarget =
+                    UT->getParent()->getQualifiedNameAsString();
+                auto generator = getGenerator(target, qualifiedTarget, filePath, true);
             auto configGenerator = getConfigGenerator(target);
 
             ReportEntry entry;
@@ -980,6 +1039,7 @@ void ASKGen::generateReadMethod(Generator &testGen, const InfoType &type) {
 }
 
 std::shared_ptr<Generator> ASKGen::getGenerator(const std::string &target,
+                                                const std::string &targetQualifiedName,
                                                 const std::string &filePath,
                                                 bool isFromClass) {
     auto pos = generators.find(target);
@@ -989,13 +1049,16 @@ std::shared_ptr<Generator> ASKGen::getGenerator(const std::string &target,
 
         switch (getFramework()) {
         case CATCH:
-            generator = std::make_shared<CatchGenerator>(target, filePath, isFromClass);
+            generator = std::make_shared<CatchGenerator>(
+                target, targetQualifiedName, filePath, isFromClass);
             break;
         case GTEST:
-            generator = std::make_shared<GTestGenerator>(target, filePath, isFromClass);
+            generator = std::make_shared<GTestGenerator>(
+                target, targetQualifiedName, filePath, isFromClass);
             break;
         default:
-            generator = std::make_shared<BoostGen>(target, filePath, isFromClass);
+            generator = std::make_shared<BoostGen>(
+                target, targetQualifiedName, filePath, isFromClass);
             break;
         }
         generators.insert({target, generator});
@@ -1087,6 +1150,15 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     InfoType returnType(UT->getReturnType());
     std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
     bool isStatic = UT->isStatic();
+
+    if (!isStatic) {
+        auto ctorSelection = selectConstructorForInstantiation(UT->getParent());
+        if (!ctorSelection.has_value() ||
+            !testGen.setInstanceConstruction(ctorSelection->params,
+                                             ctorSelection->useDefaultConstructor)) {
+            throw ComplexTypeException(UT->getParent()->getQualifiedNameAsString());
+        }
+    }
 
     std::string functionName = UT->getNameInfo().getAsString();
     if (function_occurrences[functionName]++ > 1) {

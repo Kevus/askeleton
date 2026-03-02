@@ -6,9 +6,10 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-CatchGenerator::CatchGenerator(const string &targetName, const string &filePath,
-                               bool isFromClass)
-    : Generator(targetName, filePath, isFromClass) {
+CatchGenerator::CatchGenerator(const string &targetName,
+                               const string &targetQualifiedName,
+                               const string &filePath, bool isFromClass)
+    : Generator(targetName, targetQualifiedName, filePath, isFromClass) {
     setFrameworkTemplatePath(getAskeletonHome() / config["route"]["catch_templates"]);
 
     map<string, string> tokensToReplace;
@@ -36,7 +37,8 @@ void CatchGenerator::generateFullAssert(const string &function,
     if (!pointers.empty())
         pointers = pointers + "\n";
 
-    string initializations = buildInitializations(parameters, function, number);
+    string initializations =
+        buildInitializations(parameters, function, number, isStatic);
 
     map<string, string> tokensToReplace = {
         {templateItems["tplitem"]["catch"]["target"], targetName},

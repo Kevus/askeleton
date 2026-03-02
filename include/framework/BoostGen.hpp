@@ -12,7 +12,9 @@ public:
     BoostGen() = delete;
     ~BoostGen() = default;
 
-    BoostGen(const std::string &targetName, const std::string &filePath,
+    BoostGen(const std::string &targetName,
+             const std::string &targetQualifiedName,
+             const std::string &filePath,
              bool isFromClass = false);
 
     void generateFunctionAssert(const std::string &function,

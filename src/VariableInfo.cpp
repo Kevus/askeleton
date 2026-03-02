@@ -24,6 +24,11 @@ InfoType::InfoType(const clang::QualType &type)
       isRecord_(false), isEnum_(false), recordFields() {
 
     auto equivalent = getEquivalentType(original);
+    if (!equivalent.has_value()) {
+        std::string normalized = original;
+        removeTypeQualifiers(normalized);
+        equivalent = getEquivalentType(normalized);
+    }
     if (equivalent.has_value()) {
         original = equivalent.value();
     } else if (type->isArrayType()) {
@@ -153,7 +158,13 @@ string InfoType::formatType(const string &name) {
 }
 
 bool InfoType::typeIsComplex(const string &type) {
-    return containsAnySubstring(type, {"[", "]", "..."});
+    if (containsAnySubstring(type, {"[", "]", "..."})) {
+        return true;
+    }
+
+    string normalized = removeTemplateArguments(removeNamespaceQualifier(type));
+    removeTypeQualifiers(normalized);
+    return !normalized.empty() && normalized[0] == '_';
 }
 
 std::vector<InfoVariable> InfoType::getRecordFields() const { return recordFields; }

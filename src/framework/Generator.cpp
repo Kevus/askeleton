@@ -62,9 +62,12 @@ unsigned Generator::MAX_DEPTH;
 const json &Generator::config = getConfig();
 const nlohmann::json &Generator::templateItems = getTemplateItems();
 
-Generator::Generator(const string &targetName, const string &filePath, bool isFromClass)
+Generator::Generator(const string &targetName, const string &targetQualifiedName,
+                     const string &filePath, bool isFromClass)
     : targetName(targetName), targetFilePath(filePath),
-      targetFileName(extractFileName(filePath)), isFromClass(isFromClass),
+      targetFileName(extractFileName(filePath)),
+      targetQualifiedName(targetQualifiedName.empty() ? targetName : targetQualifiedName),
+      isFromClass(isFromClass),
       utPath(getAskeletonHome() / config["route"]["ut"] / targetName),
       configGenerator{targetName} {
 
@@ -101,6 +104,11 @@ void Generator::setOutputFilesPath() {
 void Generator::setValuesToChange(std::map<std::string, std::string> &valuesToChange) {
     auto sourceFile = getSourceFile(targetFilePath);
     auto headerFile = getHeaderFile(targetFilePath);
+    const std::string sourcePath = sourceFile.value_or(targetFilePath);
+    const bool includeSourceInFixture = !isFromClass || !headerFile.has_value();
+    const std::string includePath =
+        includeSourceInFixture ? sourcePath : headerFile.value();
+    const bool compileSourceSeparately = includePath != sourcePath;
 
     if (!missingFilesWarn) {
         std::string ext = fs::path(targetFilePath).extension().string();
@@ -122,24 +130,22 @@ void Generator::setValuesToChange(std::map<std::string, std::string> &valuesToCh
         {templateItems["tplitem"]["target"], targetName},
         {templateItems["tplitem"]["file_name"], targetFileName},
 
-        {templateItems["tplitem"]["cpp_path"], sourceFile.value_or(targetFilePath)},
-        {templateItems["tplitem"]["header_path"], headerFile.value_or(targetFilePath)},
+        {templateItems["tplitem"]["cpp_path"], sourcePath},
+        {templateItems["tplitem"]["header_path"], includePath},
 
         {templateItems["tplitem"]["date_of_generation"], getTodayString()},
         {templateItems["tplitem"]["includes"], ""},
         {templateItems["tplitem"]["namespaces"], ""},
         {templateItems["tplitem"]["new_methods"], ""},
+        {"{classMemberDecl}", ""},
+        {"{objectFiles}",
+         compileSourceSeparately ? (targetName + ".o tests.o main.o")
+                                 : "tests.o main.o"},
+        {"{sourceBuildRule}",
+         compileSourceSeparately
+             ? (targetName + ".o: " + sourcePath + "\n\t$(CXX) -c $< -o $@\n")
+             : ""},
     };
-
-    if (isFromClass) {
-        string objectTest = targetName + "_test;";
-        objectTest[0] = tolower(objectTest[0]);
-        valuesToChange.insert({templateItems["tplitem"]["class_name"], targetName});
-        valuesToChange.insert({templateItems["tplitem"]["class_name_test"], objectTest});
-    } else {
-        valuesToChange.insert({templateItems["tplitem"]["class_name"], ""});
-        valuesToChange.insert({templateItems["tplitem"]["class_name_test"], ""});
-    }
 }
 
 void Generator::setSupportedTypes() {
@@ -367,7 +373,7 @@ std::string Generator::generateParameterInitialization(const InfoType &type,
                                                        const std::string &function,
                                                        unsigned invocation) const {
     InfoVariable variable{type.original, type.formatted, function + "_return"};
-    return generateParameterInitialization(variable, function);
+    return generateParameterInitialization(variable, function, invocation);
 }
 
 std::string Generator::generateReadInvocation(const InfoVariable &type,
@@ -411,8 +417,16 @@ std::string Generator::generateParameterInvocation(
 
 std::string Generator::buildInitializations(
     const std::vector<InfoVariable> &parameters, const std::string &function,
-    unsigned invocation) const {
+    unsigned invocation, bool isStatic) const {
     std::string init = generateParameterInitialization(parameters, function, invocation);
+    const std::string instanceInit = buildInstanceInitialization(isStatic);
+    if (!instanceInit.empty()) {
+        if (!init.empty()) {
+            init = instanceInit + "\n" + init;
+        } else {
+            init = instanceInit;
+        }
+    }
     if (!init.empty())
         init = "\n" + init;
     return init;
@@ -425,6 +439,9 @@ std::string Generator::buildReturnReadMethod(const InfoType &underlying,
 }
 
 std::string Generator::normalizeReadMethodType(const InfoType &type) const {
+    if (containsSubstring(type.original, "string")) {
+        return "string";
+    }
     if (!type.isMap()) {
         return type.formatted;
     }
@@ -473,11 +490,69 @@ std::string Generator::buildInvocation(const std::string &function, bool isStati
                                        bool returnsPointer) const {
     std::string invocation = returnsPointer ? "*" : "";
     if (isStatic)
-        invocation += targetName + "::";
+        invocation += targetQualifiedName + "::";
     else if (isFromClass)
         invocation += generateTestObjectForTarget(targetName) + ".";
     invocation += function;
     return invocation;
+}
+
+bool Generator::setInstanceConstruction(
+    const std::vector<InfoVariable> &constructorParams, bool useDefaultConstructor) {
+    if (!isFromClass) {
+        instanceConstruction_.clear();
+        return true;
+    }
+
+    std::ostringstream ss;
+    ss << targetQualifiedName << " " << generateTestObjectForTarget(targetName) << "{";
+
+    if (!useDefaultConstructor) {
+        for (size_t i = 0; i < constructorParams.size(); ++i) {
+            const auto &param = constructorParams[i];
+            if (param.isReference()) {
+                return false;
+            }
+            ss << buildConstructorArgumentExpression(param);
+            if (i + 1 < constructorParams.size()) {
+                ss << ", ";
+            }
+        }
+    }
+
+    ss << "};";
+    instanceConstruction_ = ss.str();
+    return true;
+}
+
+std::string Generator::buildConstructorArgumentExpression(const InfoType &type) const {
+    // TODO: This is only a compile-oriented fallback. Revisit it together with the
+    // test-oracle work so instance construction uses semantically meaningful data,
+    // not just "something that compiles".
+    if (type.isPointer()) {
+        return "nullptr";
+    }
+    if (containsSubstring(type.original, "string")) {
+        return type.original + "{}";
+    }
+    if (type.isContainer() || type.isRecord()) {
+        return type.original + "{}";
+    }
+    if (type.isEnum()) {
+        return type.original + "{}";
+    }
+
+    const auto def = getDefaultValueForType(type);
+    const std::string literal =
+        def.has_value() ? def.value() : getZeroValueForType(type);
+    return formatLiteralForType(literal, type);
+}
+
+std::string Generator::buildInstanceInitialization(bool isStatic) const {
+    if (isStatic || !isFromClass) {
+        return "";
+    }
+    return instanceConstruction_;
 }
 
 std::string Generator::generatePointersAssertsWithTemplate(

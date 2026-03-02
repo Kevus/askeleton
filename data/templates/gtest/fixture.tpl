@@ -418,7 +418,7 @@ struct Fixture : public ::testing::Test {
     }
 //{readObject}
 {newMethods}
-	{className} {classNameTest}
+{classMemberDecl}
 
 private:
 	static void replaceAll(std::string &str, const std::string &from, const std::string &to) {

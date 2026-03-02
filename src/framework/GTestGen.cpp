@@ -6,9 +6,10 @@
 using namespace std;
 namespace fs = std::filesystem;
 
-GTestGenerator::GTestGenerator(const string &targetName, const string &filePath,
-                               bool isFromClass)
-    : Generator(targetName, filePath, isFromClass) {
+GTestGenerator::GTestGenerator(const string &targetName,
+                               const string &targetQualifiedName,
+                               const string &filePath, bool isFromClass)
+    : Generator(targetName, targetQualifiedName, filePath, isFromClass) {
     setFrameworkTemplatePath(getAskeletonHome() / config["route"]["gtest_templates"]);
 
     map<string, string> tokensToReplace;
@@ -26,7 +27,7 @@ void GTestGenerator::generateFullAssert(const string &function,
     InfoType underlying = returnType.getUnderlyingType();
     const unsigned number = getFunctionCounter(function) + 1;
 
-    string init = buildInitializations(parameters, function, number);
+    string init = buildInitializations(parameters, function, number, isStatic);
 
     const string returnTypeOriginal = underlying.original;
     const string returnReadMethod = buildReturnReadMethod(underlying, function, number);

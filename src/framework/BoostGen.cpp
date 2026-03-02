@@ -10,9 +10,10 @@ using namespace askeleton;
 using namespace std;
 namespace fs = std::filesystem;
 
-BoostGen::BoostGen(const std::string &targetName, const std::string &filePath,
-                   bool isFromClass)
-    : Generator(targetName, filePath, isFromClass) {
+BoostGen::BoostGen(const std::string &targetName,
+                   const std::string &targetQualifiedName,
+                   const std::string &filePath, bool isFromClass)
+    : Generator(targetName, targetQualifiedName, filePath, isFromClass) {
 
     setFrameworkTemplatePath(getAskeletonHome() /
                              config["route"]["boost_templates"].get<string>());
@@ -37,7 +38,8 @@ void BoostGen::generateFullAssert(const std::string &function,
     if (!pointers.empty())
         pointers = pointers + "\n";
 
-    string initializations = buildInitializations(parameters, function, number);
+    string initializations =
+        buildInitializations(parameters, function, number, isStatic);
 
     const string assert =
         generateAssertForFunction(function, parameters, returnType, isStatic);

@@ -1,5 +1,6 @@
 {
     "_Bool": "bool",
+    "basic_string<char>": "std::string",
     "char *": "char *",
     "class std::basic_string<char>": "std::string",
     "const char *": "const char *",
@@ -25,6 +26,8 @@
     "uint64_t": "unsigned long long",
     "size_t": "unsigned",
     "std::size_t": "unsigned",
+    "std::basic_string<char>": "std::string",
+    "std::__cxx11::basic_string<char>": "std::string",
     "unsigned int": "unsigned",
     "unsigned long int": "unsigned long",
     "unsigned long long int": "unsigned long long",

@@ -10,7 +10,9 @@ public:
     CatchGenerator() = delete;
     ~CatchGenerator() = default;
 
-    CatchGenerator(const std::string &targetName, const std::string &filePath,
+    CatchGenerator(const std::string &targetName,
+                   const std::string &targetQualifiedName,
+                   const std::string &filePath,
                    bool isFromClass = false);
 
     void generateFunctionAssert(const std::string &function,

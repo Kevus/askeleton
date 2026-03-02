@@ -86,6 +86,9 @@ void ConfigGenerator::generateTestCase(const string &functionName,
 
     ss << functionName << "_" << invocationNumber << ":\n{\n";
     ss << generateParam(params);
+    // TODO: Replace this synthetic expected-value generation with a real oracle
+    // strategy. Today we generate return_* like any other input, so tests may
+    // compile and run but still fail because "expected" is not derived from the SUT.
     ss << generateParam(returnVar, false, returnPrefix);
     ss << "\n};\n\n";
 

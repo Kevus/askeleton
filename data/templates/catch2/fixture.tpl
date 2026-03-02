@@ -426,7 +426,7 @@ struct Fixture {
 {newMethods}
 	int argc;
 	char **argv;
-{className} {classNameTest}
+{classMemberDecl}
 	map<string, map<string, string>> configContent;
 	vector<void *> pointers;
 };

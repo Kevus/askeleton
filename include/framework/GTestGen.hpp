@@ -10,7 +10,9 @@ public:
     GTestGenerator() = delete;
     ~GTestGenerator() = default;
 
-    GTestGenerator(const std::string &targetName, const std::string &filePath,
+    GTestGenerator(const std::string &targetName,
+                   const std::string &targetQualifiedName,
+                   const std::string &filePath,
                    bool isFromClass = false);
 
     void generateFunctionAssert(const std::string &function,

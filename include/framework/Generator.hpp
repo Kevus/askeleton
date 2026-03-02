@@ -25,7 +25,8 @@ struct outputFiles {
 class Generator {
 public:
     Generator() = delete;
-    Generator(const std::string &targetName, const std::string &filePath,
+    Generator(const std::string &targetName, const std::string &targetQualifiedName,
+              const std::string &filePath,
               bool isFromClass = false);
 
     bool isTypeSupported(const InfoType &type) const;
@@ -51,6 +52,8 @@ public:
     void setStringRuleValues(
         const std::map<std::string, std::map<std::string, std::vector<std::string>>>
             &rules);
+    bool setInstanceConstruction(const std::vector<InfoVariable> &constructorParams,
+                                 bool useDefaultConstructor);
 
 protected:
     virtual void generateFullAssert(const std::string &function,
@@ -85,7 +88,7 @@ protected:
 
     std::string buildInitializations(const std::vector<InfoVariable> &parameters,
                                      const std::string &function,
-                                     unsigned invocation) const;
+                                     unsigned invocation, bool isStatic) const;
     std::string buildReturnReadMethod(const InfoType &underlying,
                                       const std::string &function,
                                       unsigned invocation) const;
@@ -114,6 +117,7 @@ protected:
                                     unsigned invocation) const;
 
     const std::string targetName, targetFilePath, targetFileName;
+    std::string targetQualifiedName;
     const bool isFromClass;
 
     std::filesystem::path templateFrameworkPath, templateMethodPath;
@@ -124,6 +128,8 @@ protected:
 private:
     void setOutputFilesPath();
     void setSupportedTypes();
+    std::string buildConstructorArgumentExpression(const InfoType &type) const;
+    std::string buildInstanceInitialization(bool isStatic) const;
 
     void createPointerReadToFixture(const InfoType &type) const;
     void createEnumReadToFixture(const InfoType &type) const;
@@ -138,5 +144,6 @@ private:
     std::set<std::string> supportedTypes;
     std::map<std::string, unsigned> functionCounter;
     bool missingFilesWarn = false;
+    std::string instanceConstruction_;
     ConfigGenerator configGenerator;
 };
