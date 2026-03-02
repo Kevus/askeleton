@@ -9,17 +9,21 @@
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
 #include "clang/Tooling/CommonOptionsParser.h"
+#include "clang/Tooling/JSONCompilationDatabase.h"
 #include "clang/Tooling/Tooling.h"
 #include "llvm/Support/CommandLine.h"
 
 #include <chrono>
 #include <ctime>
+#include <fcntl.h>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <set>
 #include <unordered_map>
+#include <unistd.h>
 
 using namespace llvm;
 using namespace clang;
@@ -76,6 +80,157 @@ class NormalizedCompilationDatabase : public CompilationDatabase {
     std::vector<CompileCommand> allCommands_;
     std::vector<std::string> allFiles_;
 };
+
+static std::optional<std::string> findBuildPathArg(int argc, const char **argv) {
+    for (int i = 1; i < argc; ++i) {
+        std::string a = argv[i];
+        if ((a == "-p" || a == "--build-path") && i + 1 < argc) {
+            return std::string(argv[i + 1]);
+        }
+        if (a.rfind("--build-path=", 0) == 0) {
+            return a.substr(std::string("--build-path=").size());
+        }
+        if (a.rfind("-p=", 0) == 0) {
+            return a.substr(std::string("-p=").size());
+        }
+    }
+    return std::nullopt;
+}
+
+static bool hasFlagArg(int argc, const char **argv, llvm::StringRef flag) {
+    for (int i = 1; i < argc; ++i) {
+        if (argv[i] == flag) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static fs::path compdbFilePathFromArgsOrCwd(int argc, const char **argv) {
+    auto bp = findBuildPathArg(argc, argv);
+    fs::path dir = bp ? fs::path(*bp) : fs::current_path();
+    if (dir.is_relative()) dir = fs::absolute(dir);
+    return dir / "compile_commands.json";
+}
+
+class ScopedStderrSilencer {
+  public:
+    ScopedStderrSilencer() {
+        nullFd_ = ::open("/dev/null", O_WRONLY);
+        if (nullFd_ == -1) {
+            return;
+        }
+
+        savedFd_ = ::dup(STDERR_FILENO);
+        if (savedFd_ == -1) {
+            ::close(nullFd_);
+            nullFd_ = -1;
+            return;
+        }
+
+        if (::dup2(nullFd_, STDERR_FILENO) == -1) {
+            ::close(savedFd_);
+            ::close(nullFd_);
+            savedFd_ = -1;
+            nullFd_ = -1;
+        }
+    }
+
+    ~ScopedStderrSilencer() {
+        if (savedFd_ != -1) {
+            ::dup2(savedFd_, STDERR_FILENO);
+            ::close(savedFd_);
+        }
+        if (nullFd_ != -1) {
+            ::close(nullFd_);
+        }
+    }
+
+    ScopedStderrSilencer(const ScopedStderrSilencer &) = delete;
+    ScopedStderrSilencer &operator=(const ScopedStderrSilencer &) = delete;
+
+  private:
+    int savedFd_ = -1;
+    int nullFd_ = -1;
+};
+
+static bool shouldSuppressCompdbProbeNoise(int argc, const char **argv) {
+    if (!hasFlagArg(argc, argv, "--bootstrap-compdb")) {
+        return false;
+    }
+    return !fs::exists(compdbFilePathFromArgsOrCwd(argc, argv));
+}
+
+static std::vector<std::string> minimalCompileArgumentsForFile(
+    const fs::path &absFile) {
+    const std::string ext = absFile.extension().string();
+    // Minimal but reasonable defaults for "single-file" bootstrapping.
+    if (ext == ".c") {
+        return {"clang", "-std=c11", "-I.", "-c", absFile.string()};
+    }
+    // default to C++
+    return {"clang++", "-std=c++20", "-I.", "-c", absFile.string()};
+}
+
+static bool ensureCompileCommandEntry(const fs::path &compdbPath, const fs::path &absFile) {
+    json db = json::array();
+
+    // Load existing compile_commands.json if present and valid.
+    if (fs::exists(compdbPath)) {
+        try {
+            std::ifstream in(compdbPath);
+            in >> db;
+            if (!db.is_array()) {
+                return false;
+            }
+        } catch (...) {
+            // If file is corrupt/unreadable, do NOT destroy it silently.
+            return false;
+        }
+    }
+
+    const std::string absFileStr = absFile.string();
+
+    // If there is already an entry for this file (absolute or suffix match), do nothing.
+    for (const auto &entry : db) {
+        if (!entry.is_object()) continue;
+        if (entry.contains("file") && entry["file"].is_string()) {
+            fs::path entryFile = fs::path(entry["file"].get<std::string>());
+            if (entryFile.is_relative() && entry.contains("directory") &&
+                entry["directory"].is_string()) {
+                entryFile = fs::path(entry["directory"].get<std::string>()) / entryFile;
+            }
+            if (fs::absolute(entryFile) == absFile) return true;
+        }
+    }
+
+    // Append minimal entry
+    json e;
+    e["directory"] = absFile.parent_path().string();
+    e["arguments"] = minimalCompileArgumentsForFile(absFile);
+    e["file"] = absFileStr;
+    db.push_back(e);
+
+    // Backup existing compdb before writing, if it existed.
+    if (fs::exists(compdbPath)) {
+        fs::path bak = compdbPath;
+        bak += ".bak";
+        std::error_code ec;
+        fs::copy_file(compdbPath, bak, fs::copy_options::overwrite_existing, ec);
+        // If backup fails we still try writing, but we won't pretend it succeeded.
+    }
+
+    try {
+        std::ofstream out(compdbPath);
+        if (!out.is_open()) {
+            return false;
+        }
+        out << db.dump(2) << "\n";
+        return out.good();
+    } catch (...) {
+        return false;
+    }
+}
 
 } // namespace
 
@@ -225,6 +380,10 @@ cl::opt<bool> DebugOption(
 cl::opt<std::string> LogJsonOption(
     "log-json", cl::desc("Write execution log to JSON file at the given path"),
     cl::value_desc("path"), cl::init(""), cl::cat(OptC));
+cl::opt<bool> BootstrapCompdbOption(
+    "bootstrap-compdb",
+    cl::desc("If a source file has no entry in compile_commands.json, create/append a minimal one automatically."),
+    cl::init(false), cl::cat(OptC));
 
 int main(int argc, const char **argv) {
     system("");
@@ -236,7 +395,13 @@ int main(int argc, const char **argv) {
 
     const auto time_start = std::chrono::steady_clock::now();
 
+    std::optional<ScopedStderrSilencer> silentProbe;
+    if (shouldSuppressCompdbProbeNoise(argc, argv)) {
+        silentProbe.emplace();
+    }
+
     Expected<CommonOptionsParser> options = CommonOptionsParser::create(argc, argv, OptC);
+    silentProbe.reset();
 
     if (!options) {
         llvm::errs() << options.takeError();
@@ -414,7 +579,77 @@ int main(int argc, const char **argv) {
     for (auto i : createMapMatchers(RuleDataOption))
         Finder.addMatcher(i.second, &Functionality);
 
-    ClangTool Tool(normalizedCompdb, sourcesForTool);
+
+        // --- Pre-check: every source must have a compile command ---
+    // Otherwise ClangTool will silently skip it and the UX is terrible.
+    std::vector<std::string> missing;
+    for (const auto &absSrc : sourcesForTool) {
+        auto cmds = normalizedCompdb.getCompileCommands(absSrc);
+        if (cmds.empty()) {
+            missing.push_back(absSrc);
+        }
+    }
+
+    const CompilationDatabase *toolCompdb = &normalizedCompdb;
+    std::unique_ptr<NormalizedCompilationDatabase> reloadedNormalizedCompdb;
+
+    if (!missing.empty()) {
+        fs::path compdbPath = compdbFilePathFromArgsOrCwd(argc, argv);
+
+        if (BootstrapCompdbOption.getValue()) {
+            bool okAll = true;
+            for (const auto &m : missing) {
+                fs::path absFile = fs::path(m);
+                if (absFile.is_relative()) absFile = fs::absolute(absFile);
+                if (!ensureCompileCommandEntry(compdbPath, absFile)) {
+                    okAll = false;
+                }
+            }
+
+            if (!okAll) {
+                llvm::errs()
+                    << "ERROR: --bootstrap-compdb failed. Existing compile_commands.json may be invalid or not writable.\n"
+                    << "Tried: " << compdbPath.string() << "\n";
+                return 2;
+            }
+
+            llvm::outs()
+                << "Bootstrapped compilation database at:\n  " << compdbPath.string() << "\n"
+                << "Re-loading compilation database and continuing...\n";
+
+            std::string errMsg;
+            auto newDb = JSONCompilationDatabase::loadFromFile(compdbPath.string(), errMsg,
+                                                              JSONCommandLineSyntax::AutoDetect);
+            if (!newDb) {
+                llvm::errs()
+                    << "ERROR: Could not load compilation database after bootstrapping:\n"
+                    << errMsg << "\n";
+                return 2;
+            }
+
+            reloadedNormalizedCompdb =
+                std::make_unique<NormalizedCompilationDatabase>(*newDb);
+            toolCompdb = reloadedNormalizedCompdb.get();
+        } else {
+            llvm::errs()
+                << "ERROR: No compile command found for one or more source files.\n\n"
+                << "ASkeleTon requires a valid compile_commands.json entry for each file because it uses Clang AST parsing.\n\n"
+                << "Missing entries:\n";
+            for (const auto &m : missing) {
+                llvm::errs() << "  - " << m << "\n";
+            }
+            llvm::errs()
+                << "\nHow to fix:\n"
+                << "  • CMake: cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON\n"
+                << "  • Make:  bear -- make\n"
+                << "  • Quick test (single file): re-run with --bootstrap-compdb\n\n"
+                << "Example:\n"
+                << "  askeleton -p . sut.cpp --framework=gtest --bootstrap-compdb\n";
+            return 2;
+        }
+    }
+    
+    ClangTool Tool(*toolCompdb, sourcesForTool);
     auto tool_start = std::chrono::steady_clock::now();
     int result = Tool.run(newFrontendActionFactory(&Finder).get());
     auto tool_end = std::chrono::steady_clock::now();
