@@ -1,5 +1,5 @@
-CXX ?= clang++-18
-LLVM_CONFIG ?= llvm-config-18
+CXX ?= clang++
+LLVM_CONFIG ?= llvm-config
 INCLUDES = -Iinclude/ -I$(shell $(LLVM_CONFIG) --includedir)
 CXXFLAGS = -std=c++20 -Wall -Wextra -Wcast-qual -Wwrite-strings -Wno-unused-parameter \
            -Wdelete-non-virtual-dtor -fPIC -ffunction-sections -fdata-sections #-MMD -MP
@@ -17,11 +17,7 @@ OBJS = $(SRCS:.cpp=.o)
 TARGET = askeleton
 
 ALLOW_NON_CLANG ?= 0
-ifneq ($(ALLOW_NON_CLANG),1)
-ifneq ($(findstring clang,$(CXX)),clang)
-$(error CXX must be clang (e.g., clang++-18). Set CXX=clang++-18 or ALLOW_NON_CLANG=1 to override.)
-endif
-else
+ifeq ($(ALLOW_NON_CLANG),1)
 $(warning ALLOW_NON_CLANG=1: proceeding with CXX=$(CXX), results may differ)
 endif
 
@@ -40,3 +36,11 @@ clean:
 	rm -f ${OBJS} $(TARGET)
 
 .PHONY: clean
+
+# Generic clang check (accepts clang++, clang++-18, etc.)
+ifneq ($(ALLOW_NON_CLANG),1)
+CLANG_DETECTED := $(shell $(CXX) --version 2>/dev/null | head -n 1 | grep -Eqi "clang" && echo yes || echo no)
+ifneq ($(CLANG_DETECTED),yes)
+$(error CXX must be clang. Set CXX=clang++ or ALLOW_NON_CLANG=1)
+endif
+endif
