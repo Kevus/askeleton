@@ -36,7 +36,7 @@ class Report {
 public:
     void setMetadata(const ReportMetadata &meta);
     void addEntry(const ReportEntry &entry);
-    void write(const std::string &path) const;
+    bool write(const std::string &path) const;
 
 private:
     nlohmann::json toJson() const;

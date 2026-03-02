@@ -26,7 +26,6 @@ string extractFileName(const fs::path &fileRoute) { return fileRoute.stem(); }
 
 void exitWithError(const string &message) {
     cerr << message << "\n";
-    cerr << ANSI_BOLD_RED << "Error code: " << errno << " - " << strerror(errno) << "\n";
     cerr << "\nFatal error. Exiting...\n" << ANSI_RESET;
     exit(EXIT_FAILURE);
 }
@@ -119,19 +118,6 @@ void refreshSystemFiles(bool force) {
     }
 }
 
-std::string createPath(const std::vector<std::string> &parts, bool isFile) {
-    fs::path result;
-
-    if (!parts.empty() && parts[0][0] == '/')
-        result = "/";
-
-    for (const std::string &part : parts) {
-        result /= part;
-    }
-
-    return result;
-}
-
 string readFromFile(const std::string &filePath) {
     std::ifstream file(filePath);
     if (!file.is_open())
@@ -198,9 +184,6 @@ fs::path getAskeletonHome() {
             home = fs::path(getenv("ASKELETON_HOME"));
         else
             home = fs::current_path();
-
-        std::cout << "ASkeleTon home set to: " << ANSI_BOLD << home.string() << ANSI_RESET
-                  << "\n";
     }
 
     return home;

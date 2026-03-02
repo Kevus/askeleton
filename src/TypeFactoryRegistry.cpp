@@ -2,6 +2,7 @@
 
 #include <fstream>
 
+#include "Logging.hpp"
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
 #include "utils/templating.hpp"
@@ -49,7 +50,9 @@ void TypeFactoryRegistry::load() {
     json data;
     try {
         file >> data;
-    } catch (...) {
+    } catch (const json::parse_error &e) {
+        Logger::instance().warn("Could not parse type factories file " +
+                                path.string() + ": " + e.what());
         return;
     }
 

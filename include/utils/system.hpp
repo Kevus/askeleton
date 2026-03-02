@@ -62,21 +62,6 @@ void exitWithError(const std::string &message);
 std::string getTodayString(const std::string &format = "%d-%m-%Y %H:%M:%S");
 
 /**
- * @brief Create a path from a list of parts.
- *
- * This function concatenates a list of strings to create a path. The parts are
- * joined with a forward slash ('/') character. If the first part of the path
- * starts with a forward slash, the resulting path will also start with a
- * forward slash.
- *
- * @param parts A vector of strings representing the parts of the path.
- * @param isFile A boolean value indicating whether the path represents a file.
- * @return The concatenated path.
- */
-std::string createPath(const std::vector<std::string> &parts,
-                       bool isFile = false);
-
-/**
  * @brief Read the content of a file.
  *
  * This function reads the entire content of the file at the specified path and

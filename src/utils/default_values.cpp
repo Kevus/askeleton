@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 
+#include "Logging.hpp"
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
 #include "utils/templating.hpp"
@@ -22,7 +23,9 @@ const json &getDefaultValuesJson() {
         }
         try {
             file >> values;
-        } catch (...) {
+        } catch (const json::parse_error &e) {
+            Logger::instance().warn("Could not parse default values file " +
+                                    path.string() + ": " + e.what());
             values = json::object();
         }
     }

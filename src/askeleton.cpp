@@ -172,9 +172,8 @@ static std::vector<std::string> minimalCompileArgumentsForFile(
     return {"clang++", "-std=c++20", "-I.", "-c", absFile.string()};
 }
 
-static bool ensureCompileCommandEntry(const fs::path &compdbPath, const fs::path &absFile) {
-    json db = json::array();
-
+static bool loadCompilationDatabaseJson(const fs::path &compdbPath, json &db) {
+    db = json::array();
     // Load existing compile_commands.json if present and valid.
     if (fs::exists(compdbPath)) {
         try {
@@ -188,10 +187,10 @@ static bool ensureCompileCommandEntry(const fs::path &compdbPath, const fs::path
             return false;
         }
     }
+    return true;
+}
 
-    const std::string absFileStr = absFile.string();
-
-    // If there is already an entry for this file (absolute or suffix match), do nothing.
+static bool hasCompileCommandEntry(const json &db, const fs::path &absFile) {
     for (const auto &entry : db) {
         if (!entry.is_object()) continue;
         if (entry.contains("file") && entry["file"].is_string()) {
@@ -203,21 +202,27 @@ static bool ensureCompileCommandEntry(const fs::path &compdbPath, const fs::path
             if (fs::absolute(entryFile) == absFile) return true;
         }
     }
+    return false;
+}
 
-    // Append minimal entry
+static void appendMinimalCompileCommandEntry(json &db, const fs::path &absFile) {
     json e;
     e["directory"] = absFile.parent_path().string();
     e["arguments"] = minimalCompileArgumentsForFile(absFile);
-    e["file"] = absFileStr;
+    e["file"] = absFile.string();
     db.push_back(e);
+}
 
+static bool writeCompilationDatabaseJson(const fs::path &compdbPath, const json &db) {
     // Backup existing compdb before writing, if it existed.
     if (fs::exists(compdbPath)) {
         fs::path bak = compdbPath;
         bak += ".bak";
         std::error_code ec;
         fs::copy_file(compdbPath, bak, fs::copy_options::overwrite_existing, ec);
-        // If backup fails we still try writing, but we won't pretend it succeeded.
+        if (ec) {
+            return false;
+        }
     }
 
     try {
@@ -230,6 +235,40 @@ static bool ensureCompileCommandEntry(const fs::path &compdbPath, const fs::path
     } catch (...) {
         return false;
     }
+}
+
+static bool ensureCompileCommandEntries(const fs::path &compdbPath,
+                                        const std::vector<fs::path> &absFiles) {
+    json db;
+    if (!loadCompilationDatabaseJson(compdbPath, db)) {
+        return false;
+    }
+
+    bool changed = false;
+    for (const auto &absFile : absFiles) {
+        if (hasCompileCommandEntry(db, absFile)) {
+            continue;
+        }
+        appendMinimalCompileCommandEntry(db, absFile);
+        changed = true;
+    }
+
+    if (!changed) {
+        return true;
+    }
+    return writeCompilationDatabaseJson(compdbPath, db);
+}
+
+static std::string frameworkName(Framework framework) {
+    switch (framework) {
+    case Framework::GTEST:
+        return "gtest";
+    case Framework::BOOST:
+        return "boost";
+    case Framework::CATCH:
+        return "catch";
+    }
+    return "gtest";
 }
 
 } // namespace
@@ -385,6 +424,21 @@ cl::opt<bool> BootstrapCompdbOption(
     cl::desc("If a source file has no entry in compile_commands.json, create/append a minimal one automatically."),
     cl::init(false), cl::cat(OptC));
 
+static ReportMetadata buildReportMetadata(Framework framework,
+                                          const std::vector<std::string> &sources) {
+    ReportMetadata meta;
+    meta.generated_at = getTodayString("%Y-%m-%d %H:%M:%S");
+    meta.profile = ProfileOption.getValue();
+    if (SeedOption.getValue() >= 0) {
+        meta.seed = static_cast<uint32_t>(SeedOption.getValue());
+    }
+    meta.rule_data = RuleDataOption.getValue();
+    meta.rule_max_cases = RuleMaxCasesOption.getValue();
+    meta.framework = frameworkName(framework);
+    meta.sources = sources;
+    return meta;
+}
+
 int main(int argc, const char **argv) {
     system("");
 
@@ -501,23 +555,8 @@ int main(int argc, const char **argv) {
     RunStats stats;
     Report report;
     if (!reportPath.empty()) {
-        ReportMetadata meta;
-        meta.generated_at = getTodayString("%Y-%m-%d %H:%M:%S");
-        meta.profile = ProfileOption.getValue();
-        if (SeedOption.getValue() >= 0) {
-            meta.seed = static_cast<uint32_t>(SeedOption.getValue());
-        }
-        meta.rule_data = RuleDataOption.getValue();
-        meta.rule_max_cases = RuleMaxCasesOption.getValue();
-        if (selectedFramework.value() == Framework::GTEST) {
-            meta.framework = "gtest";
-        } else if (selectedFramework.value() == Framework::BOOST) {
-            meta.framework = "boost";
-        } else {
-            meta.framework = "catch";
-        }
-        meta.sources = options->getSourcePathList();
-        report.setMetadata(meta);
+        report.setMetadata(
+            buildReportMetadata(selectedFramework.value(), options->getSourcePathList()));
     }
 
     std::vector<std::string> sources = options->getSourcePathList();
@@ -544,23 +583,7 @@ int main(int argc, const char **argv) {
         }
         sources = std::move(filtered);
         if (!reportPath.empty()) {
-            ReportMetadata meta;
-            meta.generated_at = getTodayString("%Y-%m-%d %H:%M:%S");
-            meta.profile = ProfileOption.getValue();
-            if (SeedOption.getValue() >= 0) {
-                meta.seed = static_cast<uint32_t>(SeedOption.getValue());
-            }
-            meta.rule_data = RuleDataOption.getValue();
-            meta.rule_max_cases = RuleMaxCasesOption.getValue();
-            if (selectedFramework.value() == Framework::GTEST) {
-                meta.framework = "gtest";
-            } else if (selectedFramework.value() == Framework::BOOST) {
-                meta.framework = "boost";
-            } else {
-                meta.framework = "catch";
-            }
-            meta.sources = sources;
-            report.setMetadata(meta);
+            report.setMetadata(buildReportMetadata(selectedFramework.value(), sources));
         }
     }
 
@@ -580,7 +603,7 @@ int main(int argc, const char **argv) {
         Finder.addMatcher(i.second, &Functionality);
 
 
-        // --- Pre-check: every source must have a compile command ---
+    // Pre-check: every source must have a compile command.
     // Otherwise ClangTool will silently skip it and the UX is terrible.
     std::vector<std::string> missing;
     for (const auto &absSrc : sourcesForTool) {
@@ -597,16 +620,15 @@ int main(int argc, const char **argv) {
         fs::path compdbPath = compdbFilePathFromArgsOrCwd(argc, argv);
 
         if (BootstrapCompdbOption.getValue()) {
-            bool okAll = true;
+            std::vector<fs::path> missingPaths;
+            missingPaths.reserve(missing.size());
             for (const auto &m : missing) {
                 fs::path absFile = fs::path(m);
                 if (absFile.is_relative()) absFile = fs::absolute(absFile);
-                if (!ensureCompileCommandEntry(compdbPath, absFile)) {
-                    okAll = false;
-                }
+                missingPaths.push_back(absFile);
             }
 
-            if (!okAll) {
+            if (!ensureCompileCommandEntries(compdbPath, missingPaths)) {
                 llvm::errs()
                     << "ERROR: --bootstrap-compdb failed. Existing compile_commands.json may be invalid or not writable.\n"
                     << "Tried: " << compdbPath.string() << "\n";
@@ -655,8 +677,13 @@ int main(int argc, const char **argv) {
     auto tool_end = std::chrono::steady_clock::now();
     if (!reportPath.empty()) {
         std::filesystem::path outPath = reportPath;
-        std::filesystem::create_directories(outPath.parent_path());
-        report.write(reportPath);
+        if (!outPath.parent_path().empty()) {
+            std::filesystem::create_directories(outPath.parent_path());
+        }
+        if (!report.write(reportPath)) {
+            llvm::errs() << "ERROR: Could not write report to " << reportPath << "\n";
+            return 2;
+        }
     }
 
     Logger::instance().printWarningsSummary();
@@ -716,7 +743,9 @@ int main(int argc, const char **argv) {
         log["timings_ms"]["total"] = total_ms;
 
         std::filesystem::path logPath = LogJsonOption.getValue();
-        std::filesystem::create_directories(logPath.parent_path());
+        if (!logPath.parent_path().empty()) {
+            std::filesystem::create_directories(logPath.parent_path());
+        }
         std::ofstream out(logPath);
         if (out.is_open())
             out << log.dump(2) << "\n";

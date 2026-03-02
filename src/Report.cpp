@@ -62,9 +62,10 @@ json Report::toJson() const {
     return root;
 }
 
-void Report::write(const std::string &path) const {
+bool Report::write(const std::string &path) const {
     std::ofstream out(path);
     if (!out.is_open())
-        return;
+        return false;
     out << toJson().dump(2) << "\n";
+    return out.good();
 }
