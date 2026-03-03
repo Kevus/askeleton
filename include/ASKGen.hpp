@@ -81,6 +81,12 @@ private:
     void recordSkippedResult(const std::string &kind,
                              const std::string &entityName,
                              ReportEntry &entry, const std::string &detail);
+    ReportEntry makeReportEntry(const std::string &kind, const std::string &name,
+                                const std::string &qualifiedName,
+                                const std::string &filePath, unsigned line,
+                                unsigned column, const std::string &target,
+                                bool isClass,
+                                const std::string &signature) const;
 
     bool ruleDataEnabled = false;
     unsigned ruleMaxCases = 3;

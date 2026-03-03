@@ -265,6 +265,20 @@ void validateTypesMaterialization(const std::vector<InfoVariable> &variables) {
         validateTypeMaterialization(variable);
     }
 }
+
+std::optional<std::string> resolveAbsoluteSourcePath(ASTContext *context,
+                                                     clang::SourceLocation loc,
+                                                     const std::string &kind,
+                                                     const std::string &entityName) {
+    const std::string rawFilePath = context->getSourceManager().getFilename(loc).str();
+    if (rawFilePath.empty()) {
+        llvm::outs() << ANSI_YELLOW << "Skipping " << kind
+                     << " with empty source path: " << entityName << "\n"
+                     << ANSI_RESET;
+        return std::nullopt;
+    }
+    return fs::absolute(rawFilePath).string();
+}
 } // namespace
 
 void ASKGen::run(const MatchFinder::MatchResult &Result) {
@@ -290,43 +304,33 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
             if (!isa<CXXMethodDecl>(UT)) {
 
                 // Get the file name
-                const std::string rawFilePath =
-                    Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
-                if (rawFilePath.empty()) {
-                    llvm::outs() << ANSI_YELLOW
-                                 << "Skipping function with empty source path: "
-                                 << UT->getNameInfo().getAsString() << "\n"
-                                 << ANSI_RESET;
+                const auto filePath =
+                    resolveAbsoluteSourcePath(Context, UT->getBeginLoc(), "function",
+                                              UT->getNameInfo().getAsString());
+                if (!filePath.has_value()) {
                     return;
                 }
-                fs::path filePath = fs::absolute(rawFilePath);
-                string fileName = extractFileName(filePath);
+                string fileName = extractFileName(*filePath);
                 string target = fileName;
 
-                Logger::instance().recordFileSeen(filePath.string());
+                Logger::instance().recordFileSeen(*filePath);
                 Logger::instance().verbose(
                     std::string("Found FunctionDecl: ") +
                     UT->getNameInfo().getAsString() + " in " + fileName);
 
-                auto generator = getGenerator(target, target, filePath, false);
+                auto generator = getGenerator(target, target, *filePath, false);
                 auto configGenerator = getConfigGenerator(target);
                 if (ruleDataEnabled) {
                     collectRuleValuesFromFunction(UT);
                     configGenerator->setRuleValues(ruleValues);
                 }
 
-                ReportEntry entry;
-                if (reporter) {
-                    entry.kind = "function";
-                    entry.name = UT->getNameInfo().getAsString();
-                    entry.qualified_name = UT->getQualifiedNameAsString();
-                    entry.file = filePath.string();
-                    entry.line = FullLocation.getSpellingLineNumber();
-                    entry.column = FullLocation.getSpellingColumnNumber();
-                    entry.target = target;
-                    entry.is_class = false;
-                    entry.signature = buildSignature(UT);
-                }
+                ReportEntry entry = makeReportEntry(
+                    "function", UT->getNameInfo().getAsString(),
+                    UT->getQualifiedNameAsString(), *filePath,
+                    FullLocation.getSpellingLineNumber(),
+                    FullLocation.getSpellingColumnNumber(), target, false,
+                    buildSignature(UT));
 
                 try {
                     unsigned cases = generateTest(*generator, *configGenerator, UT);
@@ -356,18 +360,15 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
             // No constructor, destructor or operator
             if (!isa<CXXConstructorDecl>(UT) && !isa<CXXDestructorDecl>(UT) &&
                 !UT->isOverloadedOperator()) {
-                string source_file =
-                    Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
-                if (source_file.empty()) {
-                    llvm::outs() << ANSI_YELLOW
-                                 << "Skipping method with empty source path: "
-                                 << UT->getNameInfo().getAsString() << "\n"
-                                 << ANSI_RESET;
+                const auto sourceFile =
+                    resolveAbsoluteSourcePath(Context, UT->getBeginLoc(), "method",
+                                              UT->getNameInfo().getAsString());
+                if (!sourceFile.has_value()) {
                     return;
                 }
                 string parentname = UT->getParent()->getName().str();
 
-                Logger::instance().recordFileSeen(source_file);
+                Logger::instance().recordFileSeen(*sourceFile);
                 Logger::instance().verbose(
                     std::string("Found CxxMethodDecl: ") +
                     UT->getNameInfo().getAsString() + " from class " + parentname);
@@ -375,25 +376,19 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
                 const std::string qualifiedParent =
                     UT->getParent()->getQualifiedNameAsString();
                 auto generator =
-                    getGenerator(parentname, qualifiedParent, source_file, true);
+                    getGenerator(parentname, qualifiedParent, *sourceFile, true);
                 auto configGenerator = getConfigGenerator(parentname);
                 if (ruleDataEnabled) {
                     collectRuleValuesFromFunction(UT);
                     configGenerator->setRuleValues(ruleValues);
                 }
 
-                ReportEntry entry;
-                if (reporter) {
-                    entry.kind = "method";
-                    entry.name = UT->getNameInfo().getAsString();
-                    entry.qualified_name = UT->getQualifiedNameAsString();
-                    entry.file = source_file;
-                    entry.line = FullLocation.getSpellingLineNumber();
-                    entry.column = FullLocation.getSpellingColumnNumber();
-                    entry.target = parentname;
-                    entry.is_class = true;
-                    entry.signature = buildSignature(UT);
-                }
+                ReportEntry entry = makeReportEntry(
+                    "method", UT->getNameInfo().getAsString(),
+                    UT->getQualifiedNameAsString(), *sourceFile,
+                    FullLocation.getSpellingLineNumber(),
+                    FullLocation.getSpellingColumnNumber(), parentname, true,
+                    buildSignature(UT));
 
                 try {
                     unsigned cases = generateTest(*generator, *configGenerator, UT);
@@ -424,40 +419,30 @@ void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
         if (FullLocation.isValid() &&
             !Context->getSourceManager().isInSystemHeader(FullLocation)) {
 
-            string filePath =
-                Context->getSourceManager().getFilename(UT->getBeginLoc()).str();
-            if (filePath.empty()) {
-                llvm::outs() << ANSI_YELLOW
-                             << "Skipping constructor with empty source path: "
-                             << UT->getNameInfo().getAsString() << "\n"
-                             << ANSI_RESET;
+            const auto filePath =
+                resolveAbsoluteSourcePath(Context, UT->getBeginLoc(), "constructor",
+                                          UT->getNameInfo().getAsString());
+            if (!filePath.has_value()) {
                 return;
             }
-            string fileName = extractFileName(filePath);
             string target = UT->getParent()->getName().str();
 
-            Logger::instance().recordFileSeen(filePath);
+            Logger::instance().recordFileSeen(*filePath);
             Logger::instance().verbose(
                 std::string("Found CXXConstructorDecl: ") +
                 UT->getNameInfo().getAsString() + " from class " + target);
 
                 const std::string qualifiedTarget =
                     UT->getParent()->getQualifiedNameAsString();
-                auto generator = getGenerator(target, qualifiedTarget, filePath, true);
+                auto generator = getGenerator(target, qualifiedTarget, *filePath, true);
             auto configGenerator = getConfigGenerator(target);
 
-            ReportEntry entry;
-            if (reporter) {
-                entry.kind = "constructor";
-                entry.name = UT->getNameInfo().getAsString();
-                entry.qualified_name = UT->getQualifiedNameAsString();
-                entry.file = filePath;
-                entry.line = FullLocation.getSpellingLineNumber();
-                entry.column = FullLocation.getSpellingColumnNumber();
-                entry.target = target;
-                entry.is_class = true;
-                entry.signature = buildSignature(UT);
-            }
+            ReportEntry entry = makeReportEntry(
+                "constructor", UT->getNameInfo().getAsString(),
+                UT->getQualifiedNameAsString(), *filePath,
+                FullLocation.getSpellingLineNumber(),
+                FullLocation.getSpellingColumnNumber(), target, true,
+                buildSignature(UT));
 
             try {
                 unsigned cases = generateTest(*generator, *configGenerator, UT);
@@ -1227,6 +1212,29 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
 
     testGen.generateConstructorAssert(parameters);
     return 1;
+}
+
+ReportEntry ASKGen::makeReportEntry(const std::string &kind, const std::string &name,
+                                    const std::string &qualifiedName,
+                                    const std::string &filePath, unsigned line,
+                                    unsigned column, const std::string &target,
+                                    bool isClass,
+                                    const std::string &signature) const {
+    if (!reporter) {
+        return {};
+    }
+
+    ReportEntry entry;
+    entry.kind = kind;
+    entry.name = name;
+    entry.qualified_name = qualifiedName;
+    entry.file = filePath;
+    entry.line = line;
+    entry.column = column;
+    entry.target = target;
+    entry.is_class = isClass;
+    entry.signature = signature;
+    return entry;
 }
 
 void ASKGen::recordGeneratedResult(const std::string &kind,
