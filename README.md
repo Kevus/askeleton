@@ -217,7 +217,9 @@ Use `--report` or `--report-json` to generate a machine-readable summary with:
 - Per-entity status: `generated` or `skipped`.
 - Failure reason and type details when skipped.
 - The selected `coverage_mode`.
-- `summary` section with counts by status, kind, and target.
+- `summary` section with counts by status, kind, target, reason, and file.
+- Coverage metrics (`generation_rate`, `skip_rate`) plus top skip reasons and
+  targets with the most skips.
 
 Common `reason` values include:
 - `abstract_record`

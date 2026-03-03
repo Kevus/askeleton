@@ -15,15 +15,19 @@
 #include "llvm/Support/CommandLine.h"
 
 #include <chrono>
+#include <algorithm>
 #include <ctime>
 #include <fcntl.h>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <set>
+#include <sstream>
 #include <unordered_map>
+#include <vector>
 #include <unistd.h>
 
 using namespace llvm;
@@ -35,6 +39,31 @@ using json = nlohmann::json;
 namespace fs = std::filesystem;
 
 namespace {
+
+double computeRatio(unsigned numerator, unsigned denominator) {
+    if (denominator == 0) {
+        return 0.0;
+    }
+    return static_cast<double>(numerator) / static_cast<double>(denominator);
+}
+
+json topCounts(const std::map<std::string, unsigned> &counts, std::size_t limit = 5) {
+    std::vector<std::pair<std::string, unsigned>> items(counts.begin(), counts.end());
+    std::sort(items.begin(), items.end(),
+              [](const auto &lhs, const auto &rhs) {
+                  if (lhs.second != rhs.second) {
+                      return lhs.second > rhs.second;
+                  }
+                  return lhs.first < rhs.first;
+              });
+
+    json result = json::array();
+    const std::size_t count = std::min(limit, items.size());
+    for (std::size_t i = 0; i < count; ++i) {
+        result.push_back({{"name", items[i].first}, {"count", items[i].second}});
+    }
+    return result;
+}
 
 class NormalizedCompilationDatabase : public CompilationDatabase {
   public:
@@ -456,6 +485,10 @@ static void printRunSummary(const RunStats &stats, const std::string &reportPath
     llvm::outs() << "  Found: " << stats.found << "\n";
     llvm::outs() << "  Generated: " << stats.generated << "\n";
     llvm::outs() << "  Skipped: " << stats.skipped << "\n";
+    std::ostringstream generationRate;
+    generationRate << std::fixed << std::setprecision(2)
+                   << (computeRatio(stats.generated, stats.found) * 100.0) << "%";
+    llvm::outs() << "  Generation rate: " << generationRate.str() << "\n";
     if (!stats.skipped_by_reason.empty()) {
         llvm::outs() << "  Skipped by reason:\n";
         for (const auto &it : stats.skipped_by_reason) {
@@ -492,6 +525,9 @@ static void writeExecutionLogJson(
         {"generated", stats.generated},
         {"skipped", stats.skipped},
         {"skipped_by_reason", stats.skipped_by_reason},
+        {"generation_rate", computeRatio(stats.generated, stats.found)},
+        {"skip_rate", computeRatio(stats.skipped, stats.found)},
+        {"top_skip_reasons", topCounts(stats.skipped_by_reason)},
     };
     log["by_kind"] = stats.by_kind;
     log["by_target"] = stats.by_target;
