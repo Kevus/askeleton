@@ -248,6 +248,7 @@ Common `reason` values include:
 - `missing_fixture_strategy`
 - `missing_instance_strategy`
 - `non_public_lifecycle`
+- `unsupported_framework_feature`
 - `unsupported_indirection`
 
 **Troubleshooting**

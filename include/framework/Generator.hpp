@@ -43,6 +43,7 @@ public:
                                       bool isStatic = false) = 0;
     virtual void
     generateConstructorAssert(const std::vector<InfoVariable> &parameters) = 0;
+    virtual bool supportsConstructorTests() const;
 
     virtual ~Generator();
 

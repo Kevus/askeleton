@@ -1058,6 +1058,13 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
     std::string constructorName = UT->getParent()->getName().str();
 
+    if (!testGen.supportsConstructorTests()) {
+        throw ComplexTypeException(
+            "unsupported_framework_feature",
+            "selected framework does not emit constructor tests: " +
+                constructorName);
+    }
+
     if (function_occurrences[constructorName]++ > 1) {
         constructorName += "_" + std::to_string(function_occurrences[constructorName]);
     }

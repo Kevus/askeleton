@@ -333,6 +333,8 @@ Generator::Generator(const string &targetName, const string &targetQualifiedName
     fs::create_directory(utPath);
 }
 
+bool Generator::supportsConstructorTests() const { return false; }
+
 void Generator::appendTestCaseToTestFile(const std::string &testCase) const {
     appendToFile(testPath, "\n\n" + testCase);
 }
