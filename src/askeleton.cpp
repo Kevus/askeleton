@@ -1,6 +1,7 @@
 #include "ASKGen.hpp"
 #include "ASKMatchers.hpp"
 #include "color.h"
+#include "CoverageMode.hpp"
 #include "framework/Generator.hpp"
 #include "ConfigGenerator.hpp"
 #include "Logging.hpp"
@@ -335,6 +336,10 @@ cl::opt<std::string> ProfileOption(
     "profile",
     cl::desc("Data generation profile (random, boundary, safe, stress)"),
     cl::init("random"), cl::cat(OptC));
+cl::opt<std::string> CoverageModeOption(
+    "coverage-mode",
+    cl::desc("Coverage policy (strict, balanced, aggressive)"),
+    cl::init("balanced"), cl::cat(OptC));
 cl::opt<std::string> OutDirOption(
     "out-dir",
     cl::desc("Output directory for generated tests (overrides default)"),
@@ -369,10 +374,12 @@ cl::opt<bool> BootstrapCompdbOption(
     cl::init(false), cl::cat(OptC));
 
 static ReportMetadata buildReportMetadata(Framework framework,
+                                          CoverageMode coverageMode,
                                           const std::vector<std::string> &sources) {
     ReportMetadata meta;
     meta.generated_at = getTodayString("%Y-%m-%d %H:%M:%S");
     meta.profile = ProfileOption.getValue();
+    meta.coverage_mode = coverageModeName(coverageMode);
     if (SeedOption.getValue() >= 0) {
         meta.seed = static_cast<uint32_t>(SeedOption.getValue());
     }
@@ -437,6 +444,7 @@ static std::string resolveReportPath() {
 }
 
 static void printRunSummary(const RunStats &stats, const std::string &reportPath,
+                            CoverageMode coverageMode,
                             const std::chrono::steady_clock::time_point &tool_start,
                             const std::chrono::steady_clock::time_point &tool_end,
                             const std::optional<long long> &refresh_ms) {
@@ -454,6 +462,7 @@ static void printRunSummary(const RunStats &stats, const std::string &reportPath
             llvm::outs() << "    - " << it.first << ": " << it.second << "\n";
         }
     }
+    llvm::outs() << "  Coverage mode: " << coverageModeName(coverageMode) << "\n";
     llvm::outs() << "  Output: " << config["route"]["ut"].get<std::string>() << "\n";
     if (!reportPath.empty()) {
         llvm::outs() << "  Report: " << reportPath << "\n";
@@ -540,6 +549,11 @@ int main(int argc, const char **argv) {
     std::optional<Framework> selectedFramework = parseFramework(FrameworkOption);
     exitIfNotValidFramework(selectedFramework);
     selectFrameworkFromOption(selectedFramework.value());
+    std::optional<CoverageMode> coverageMode = parseCoverageMode(CoverageModeOption);
+    if (!coverageMode.has_value()) {
+        exitWithError("ERROR: Invalid coverage mode. Please use one of the "
+                      "following: strict, balanced, aggressive\n");
+    }
 
     std::optional<long long> refresh_ms;
     if (!NoSystemFilesRefresh.getValue()) {
@@ -566,9 +580,12 @@ int main(int argc, const char **argv) {
     if (Logger::instance().level() >= LogLevel::Normal) {
         if (SeedOption.getValue() >= 0) {
             llvm::outs() << "Data generation: profile=" << ProfileOption.getValue()
-                         << " seed=" << SeedOption.getValue() << "\n";
+                         << " seed=" << SeedOption.getValue()
+                         << " coverage=" << coverageModeName(coverageMode.value())
+                         << "\n";
         } else {
             llvm::outs() << "Data generation: profile=" << ProfileOption.getValue()
+                         << " coverage=" << coverageModeName(coverageMode.value())
                          << "\n";
         }
     }
@@ -590,7 +607,8 @@ int main(int argc, const char **argv) {
     Report report;
     if (!reportPath.empty()) {
         report.setMetadata(
-            buildReportMetadata(selectedFramework.value(), options->getSourcePathList()));
+            buildReportMetadata(selectedFramework.value(), coverageMode.value(),
+                                options->getSourcePathList()));
     }
 
     std::vector<std::string> sources = options->getSourcePathList();
@@ -617,7 +635,8 @@ int main(int argc, const char **argv) {
         }
         sources = std::move(filtered);
         if (!reportPath.empty()) {
-            report.setMetadata(buildReportMetadata(selectedFramework.value(), sources));
+            report.setMetadata(
+                buildReportMetadata(selectedFramework.value(), coverageMode.value(), sources));
         }
     }
 
@@ -632,7 +651,8 @@ int main(int argc, const char **argv) {
 
     clang::ast_matchers::MatchFinder Finder;
     ASKGen Functionality(RuleDataOption, RuleMaxCasesOption,
-                         reportPath.empty() ? nullptr : &report, &stats);
+                         reportPath.empty() ? nullptr : &report, &stats,
+                         coverageMode.value());
     for (auto i : createMapMatchers(RuleDataOption))
         Finder.addMatcher(i.second, &Functionality);
 
@@ -722,7 +742,8 @@ int main(int argc, const char **argv) {
 
     Logger::instance().printWarningsSummary();
 
-    printRunSummary(stats, reportPath, tool_start, tool_end, refresh_ms);
+    printRunSummary(stats, reportPath, coverageMode.value(), tool_start, tool_end,
+                    refresh_ms);
     writeExecutionLogJson(stats, time_start, tool_start, tool_end, refresh_ms);
     return result;
 }

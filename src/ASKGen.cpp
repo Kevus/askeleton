@@ -29,9 +29,9 @@ namespace fs = std::filesystem;
 
 
 ASKGen::ASKGen(bool ruleDataEnabled, unsigned ruleMaxCases, Report *reporter,
-               RunStats *stats)
+               RunStats *stats, CoverageMode coverageMode)
     : ruleDataEnabled(ruleDataEnabled), ruleMaxCases(std::max(1u, ruleMaxCases)),
-      reporter(reporter), stats(stats) {}
+      coverageMode(coverageMode), reporter(reporter), stats(stats) {}
 
 void printDebugInfo(const vector<InfoVariable> &parameters, const InfoType &returnType) {
     if (Logger::instance().level() < LogLevel::Debug)
@@ -123,6 +123,12 @@ bool canMaterializeConstructorParams(const std::vector<InfoVariable> &params,
     } catch (const ComplexTypeException &) {
         return false;
     }
+}
+
+bool requiresMutableAliasHandling(const std::vector<InfoVariable> &params) {
+    return std::any_of(params.begin(), params.end(), [](const InfoVariable &param) {
+        return (param.isPointer() || param.isReference()) && param.isMutableOutput();
+    });
 }
 
 std::optional<ConstructorSelection>
@@ -1161,6 +1167,13 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     if (function_occurrences[functionName]++ > 1) {
         functionName += "_" + std::to_string(function_occurrences[functionName]);
     }
+    if (coverageMode == CoverageMode::Strict && requiresMutableAliasHandling(parameters)) {
+        throw ComplexTypeException(
+            "unsupported_mutable_parameter",
+            "strict coverage mode does not generate mutable pointer/reference "
+            "parameters: " +
+                UT->getQualifiedNameAsString());
+    }
     validateTypesMaterialization(parameters, functionName);
     validateTypeMaterialization(returnType);
 
@@ -1202,6 +1215,13 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     if (!isStatic) {
         auto ctorSelection =
             selectConstructorForInstantiation(UT->getParent(), UT->getNameInfo().getAsString());
+        if (coverageMode == CoverageMode::Strict && ctorSelection.has_value() &&
+            !ctorSelection->useDefaultConstructor) {
+            throw ComplexTypeException(
+                "missing_instance_strategy",
+                "strict coverage mode requires default-constructible instances: " +
+                    UT->getParent()->getQualifiedNameAsString());
+        }
         if (!ctorSelection.has_value() ||
             !testGen.setInstanceConstruction(ctorSelection->params,
                                              ctorSelection->useDefaultConstructor)) {
@@ -1215,6 +1235,13 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     std::string functionName = UT->getNameInfo().getAsString();
     if (function_occurrences[functionName]++ > 1) {
         functionName += "_" + std::to_string(function_occurrences[functionName]);
+    }
+    if (coverageMode == CoverageMode::Strict && requiresMutableAliasHandling(parameters)) {
+        throw ComplexTypeException(
+            "unsupported_mutable_parameter",
+            "strict coverage mode does not generate mutable pointer/reference "
+            "parameters: " +
+                UT->getQualifiedNameAsString());
     }
     validateTypesMaterialization(parameters, functionName);
     validateTypeMaterialization(returnType);

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "ConfigGenerator.hpp"
+#include "CoverageMode.hpp"
 #include "framework/Generator.hpp"
 #include "Report.hpp"
 #include "RunStats.hpp"
@@ -16,7 +17,8 @@
 class ASKGen : public clang::ast_matchers::MatchFinder::MatchCallback {
 public:
     explicit ASKGen(bool ruleDataEnabled = false, unsigned ruleMaxCases = 3,
-                    Report *reporter = nullptr, RunStats *stats = nullptr);
+                    Report *reporter = nullptr, RunStats *stats = nullptr,
+                    CoverageMode coverageMode = CoverageMode::Balanced);
 
     virtual void
     run(const clang::ast_matchers::MatchFinder::MatchResult &Result);
@@ -91,6 +93,7 @@ private:
 
     bool ruleDataEnabled = false;
     unsigned ruleMaxCases = 3;
+    CoverageMode coverageMode = CoverageMode::Balanced;
     std::map<std::string, std::map<std::string, std::vector<long long>>> ruleValues;
     std::map<std::string, std::map<std::string, std::vector<std::string>>>
         ruleStringValues;

@@ -25,6 +25,7 @@ struct ReportEntry {
 struct ReportMetadata {
     std::string generated_at;
     std::string profile;
+    std::string coverage_mode;
     std::optional<uint32_t> seed;
     bool rule_data = false;
     unsigned rule_max_cases = 0;
