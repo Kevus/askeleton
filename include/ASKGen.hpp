@@ -80,7 +80,8 @@ private:
                                ReportEntry &entry, unsigned testCases);
     void recordSkippedResult(const std::string &kind,
                              const std::string &entityName,
-                             ReportEntry &entry, const std::string &detail);
+                             ReportEntry &entry, const std::string &reasonCode,
+                             const std::string &detail);
     ReportEntry makeReportEntry(const std::string &kind, const std::string &name,
                                 const std::string &qualifiedName,
                                 const std::string &filePath, unsigned line,

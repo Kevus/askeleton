@@ -16,10 +16,12 @@
 #include "{headerPath}"
 #define BOOST_TEST_MODULE {target}_TEST
 
+#include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/test/included/unit_test.hpp>
+#include <cctype>
 #include <cstring>
 #include <ctime>
 #include <filesystem>

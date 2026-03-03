@@ -12,8 +12,11 @@ struct InfoVariable;
 
 class ComplexTypeException : public std::runtime_error {
 public:
-	explicit ComplexTypeException(const std::string &type);
-	const std::string type;
+    explicit ComplexTypeException(const std::string &detail);
+    ComplexTypeException(const std::string &reasonCode, const std::string &detail);
+
+    const std::string reasonCode;
+    const std::string type;
 };
 
 struct InfoType {

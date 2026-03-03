@@ -14,7 +14,9 @@
 
 #include "{headerPath}"
 
+#include <algorithm>
 #include <boost/lexical_cast.hpp>
+#include <cctype>
 #if __has_include(<catch2/catch_all.hpp>)
 #include <catch2/catch_all.hpp>
 #elif __has_include(<catch2/catch.hpp>)

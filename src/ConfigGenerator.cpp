@@ -150,7 +150,7 @@ std::string ConfigGenerator::generateParam(const InfoVariable &param,
                                            std::set<std::string> &stack) const {
     pair<InfoVariable, InfoVariable> pointers = param.getPointers();
     InfoType underlying = param.getUnderlyingType();
-    const auto factory = TypeFactoryRegistry::get().find(underlying);
+    const auto factory = TypeFactoryRegistry::get().find(underlying, currentFunctionName);
     const bool hasFactory = factory.has_value() &&
                             factory->strategy != TypeInitStrategy::Random;
 

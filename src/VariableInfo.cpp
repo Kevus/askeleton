@@ -16,8 +16,13 @@ using namespace clang;
 using std::string;
 
 ComplexTypeException::ComplexTypeException(const string &complexType)
-    : std::runtime_error("Type is too complex for ASkeleTon: " + complexType),
-      type(complexType) {}
+    : ComplexTypeException("unsupported_type_shape", complexType) {}
+
+ComplexTypeException::ComplexTypeException(const string &reasonCode,
+                                           const string &complexType)
+    : std::runtime_error("Type is too complex for ASkeleTon [" + reasonCode +
+                         "]: " + complexType),
+      reasonCode(reasonCode), type(complexType) {}
 
 InfoType::InfoType(const clang::QualType &type)
     : original(type.getCanonicalType().getAsString()), formatted(), type(type),
@@ -42,7 +47,7 @@ InfoType::InfoType(const clang::QualType &type)
                 throw ComplexTypeException(original);
             }
         } else {
-            throw ComplexTypeException(original);
+            throw ComplexTypeException("unsupported_array_shape", original);
         }
     } else if (typeIsComplex(original)) {
         throw ComplexTypeException(original);

@@ -209,29 +209,31 @@ bool canDefaultConstructForFixture(const CXXRecordDecl *record) {
     return true;
 }
 
-bool usesExplicitFactory(const InfoType &type) {
-    const auto factory = TypeFactoryRegistry::get().find(type);
+bool usesExplicitFactory(const InfoType &type, const std::string &functionName) {
+    const auto factory = TypeFactoryRegistry::get().find(type, functionName);
     return factory.has_value() && factory->strategy == TypeInitStrategy::Factory &&
            !factory->expr.empty();
 }
 
 [[noreturn]] void throwUnsupportedType(const std::string &reason,
-                                       const std::string &typeName) {
-    throw ComplexTypeException(reason + ": " + typeName);
+                                       const std::string &typeName,
+                                       const std::string &detail) {
+    throw ComplexTypeException(reason, detail + ": " + typeName);
 }
 
-void validateTypeMaterialization(const InfoType &type) {
+void validateTypeMaterialization(const InfoType &type,
+                                const std::string &functionName = "") {
     if (countIndirections(type) > 1) {
-        throwUnsupportedType("more than one pointer/reference indirection is not supported",
-                             type.original);
+        throwUnsupportedType("unsupported_indirection", type.original,
+                             "more than one pointer/reference indirection is not supported");
     }
 
     const InfoType materialized =
         (type.isPointer() || type.isReference()) ? type.getUnderlyingType() : type;
 
     if (materialized.isPointer() || materialized.isReference()) {
-        throwUnsupportedType("nested pointer/reference materialization is not supported",
-                             type.original);
+        throwUnsupportedType("unsupported_indirection", type.original,
+                             "nested pointer/reference materialization is not supported");
     }
 
     if (!materialized.isRecord()) {
@@ -244,25 +246,27 @@ void validateTypeMaterialization(const InfoType &type) {
     }
 
     if (record->isAbstract()) {
-        throwUnsupportedType("abstract record cannot be instantiated for fixtures",
-                             materialized.original);
+        throwUnsupportedType("abstract_record", materialized.original,
+                             "abstract record cannot be instantiated for fixtures");
     }
 
     if (!hasPublicUsableDestructor(record)) {
-        throwUnsupportedType("record does not have a public usable destructor",
-                             materialized.original);
+        throwUnsupportedType("non_public_lifecycle", materialized.original,
+                             "record does not have a public usable destructor");
     }
 
-    if (!usesExplicitFactory(materialized) && !canDefaultConstructForFixture(record)) {
-        throwUnsupportedType(
-            "record requires a default constructor or explicit factory for fixture setup",
-            materialized.original);
+    if (!usesExplicitFactory(materialized, functionName) &&
+        !canDefaultConstructForFixture(record)) {
+        throwUnsupportedType("missing_fixture_strategy", materialized.original,
+                             "record requires a default constructor or explicit "
+                             "factory for fixture setup");
     }
 }
 
-void validateTypesMaterialization(const std::vector<InfoVariable> &variables) {
+void validateTypesMaterialization(const std::vector<InfoVariable> &variables,
+                                  const std::string &functionName = "") {
     for (const auto &variable : variables) {
-        validateTypeMaterialization(variable);
+        validateTypeMaterialization(variable, functionName);
     }
 }
 
@@ -338,7 +342,7 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
                                           entry, cases);
                 } catch (const ComplexTypeException &e) {
                     recordSkippedResult("function", UT->getNameInfo().getAsString(),
-                                        entry, e.type);
+                                        entry, e.reasonCode, e.type);
                 }
 
                 Logger::instance().debug("--------------");
@@ -396,7 +400,7 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
                                           entry, cases);
                 } catch (const ComplexTypeException &e) {
                     recordSkippedResult("method", UT->getNameInfo().getAsString(),
-                                        entry, e.type);
+                                        entry, e.reasonCode, e.type);
                 }
 
                 Logger::instance().debug("--------------");
@@ -450,7 +454,7 @@ void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
                                       entry, cases);
             } catch (const ComplexTypeException &e) {
                 recordSkippedResult("constructor", UT->getNameInfo().getAsString(),
-                                    entry, e.type);
+                                    entry, e.reasonCode, e.type);
             }
 
             Logger::instance().debug("--------------");
@@ -1116,13 +1120,12 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     }
     InfoType returnType(UT->getReturnType());
     std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
-    validateTypesMaterialization(parameters);
-    validateTypeMaterialization(returnType);
-
     std::string functionName = UT->getName().str();
     if (function_occurrences[functionName]++ > 1) {
         functionName += "_" + std::to_string(function_occurrences[functionName]);
     }
+    validateTypesMaterialization(parameters, functionName);
+    validateTypeMaterialization(returnType);
 
 #ifdef FULL_DEBUG
     printDebugInfo(parameters, returnType);
@@ -1159,20 +1162,18 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     InfoType returnType(UT->getReturnType());
     std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
     bool isStatic = UT->isStatic();
-    validateTypesMaterialization(parameters);
-    validateTypeMaterialization(returnType);
-
     if (!isStatic) {
         auto ctorSelection = selectConstructorForInstantiation(UT->getParent());
         if (ctorSelection.has_value()) {
-            validateTypesMaterialization(ctorSelection->params);
+            validateTypesMaterialization(ctorSelection->params, UT->getNameInfo().getAsString());
         }
         if (!ctorSelection.has_value() ||
             !testGen.setInstanceConstruction(ctorSelection->params,
                                              ctorSelection->useDefaultConstructor)) {
             throw ComplexTypeException(
+                "missing_instance_strategy",
                 "no usable public constructor for test instance: " +
-                UT->getParent()->getQualifiedNameAsString());
+                    UT->getParent()->getQualifiedNameAsString());
         }
     }
 
@@ -1180,6 +1181,8 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     if (function_occurrences[functionName]++ > 1) {
         functionName += "_" + std::to_string(function_occurrences[functionName]);
     }
+    validateTypesMaterialization(parameters, functionName);
+    validateTypeMaterialization(returnType);
 
 #ifdef FULL_DEBUG
     printDebugInfo(parameters, returnType);
@@ -1197,12 +1200,12 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
 unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerator,
                               const CXXConstructorDecl *UT) {
     std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
-    validateTypesMaterialization(parameters);
     std::string constructorName = UT->getParent()->getName().str();
 
     if (function_occurrences[constructorName]++ > 1) {
         constructorName += "_" + std::to_string(function_occurrences[constructorName]);
     }
+    validateTypesMaterialization(parameters, constructorName);
 
 #ifdef FULL_DEBUG
     printDebugInfo(parameters, {"no return"});
@@ -1260,13 +1263,14 @@ void ASKGen::recordGeneratedResult(const std::string &kind,
 
 void ASKGen::recordSkippedResult(const std::string &kind,
                                  const std::string &entityName,
-                                 ReportEntry &entry, const std::string &detail) {
+                                 ReportEntry &entry, const std::string &reasonCode,
+                                 const std::string &detail) {
     Logger::instance().verbose("Skipped " + kind + " " + entityName +
                                " (reason: " + detail + ")");
 
     if (reporter) {
         entry.status = "skipped";
-        entry.reason = "complex_type";
+        entry.reason = reasonCode;
         entry.detail = detail;
         reporter->addEntry(entry);
     }
@@ -1275,7 +1279,7 @@ void ASKGen::recordSkippedResult(const std::string &kind,
         stats->found++;
         stats->skipped++;
         stats->by_kind[kind]++;
-        stats->skipped_by_reason["complex_type"]++;
+        stats->skipped_by_reason[reasonCode]++;
         if (!entry.target.empty()) {
             stats->by_target[entry.target]++;
         }

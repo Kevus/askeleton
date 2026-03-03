@@ -1,5 +1,7 @@
 #include "framework/Generator.hpp"
 
+#include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -38,6 +40,39 @@ std::string buildFactoryReadMethod(const InfoType &type, const std::string &expr
        << "(string objectKey) {\n";
     ss << "        (void)objectKey;\n";
     ss << "        return " << expr << ";\n";
+    ss << "    }\n";
+    return ss.str();
+}
+
+std::string buildFunctionScopedFactoryReadMethod(
+    const InfoType &type, const std::vector<std::pair<std::string, TypeFactory>> &scoped,
+    const std::optional<TypeFactory> &fallbackFactory) {
+    std::ostringstream ss;
+    ss << "    " << type.original << " Read_" << type.formatted
+       << "(string objectKey) {\n";
+    ss << "        string functionKey = objectKey;\n";
+    ss << "        size_t dot = functionKey.find(\".\");\n";
+    ss << "        if (dot != string::npos) functionKey = functionKey.substr(0, dot);\n";
+    ss << "        size_t suffix = functionKey.find_last_of('_');\n";
+    ss << "        if (suffix != string::npos && suffix + 1 < functionKey.size() &&\n";
+    ss << "            std::all_of(functionKey.begin() + suffix + 1, functionKey.end(),\n";
+    ss << "                        [](unsigned char c) { return std::isdigit(c); })) {\n";
+    ss << "            functionKey = functionKey.substr(0, suffix);\n";
+    ss << "        }\n";
+
+    for (const auto &[functionName, factory] : scoped) {
+        ss << "        if (functionKey == \"" << functionName << "\") {\n";
+        ss << "            return " << factory.expr << ";\n";
+        ss << "        }\n";
+    }
+
+    if (fallbackFactory.has_value() &&
+        fallbackFactory->strategy == TypeInitStrategy::Factory &&
+        !fallbackFactory->expr.empty()) {
+        ss << "        return " << fallbackFactory->expr << ";\n";
+    } else {
+        ss << "        return {};\n";
+    }
     ss << "    }\n";
     return ss.str();
 }
@@ -339,7 +374,14 @@ void Generator::createTypeReadToFixture(const InfoType &type, unsigned level) {
         return;
 
     if (type.isRecord()) {
+        const auto scopedFactories = TypeFactoryRegistry::get().findFunctionFactories(type);
         const auto factory = TypeFactoryRegistry::get().find(type);
+        if (!scopedFactories.empty()) {
+            appendReadMethodToFixture(
+                buildFunctionScopedFactoryReadMethod(type, scopedFactories, factory));
+            markTypeAsSupported(type);
+            return;
+        }
         if (factory && factory->strategy != TypeInitStrategy::Random) {
             if (factory->strategy == TypeInitStrategy::Factory) {
                 appendReadMethodToFixture(buildFactoryReadMethod(

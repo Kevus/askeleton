@@ -14,7 +14,9 @@
 
 #include "{headerPath}"
 
+#include <algorithm>
 #include <boost/lexical_cast.hpp>
+#include <cctype>
 #include <ctime>
 #include <filesystem>
 #include <fstream>
