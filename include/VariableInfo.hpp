@@ -10,6 +10,12 @@
 #include <vector>
 struct InfoVariable;
 
+enum class ParameterIntent {
+    Input,
+    Output,
+    InOut,
+};
+
 class ComplexTypeException : public std::runtime_error {
 public:
     explicit ComplexTypeException(const std::string &detail);
@@ -67,8 +73,13 @@ struct InfoVariable : public InfoType {
 
     std::pair<InfoVariable, InfoVariable> getPointers() const;
     std::pair<std::string, std::string> getPointersVarName() const;
+    bool isInputOnly() const;
+    bool isOutputOnly() const;
+    bool isInputOutput() const;
+    bool isMutableOutput() const;
 
     std::string name;
     std::optional<std::string> defaultValue;
+    ParameterIntent intent = ParameterIntent::Input;
     static unsigned NO_NAME_COUNT;
 };

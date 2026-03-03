@@ -120,8 +120,12 @@ std::string ConfigGenerator::generateParam(const vector<InfoVariable> &params,
     stringstream ss;
 
     std::set<std::string> stack;
-    for (const InfoVariable &param : params)
+    for (const InfoVariable &param : params) {
+        if (param.isOutputOnly()) {
+            continue;
+        }
         ss << generateParam(param, generatePointers, prefix, 0, stack) << "\n";
+    }
 
     return ss.str();
 }
@@ -139,8 +143,12 @@ std::string ConfigGenerator::generateParam(const std::vector<InfoVariable> &para
                                            unsigned depth,
                                            std::set<std::string> &stack) const {
     stringstream ss;
-    for (const InfoVariable &param : params)
+    for (const InfoVariable &param : params) {
+        if (param.isOutputOnly()) {
+            continue;
+        }
         ss << generateParam(param, generatePointers, prefix, depth, stack) << "\n";
+    }
     return ss.str();
 }
 

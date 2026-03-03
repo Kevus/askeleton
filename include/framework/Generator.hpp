@@ -83,6 +83,9 @@ protected:
                                                 unsigned invocation = 1,
                                                 const std::string &variablePrefix = "",
                                                 const std::string &keyPrefix = "") const;
+    std::string buildWritableParameterInitialization(
+        const InfoVariable &variable,
+        const std::string &variablePrefix = "") const;
 
     std::string generateReadInvocation(const InfoVariable &type,
                                        const std::string &function,

@@ -571,7 +571,9 @@ Generator::generateParameterInitialization(const std::vector<InfoVariable> &para
                                            const std::string &keyPrefix) const {
     std::stringstream ss;
     for (const auto &param : parameters) {
-        if (isCStringLike(param)) {
+        if (param.isOutputOnly()) {
+            ss << buildWritableParameterInitialization(param, variablePrefix);
+        } else if (isCStringLike(param)) {
             const std::string storageName = variablePrefix + param.name + "_storage";
             const std::string variableName = variablePrefix + param.name;
             const std::string readKey = function + "_" + std::to_string(invocation) + "." +
@@ -593,6 +595,29 @@ Generator::generateParameterInitialization(const std::vector<InfoVariable> &para
     }
 
     return ss.str();
+}
+
+std::string Generator::buildWritableParameterInitialization(
+    const InfoVariable &variable, const std::string &variablePrefix) const {
+    const InfoType underlying = variable.getUnderlyingType();
+    const std::string variableName = variablePrefix + variable.name;
+
+    if (isCStringLike(variable)) {
+        std::ostringstream ss;
+        ss << "\tstd::string " << variablePrefix << variable.name
+           << "_storage(64, '\\0');\n";
+        ss << "\t" << variable.original << " " << variableName << " = "
+           << variablePrefix << variable.name << "_storage.data()";
+        return ss.str();
+    }
+
+    if (underlying.isContainer()) {
+        return "\t" + underlying.original + " " + variableName + "{}";
+    }
+
+    const std::string readKey = "__out." + variable.name;
+    return "\t" + underlying.original + " " + variableName + " = Read_" +
+           normalizeReadMethodType(underlying) + "(\"" + readKey + "\")";
 }
 
 std::string Generator::generateParameterInitialization(const InfoVariable &variable,
@@ -858,7 +883,7 @@ std::string Generator::generatePointersAssertsWithTemplate(
     const std::string &expectedToken, const std::string &assertTemplate) const {
     std::stringstream ss;
     for (const auto &param : parameters) {
-        if (param.isPointer() || param.isReference()) {
+        if ((param.isPointer() || param.isReference()) && param.isMutableOutput()) {
             auto pointers = param.getPointersVarName();
             if (isCStringLike(param)) {
                 continue;

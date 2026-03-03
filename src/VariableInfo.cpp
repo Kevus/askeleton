@@ -15,6 +15,53 @@
 using namespace clang;
 using std::string;
 
+namespace {
+bool startsWithToken(const std::string &value, const std::string &token) {
+    if (value == token) {
+        return true;
+    }
+    if (value.size() <= token.size()) {
+        return false;
+    }
+    return value.rfind(token + "_", 0) == 0;
+}
+
+bool looksLikeOutputName(std::string name) {
+    name = toLower(name);
+    const std::vector<std::string> hints = {"out", "output", "result", "retval",
+                                            "dst", "dest", "buf", "buffer"};
+    for (const auto &hint : hints) {
+        if (startsWithToken(name, hint)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+ParameterIntent inferIntent(const ParmVarDecl *param) {
+    if (!param) {
+        return ParameterIntent::Input;
+    }
+
+    const std::string originalType = param->getOriginalType().getAsString();
+    const bool isPointer = containsSubstring(originalType, "*");
+    const bool isReference = containsSubstring(originalType, "&");
+    if (!isPointer && !isReference) {
+        return ParameterIntent::Input;
+    }
+
+    if (containsSubstring(originalType, "const")) {
+        return ParameterIntent::Input;
+    }
+
+    if (looksLikeOutputName(param->getNameAsString())) {
+        return ParameterIntent::Output;
+    }
+
+    return ParameterIntent::InOut;
+}
+} // namespace
+
 ComplexTypeException::ComplexTypeException(const string &complexType)
     : ComplexTypeException("unsupported_type_shape", complexType) {}
 
@@ -178,6 +225,7 @@ InfoVariable::InfoVariable(const clang::ParmVarDecl *param)
     : InfoType(param->getOriginalType()), name(param->getQualifiedNameAsString()) {
     if (name == "")
         name = formatted + "_" + std::to_string(NO_NAME_COUNT++);
+    intent = inferIntent(param);
 }
 
 InfoVariable::InfoVariable(const clang::FieldDecl *field)
@@ -201,11 +249,23 @@ std::pair<InfoVariable, InfoVariable> InfoVariable::getPointers() const {
     InfoType underlying = getUnderlyingType();
     InfoVariable input{name, underlying};
     InfoVariable output{name + "_output", underlying};
+    input.intent = intent;
+    output.intent = intent;
     return {input, output};
 }
 
 std::pair<string, string> InfoVariable::getPointersVarName() const {
     return {name, name + "_output"};
+}
+
+bool InfoVariable::isInputOnly() const { return intent == ParameterIntent::Input; }
+
+bool InfoVariable::isOutputOnly() const { return intent == ParameterIntent::Output; }
+
+bool InfoVariable::isInputOutput() const { return intent == ParameterIntent::InOut; }
+
+bool InfoVariable::isMutableOutput() const {
+    return isOutputOnly() || isInputOutput();
 }
 
 string InfoType::getFormattedNotParametrized() const {
