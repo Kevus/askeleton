@@ -57,7 +57,13 @@ namespace {
 struct ConstructorSelection {
     std::vector<InfoVariable> params;
     bool useDefaultConstructor = false;
+    unsigned totalParameters = 0;
 };
+
+void validateTypeMaterialization(const InfoType &type,
+                                 const std::string &functionName = "");
+void validateTypesMaterialization(const std::vector<InfoVariable> &variables,
+                                  const std::string &functionName = "");
 
 std::string buildSignature(const FunctionDecl *decl) {
     if (!decl)
@@ -109,8 +115,19 @@ std::string buildSignature(const CXXConstructorDecl *decl) {
     return ss.str();
 }
 
+bool canMaterializeConstructorParams(const std::vector<InfoVariable> &params,
+                                    const std::string &functionName) {
+    try {
+        validateTypesMaterialization(params, functionName);
+        return true;
+    } catch (const ComplexTypeException &) {
+        return false;
+    }
+}
+
 std::optional<ConstructorSelection>
-selectConstructorForInstantiation(const CXXRecordDecl *record) {
+selectConstructorForInstantiation(const CXXRecordDecl *record,
+                                  const std::string &functionName) {
     if (!record) {
         return std::nullopt;
     }
@@ -126,7 +143,16 @@ selectConstructorForInstantiation(const CXXRecordDecl *record) {
 
         ConstructorSelection candidate;
         candidate.useDefaultConstructor = ctor->isDefaultConstructor();
-        for (const auto *param : ctor->parameters()) {
+        candidate.totalParameters = ctor->getNumParams();
+
+        unsigned requiredCount = ctor->getNumParams();
+        while (requiredCount > 0 &&
+               ctor->getParamDecl(requiredCount - 1)->hasDefaultArg()) {
+            --requiredCount;
+        }
+
+        for (unsigned i = 0; i < requiredCount; ++i) {
+            const auto *param = ctor->getParamDecl(i);
             InfoVariable info(param);
             candidate.params.push_back(info);
         }
@@ -134,7 +160,14 @@ selectConstructorForInstantiation(const CXXRecordDecl *record) {
         if (candidate.useDefaultConstructor) {
             return candidate;
         }
-        if (!best.has_value() || candidate.params.size() < best->params.size()) {
+
+        if (!canMaterializeConstructorParams(candidate.params, functionName)) {
+            continue;
+        }
+
+        if (!best.has_value() || candidate.params.size() < best->params.size() ||
+            (candidate.params.size() == best->params.size() &&
+             candidate.totalParameters < best->totalParameters)) {
             best.emplace(std::move(candidate));
         }
     }
@@ -222,7 +255,7 @@ bool usesExplicitFactory(const InfoType &type, const std::string &functionName) 
 }
 
 void validateTypeMaterialization(const InfoType &type,
-                                const std::string &functionName = "") {
+                                const std::string &functionName) {
     if (countIndirections(type) > 1) {
         throwUnsupportedType("unsupported_indirection", type.original,
                              "more than one pointer/reference indirection is not supported");
@@ -264,7 +297,7 @@ void validateTypeMaterialization(const InfoType &type,
 }
 
 void validateTypesMaterialization(const std::vector<InfoVariable> &variables,
-                                  const std::string &functionName = "") {
+                                  const std::string &functionName) {
     for (const auto &variable : variables) {
         validateTypeMaterialization(variable, functionName);
     }
@@ -1167,10 +1200,8 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
     bool isStatic = UT->isStatic();
     if (!isStatic) {
-        auto ctorSelection = selectConstructorForInstantiation(UT->getParent());
-        if (ctorSelection.has_value()) {
-            validateTypesMaterialization(ctorSelection->params, UT->getNameInfo().getAsString());
-        }
+        auto ctorSelection =
+            selectConstructorForInstantiation(UT->getParent(), UT->getNameInfo().getAsString());
         if (!ctorSelection.has_value() ||
             !testGen.setInstanceConstruction(ctorSelection->params,
                                              ctorSelection->useDefaultConstructor)) {
