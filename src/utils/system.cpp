@@ -9,10 +9,66 @@
 #include <nlohmann/json.hpp>
 #include <sstream>
 #include <vector>
+#include <unistd.h>
 
 using namespace std;
 namespace fs = filesystem;
 using json = nlohmann::json;
+
+namespace {
+
+bool writeTextFileAtomicallyImpl(const fs::path &filePath, const std::string &content) {
+    if (!filePath.parent_path().empty()) {
+        std::error_code ec;
+        fs::create_directories(filePath.parent_path(), ec);
+        if (ec) {
+            return false;
+        }
+    }
+
+    fs::path tempPath = filePath;
+    tempPath += ".tmp.";
+    tempPath += std::to_string(::getpid());
+
+    {
+        std::ofstream file(tempPath, std::ios::out | std::ios::trunc);
+        if (!file.is_open()) {
+            return false;
+        }
+        file << content;
+        if (!file.good()) {
+            file.close();
+            std::error_code ec;
+            fs::remove(tempPath, ec);
+            return false;
+        }
+    }
+
+    std::error_code ec;
+    fs::rename(tempPath, filePath, ec);
+    if (!ec) {
+        return true;
+    }
+
+    if (fs::exists(filePath)) {
+        fs::remove(filePath, ec);
+        if (ec) {
+            std::error_code cleanupEc;
+            fs::remove(tempPath, cleanupEc);
+            return false;
+        }
+        fs::rename(tempPath, filePath, ec);
+        if (!ec) {
+            return true;
+        }
+    }
+
+    std::error_code cleanupEc;
+    fs::remove(tempPath, cleanupEc);
+    return false;
+}
+
+} // namespace
 
 bool fileExists(const string &filename) {
     return fs::exists(filename) && fs::is_regular_file(filename);
@@ -97,6 +153,9 @@ void refreshSystemFiles(bool force) {
 
         if (value.is_string()) {
             for (const auto &fw : frameworks) {
+                if (key == "main" && fw == "catch2") {
+                    continue;
+                }
                 files.push_back(
                     (askeletonHome / "data" / "templates" / fw /
                      value.get<string>())
@@ -111,11 +170,7 @@ void refreshSystemFiles(bool force) {
     }
 
     json output = files;
-    fs::create_directories(outputPath.parent_path());
-    std::ofstream file(outputPath);
-    if (file.is_open()) {
-        file << output.dump(4) << "\n";
-    }
+    (void)writeJsonFileAtomically(outputPath, output, 4);
 }
 
 string readFromFile(const std::string &filePath) {
@@ -127,11 +182,18 @@ string readFromFile(const std::string &filePath) {
 }
 
 void writeToFile(const std::string &filePath, const std::string &content) {
-    std::ofstream file(filePath, std::ios::out | std::ios::trunc);
-    if (!file.is_open())
+    if (!writeTextFileAtomically(filePath, content)) {
         showOpenFileError(filePath);
+    }
+}
 
-    file << content;
+bool writeTextFileAtomically(const fs::path &filePath, const std::string &content) {
+    return writeTextFileAtomicallyImpl(filePath, content);
+}
+
+bool writeJsonFileAtomically(const fs::path &filePath, const json &content,
+                             int indent) {
+    return writeTextFileAtomicallyImpl(filePath, content.dump(indent) + "\n");
 }
 
 void appendToFile(const std::string &filePath, const std::string &content) {

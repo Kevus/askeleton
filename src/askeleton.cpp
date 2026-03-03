@@ -226,12 +226,7 @@ static bool writeCompilationDatabaseJson(const fs::path &compdbPath, const json 
     }
 
     try {
-        std::ofstream out(compdbPath);
-        if (!out.is_open()) {
-            return false;
-        }
-        out << db.dump(2) << "\n";
-        return out.good();
+        return writeJsonFileAtomically(compdbPath, db, 2);
     } catch (...) {
         return false;
     }
@@ -746,9 +741,7 @@ int main(int argc, const char **argv) {
         if (!logPath.parent_path().empty()) {
             std::filesystem::create_directories(logPath.parent_path());
         }
-        std::ofstream out(logPath);
-        if (out.is_open())
-            out << log.dump(2) << "\n";
+        (void)writeJsonFileAtomically(logPath, log, 2);
     }
     return result;
 }

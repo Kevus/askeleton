@@ -23,13 +23,13 @@ jobs:
           sudo apt-get install -y wget ca-certificates
           wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh
           sudo bash /tmp/llvm.sh 18
-          sudo apt-get install -y clang-18 llvm-18 llvm-18-dev llvm-18-tools libclang-18-dev build-essential
+          sudo apt-get install -y clang-18 llvm-18 llvm-18-dev llvm-18-tools libclang-18-dev build-essential libgtest-dev libboost-dev catch2
 
       - name: Install LLVM/Clang 18 (Ubuntu 24.04)
         if: matrix.os == 'ubuntu-24.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-18 llvm-18 llvm-18-dev llvm-18-tools libclang-18-dev build-essential
+          sudo apt-get install -y clang-18 llvm-18 llvm-18-dev llvm-18-tools libclang-18-dev build-essential libgtest-dev libboost-dev catch2
 
       - name: Build
         run: |
@@ -52,3 +52,27 @@ jobs:
             --seed=123 --profile=random \
             --out-dir=/tmp/askeleton_smoke \
             --report=/tmp/askeleton_smoke/askeleton_report.json
+
+      - name: Validate generated tests (GoogleTest)
+        run: |
+          ASKELETON_HOME=$(pwd) ./askeleton -p examples ${GITHUB_WORKSPACE}/examples/sut.cpp \
+            --framework=gtest --seed=123 \
+            --out-dir=/tmp/askeleton_gtest
+          make -C /tmp/askeleton_gtest/sut
+          /tmp/askeleton_gtest/sut/sut_test
+
+      - name: Validate generated tests (Boost.Test)
+        run: |
+          ASKELETON_HOME=$(pwd) ./askeleton -p examples ${GITHUB_WORKSPACE}/examples/sut.cpp \
+            --framework=boost --seed=123 \
+            --out-dir=/tmp/askeleton_boost
+          make -C /tmp/askeleton_boost/sut
+          /tmp/askeleton_boost/sut/sut_test
+
+      - name: Validate generated tests (Catch2)
+        run: |
+          ASKELETON_HOME=$(pwd) ./askeleton -p examples ${GITHUB_WORKSPACE}/examples/sut.cpp \
+            --framework=catch --seed=123 \
+            --out-dir=/tmp/askeleton_catch
+          make -C /tmp/askeleton_catch/sut
+          /tmp/askeleton_catch/sut/sut_test

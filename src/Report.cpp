@@ -1,6 +1,5 @@
 #include "Report.hpp"
-
-#include <fstream>
+#include "utils/system.hpp"
 
 using json = nlohmann::json;
 
@@ -63,9 +62,5 @@ json Report::toJson() const {
 }
 
 bool Report::write(const std::string &path) const {
-    std::ofstream out(path);
-    if (!out.is_open())
-        return false;
-    out << toJson().dump(2) << "\n";
-    return out.good();
+    return writeJsonFileAtomically(path, toJson(), 2);
 }

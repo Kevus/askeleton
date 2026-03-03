@@ -30,7 +30,6 @@
             "test_fixture": "{target}_fixture.hpp",
             "test_file": "{target}_test.cpp",
             "cfg": "{target}.cfg",
-            "catch_main": "main.cpp",
             "gtest_main": "main.cpp"
         },
 

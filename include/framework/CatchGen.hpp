@@ -30,6 +30,4 @@ private:
     void generateFullAssert(const std::string &function,
                             const std::vector<InfoVariable> &parameters,
                             const InfoType &returnType, bool isStatic) override;
-
-    void copyMainFile() const;
 };

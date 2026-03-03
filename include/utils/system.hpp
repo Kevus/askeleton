@@ -82,6 +82,10 @@ std::string readFromFile(const std::string &filePath);
  * @param content The content to write to the file.
  */
 void writeToFile(const std::string &filePath, const std::string &content);
+bool writeTextFileAtomically(const std::filesystem::path &filePath,
+                             const std::string &content);
+bool writeJsonFileAtomically(const std::filesystem::path &filePath,
+                             const nlohmann::json &content, int indent = 2);
 
 /**
  * @brief Append content to a file.
