@@ -1,10 +1,11 @@
 CXX=clang++ --std=c++17
-OBJS = tests.o main.o # Please add your own .o files here
+LIBS = -lCatch2Main -lCatch2 -pthread
+OBJS = tests.o # Please add your own .o files here
 TARGET = {target}_test
 
 test: $(TARGET)
 $(TARGET): $(OBJS)
-	$(CXX) -o $@ $^
+	$(CXX) -o $@ $^ $(LIBS)
 
 clean:
 	rm -rf $(TARGET) $(OBJS) *~
