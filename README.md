@@ -5,7 +5,10 @@ Outputs fixtures, tests, Makefiles, and `.cfg` data files with deterministic or 
 **Highlights**
 - AST-driven discovery of functions, methods, and constructors.
 - Profiles for data generation: `random`, `boundary`, `safe`, `stress`.
+- Coverage policies: `strict`, `balanced`, `aggressive`.
 - Rule-based values extracted from comparisons.
+- Structured skip reasons in reports (`abstract_record`, `missing_instance_strategy`, etc.).
+- Structured input support for `std::optional`, `std::pair`, and `std::tuple`.
 - JSON report with per-target summary.
 - Output inside the SUT repo by default.
 - Clean, structured console output with optional JSON execution log.
@@ -58,6 +61,7 @@ Key options:
 - `-p <build-path>`: path to `compile_commands.json`.
 - `--framework=<gtest|boost|catch>`: select test framework.
 - `--profile=<random|boundary|safe|stress>`: data generation profile.
+- `--coverage-mode=<strict|balanced|aggressive>`: generation coverage policy.
 - `--seed=<N>`: deterministic data generation.
 - `--rule-data`: enable rule-based values from AST.
 - `--rule-max-cases=<N>`: limit rule-based test cases per function.
@@ -96,6 +100,25 @@ Profiled data:
 ```bash
 ASKELETON_HOME=$(pwd) ./askeleton --profile=boundary -p examples examples/sut.cpp
 ```
+Strict coverage mode:
+```bash
+ASKELETON_HOME=$(pwd) ./askeleton --coverage-mode=strict -p examples examples/sut.cpp
+```
+
+**Coverage Modes**
+Coverage mode controls how aggressive ASkeleTon is when deciding whether to
+generate a test for a callable. This is separate from the data-generation
+`--profile`.
+
+- `balanced`: default behavior. Uses the current materialization heuristics and
+  generates tests for mutable pointer/reference parameters when supported.
+- `strict`: favors conservative, easy-to-review scaffolding. It skips:
+  - functions and methods that require mutable pointer/reference parameter
+    handling
+  - instance methods that require constructing the object with a non-default
+    constructor
+- `aggressive`: currently behaves like `balanced`, but is exposed as the forward
+  compatibility mode for more permissive generation in future iterations.
 
 **Expected Value Strategy**
 Today ASkeleTon does not generate a semantic oracle independent from the SUT.
@@ -110,6 +133,8 @@ What this means in practice:
   specification or golden value.
 - This also lets the generated test compare side effects on pointer/reference
   parameters against the mirrored execution.
+- Parameters inferred as pure `out` values are no longer persisted as editable
+  `.cfg` inputs; they are initialized internally in generated test code.
 
 What this strategy is good for:
 - Stable, reproducible scaffold tests.
@@ -137,11 +162,8 @@ outputs across machines, keep these inputs identical:
 Configure `data/type_factories.json` to control how complex types are initialized.
 ```json
 {
-  "types": {
-    "MyType": { "strategy": "factory", "expr": "MakeMyType()" },
-    "OtherType": { "strategy": "zeroed" },
-    "ThirdType": { "strategy": "dummy" }
-  }
+  "types": {},
+  "functions": {}
 }
 ```
 Quick example:
@@ -151,6 +173,13 @@ Quick example:
     "User": { "strategy": "factory", "expr": "MakeUser(\"guest\")" },
     "Session": { "strategy": "zeroed" },
     "Address": { "strategy": "dummy" }
+  },
+  "functions": {
+    "BuildAdminSession": {
+      "types": {
+        "User": { "strategy": "factory", "expr": "MakeAdminUser()" }
+      }
+    }
   }
 }
 ```
@@ -158,12 +187,45 @@ Notes:
 - `factory`: uses the expression in the generated `Read_<Type>()` fixture method.
 - `zeroed`: returns `{}` for record types.
 - `dummy`: uses in-class defaults, then `data/default_values.json`, then zero.
+- `functions`: lets you override the factory for a type only when generating a
+  specific function or method. Function-scoped factories currently support only
+  explicit `factory` expressions.
+
+**Supported Structured Inputs**
+ASkeleTon now has first-class input support for some common C++ standard library
+shapes in generated `.cfg` files and fixtures:
+- `std::optional<T>`
+- `std::pair<T, U>`
+- `std::tuple<Ts...>`
+
+These are stored in the `.cfg` as structured keys rather than flattened strings.
+Examples:
+```text
+value.has_value=true;#bool
+value.value=39;#int
+
+pairValue.first=1;#int
+pairValue.second=2;#long
+
+tupleValue.0=4;#int
+tupleValue.1=5;#short
+tupleValue.2=6;#long long
+```
 
 **Report JSON**
 Use `--report` or `--report-json` to generate a machine-readable summary with:
 - Per-entity status: `generated` or `skipped`.
 - Failure reason and type details when skipped.
+- The selected `coverage_mode`.
 - `summary` section with counts by status, kind, and target.
+
+Common `reason` values include:
+- `abstract_record`
+- `missing_fixture_strategy`
+- `missing_instance_strategy`
+- `non_public_lifecycle`
+- `unsupported_indirection`
+- `unsupported_mutable_parameter`
 
 **Troubleshooting**
 - `compile_commands.json` not found: pass `-p <build-path>` to its directory.
