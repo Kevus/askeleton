@@ -113,6 +113,30 @@ struct Fixture {
 
 	}
 
+	bool HasObject(std::string objectKey) {
+		size_t delimiter = objectKey.find(".");
+		std::string key = objectKey.substr(0, delimiter);
+		std::string value = objectKey.substr(delimiter + 1);
+
+		auto outerIt = configContent.find(key);
+		if (outerIt == configContent.end()) {
+			return false;
+		}
+
+		if (outerIt->second.find(value) != outerIt->second.end()) {
+			return true;
+		}
+
+		const std::string nestedPrefix = value + ".";
+		for (const auto &entry : outerIt->second) {
+			if (entry.first.rfind(nestedPrefix, 0) == 0) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	//==========================================================
 	// EQUIVALENT TYPES:
 	// char

@@ -32,7 +32,7 @@ void GTestGenerator::generateFullAssert(const string &function,
 
     const string returnTypeOriginal = buildExpectedType(returnType);
     const string returnReadMethod =
-        buildExpectedInvocation(parameters, function, isStatic, returnType);
+        buildExpectedInvocation(parameters, function, number, isStatic, returnType);
 
     const string parametersInvocation = invocationTokens.second;
     string pointers = generatePointersAsserts(parameters, function);

@@ -316,6 +316,7 @@ bool hasExistingStreamOperator(const InfoType &type) {
 unsigned Generator::MAX_DEPTH;
 const json &Generator::config = getConfig();
 const nlohmann::json &Generator::templateItems = getTemplateItems();
+OracleMode Generator::oracleMode = OracleMode::Mirror;
 
 Generator::Generator(const string &targetName, const string &targetQualifiedName,
                      const string &filePath, bool isFromClass)
@@ -860,62 +861,80 @@ std::string Generator::buildExpectedType(const InfoType &returnType) const {
 
 std::string Generator::buildExpectedInvocation(
     const std::vector<InfoVariable> &parameters, const std::string &function,
-    bool isStatic, const InfoType &returnType) const {
-    // This is a mirror execution of the same SUT, not an independent oracle.
-    const auto tokens =
+    unsigned invocation, bool isStatic, const InfoType &returnType) const {
+    const auto mirrorTokens =
         buildInvocationTokens(parameters, function, isStatic, returnType, kOraclePrefix);
-    return tokens.first + "(" + tokens.second + ")";
+    const std::string mirrorInvocation =
+        mirrorTokens.first + "(" + mirrorTokens.second + ")";
+
+    if (oracleMode == OracleMode::Explicit && supportsExplicitOracle(returnType)) {
+        const std::string expectedKey =
+            function + "_" + std::to_string(invocation) + ".expected";
+        std::string readExpected;
+        if (isCStringLike(returnType)) {
+            readExpected = "Read_string(\"" + expectedKey + "\")";
+        } else {
+            readExpected = "Read_" +
+                           normalizeReadMethodType(returnType.getUnderlyingType()) +
+                           "(\"" + expectedKey + "\")";
+        }
+        return "([&]() { const std::string key = \"" + expectedKey +
+               "\"; if (HasObject(key)) return " + readExpected + "; return " +
+               mirrorInvocation + "; }())";
+    }
+    // This is a mirror execution of the same SUT, not an independent oracle.
+    return mirrorInvocation;
 }
 
 std::string Generator::normalizeReadMethodType(const InfoType &type) const {
-    if (containsSubstring(type.original, "string")) {
-        return "string";
+    if (type.isMap()) {
+        const std::string &formatted = type.formatted;
+        size_t left = formatted.find('<');
+        size_t right = formatted.find_last_of('>');
+        if (left == std::string::npos || right == std::string::npos || right <= left) {
+            return type.formatted;
+        }
+
+        std::vector<std::string> args;
+        std::string current;
+        int depth = 0;
+        for (size_t i = left + 1; i < right; ++i) {
+            char c = formatted[i];
+            if (c == '<') {
+                depth++;
+                current.push_back(c);
+            } else if (c == '>') {
+                depth--;
+                current.push_back(c);
+            } else if (c == ',' && depth == 0) {
+                ltrim(current);
+                rtrim(current);
+                args.push_back(current);
+                current.clear();
+            } else {
+                current.push_back(c);
+            }
+        }
+        ltrim(current);
+        rtrim(current);
+        if (!current.empty()) {
+            args.push_back(current);
+        }
+
+        if (args.size() < 2) {
+            return type.formatted;
+        }
+
+        return "map<" + args[0] + ", " + args[1] + ">";
     }
+
     if (type.isOptional() || type.isPair() || type.isTuple()) {
         return buildStructuredReadSuffix(type);
     }
-    if (!type.isMap()) {
-        return type.formatted;
+    if (containsSubstring(type.original, "string")) {
+        return "string";
     }
-
-    const std::string &formatted = type.formatted;
-    size_t left = formatted.find('<');
-    size_t right = formatted.find_last_of('>');
-    if (left == std::string::npos || right == std::string::npos || right <= left) {
-        return type.formatted;
-    }
-
-    std::vector<std::string> args;
-    std::string current;
-    int depth = 0;
-    for (size_t i = left + 1; i < right; ++i) {
-        char c = formatted[i];
-        if (c == '<') {
-            depth++;
-            current.push_back(c);
-        } else if (c == '>') {
-            depth--;
-            current.push_back(c);
-        } else if (c == ',' && depth == 0) {
-            ltrim(current);
-            rtrim(current);
-            args.push_back(current);
-            current.clear();
-        } else {
-            current.push_back(c);
-        }
-    }
-    ltrim(current);
-    rtrim(current);
-    if (!current.empty()) {
-        args.push_back(current);
-    }
-
-    if (args.size() < 2) {
-        return type.formatted;
-    }
-
-    return "map<" + args[0] + ", " + args[1] + ">";
+    return type.formatted;
 }
 
 std::string Generator::buildInvocation(const std::string &function, bool isStatic,
@@ -945,6 +964,10 @@ bool Generator::setInstanceConstruction(
     }
     useDefaultConstructor_ = useDefaultConstructor;
     return true;
+}
+
+void Generator::setOracleMode(OracleMode mode) {
+    oracleMode = effectiveOracleMode(mode);
 }
 
 std::string Generator::buildInstanceInitialization(const std::string &function,

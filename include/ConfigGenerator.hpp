@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "RandomValuesGenerator.hpp"
+#include "OracleMode.hpp"
 #include "VariableInfo.hpp"
 
 class ConfigGenerator {
@@ -22,6 +23,7 @@ public:
             &rules);
     static void setSeed(uint32_t seed);
     static void setProfile(const std::string &profileName);
+    static void setOracleMode(OracleMode mode);
 
     void generateTestCase(const std::string &functionName,
                           const std::vector<InfoVariable> &params,
@@ -55,7 +57,6 @@ private:
                                         const std::string &prefix, unsigned depth,
                                         std::set<std::string> &stack) const;
     std::string generateScalarValue(const InfoType &type) const;
-    std::string generateReturn(const InfoType &returnType) const;
 
     void appendToConfigFile(const std::string &content) const;
 
@@ -69,4 +70,5 @@ private:
     static RandomValuesGenerator rvg;
     static std::string dataProfile;
     static std::optional<uint32_t> seedValue;
+    static OracleMode oracleMode;
 };

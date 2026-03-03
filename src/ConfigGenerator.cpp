@@ -20,6 +20,7 @@ const json &ConfigGenerator::config = getConfig();
 const json &ConfigGenerator::tplItems = getTemplateItems();
 std::string ConfigGenerator::dataProfile = "random";
 std::optional<uint32_t> ConfigGenerator::seedValue = std::nullopt;
+OracleMode ConfigGenerator::oracleMode = OracleMode::Mirror;
 
 ConfigGenerator::ConfigGenerator(const string &target)
     : target(target), testFolder(getAskeletonHome() / config["route"]["ut"] / target),
@@ -72,6 +73,10 @@ void ConfigGenerator::setProfile(const std::string &profileName) {
     }
 }
 
+void ConfigGenerator::setOracleMode(OracleMode mode) {
+    oracleMode = effectiveOracleMode(mode);
+}
+
 void ConfigGenerator::generateTestCase(const string &functionName,
                                        const vector<InfoVariable> &params,
                                        const InfoType &returnType,
@@ -83,9 +88,8 @@ void ConfigGenerator::generateTestCaseWithSetup(
     const string &functionName, const vector<InfoVariable> &params,
     const vector<InfoVariable> &setupParams, const string &setupPrefix,
     const InfoType &returnType, unsigned invocationNumber) const {
-    (void)returnType;
-    // The cfg stores only source case inputs. Any mirrored `oracle_*` variables
-    // are reconstructed in generated test code from these same keys.
+    // The cfg stores source case inputs. Explicit oracle mode reuses mirror
+    // execution unless the user adds `expected` keys manually.
     currentFunctionName = functionName;
     currentInvocation = invocationNumber;
     stringstream ss;

@@ -62,6 +62,7 @@ Key options:
 - `--framework=<gtest|boost|catch>`: select test framework.
 - `--profile=<random|boundary|safe|stress>`: data generation profile.
 - `--coverage-mode=<strict|balanced|aggressive>`: generation coverage policy.
+- `--oracle-mode=<mirror|explicit|property>`: expected-value strategy.
 - `--seed=<N>`: deterministic data generation.
 - `--rule-data`: enable rule-based values from AST.
 - `--rule-max-cases=<N>`: limit rule-based test cases per function.
@@ -104,6 +105,10 @@ Strict coverage mode:
 ```bash
 ASKELETON_HOME=$(pwd) ./askeleton --coverage-mode=strict -p examples examples/sut.cpp
 ```
+Explicit oracle mode:
+```bash
+ASKELETON_HOME=$(pwd) ./askeleton --oracle-mode=explicit -p examples examples/sut.cpp
+```
 
 **Coverage Modes**
 Coverage mode controls how aggressive ASkeleTon is when deciding whether to
@@ -121,16 +126,25 @@ generate a test for a callable. This is separate from the data-generation
   compatibility mode for more permissive generation in future iterations.
 
 **Expected Value Strategy**
-Today ASkeleTon does not generate a semantic oracle independent from the SUT.
-Instead, generated tests derive `expected` through a second isolated execution of
-the same function or method using the same case data.
+ASkeleTon currently exposes three oracle modes:
+
+- `mirror`: default behavior. Generated tests derive `expected` through a second
+  isolated execution of the same function or method using the same case data.
+- `explicit`: generated tests first look for `expected` in the `.cfg`; if the
+  key is missing, they fall back to `mirror`. This keeps freshly generated tests
+  passing while allowing users to override specific cases with independent
+  expectations.
+- `property`: currently reserved for the next phase and intentionally falls back
+  to `mirror`.
 
 What this means in practice:
-- The `.cfg` file stores only the source case data that users are expected to edit.
+- The `.cfg` file stores the source case data that users are expected to edit.
+- In `explicit`, users may add `expected` (or structured keys such as
+  `expected.x`) to override the mirrored value.
 - Generated test code creates internal `oracle_*` variables by re-reading that same
   data into a second set of local variables.
-- `expected` is computed from that isolated mirror execution, not from a separate
-  specification or golden value.
+- If no explicit override exists, `expected` is computed from that isolated
+  mirror execution, not from a separate specification or golden value.
 - This also lets the generated test compare side effects on pointer/reference
   parameters against the mirrored execution.
 - Parameters inferred as pure `out` values are no longer persisted as editable
@@ -222,6 +236,7 @@ Use `--report` or `--report-json` to generate a machine-readable summary with:
 - Per-entity status: `generated` or `skipped`.
 - Failure reason and type details when skipped.
 - The selected `coverage_mode`.
+- The selected `oracle_mode`.
 - `summary` section with counts by status, kind, target, reason, and file.
 - Coverage metrics (`generation_rate`, `skip_rate`) plus top skip reasons and
   targets with the most skips.

@@ -29,7 +29,7 @@ void CatchGenerator::generateFullAssert(const string &function,
     const string parametersInvocation = invocationTokens.second;
     const string returnTypeOriginal = buildExpectedType(returnType);
     const string returnReadMethod =
-        buildExpectedInvocation(parameters, function, isStatic, returnType);
+        buildExpectedInvocation(parameters, function, number, isStatic, returnType);
 
     string invocation = invocationTokens.first;
 

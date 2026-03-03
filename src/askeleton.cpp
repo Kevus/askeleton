@@ -2,11 +2,12 @@
 #include "ASKMatchers.hpp"
 #include "color.h"
 #include "CoverageMode.hpp"
-#include "framework/Generator.hpp"
 #include "ConfigGenerator.hpp"
 #include "Logging.hpp"
+#include "OracleMode.hpp"
 #include "Report.hpp"
 #include "RunStats.hpp"
+#include "framework/Generator.hpp"
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
 #include "clang/Tooling/CommonOptionsParser.h"
@@ -369,6 +370,10 @@ cl::opt<std::string> CoverageModeOption(
     "coverage-mode",
     cl::desc("Coverage policy (strict, balanced, aggressive)"),
     cl::init("balanced"), cl::cat(OptC));
+cl::opt<std::string> OracleModeOption(
+    "oracle-mode",
+    cl::desc("Oracle strategy (mirror, explicit, property)"),
+    cl::init("mirror"), cl::cat(OptC));
 cl::opt<std::string> OutDirOption(
     "out-dir",
     cl::desc("Output directory for generated tests (overrides default)"),
@@ -404,11 +409,13 @@ cl::opt<bool> BootstrapCompdbOption(
 
 static ReportMetadata buildReportMetadata(Framework framework,
                                           CoverageMode coverageMode,
+                                          OracleMode oracleMode,
                                           const std::vector<std::string> &sources) {
     ReportMetadata meta;
     meta.generated_at = getTodayString("%Y-%m-%d %H:%M:%S");
     meta.profile = ProfileOption.getValue();
     meta.coverage_mode = coverageModeName(coverageMode);
+    meta.oracle_mode = oracleModeName(oracleMode);
     if (SeedOption.getValue() >= 0) {
         meta.seed = static_cast<uint32_t>(SeedOption.getValue());
     }
@@ -473,7 +480,7 @@ static std::string resolveReportPath() {
 }
 
 static void printRunSummary(const RunStats &stats, const std::string &reportPath,
-                            CoverageMode coverageMode,
+                            CoverageMode coverageMode, OracleMode oracleMode,
                             const std::chrono::steady_clock::time_point &tool_start,
                             const std::chrono::steady_clock::time_point &tool_end,
                             const std::optional<long long> &refresh_ms) {
@@ -496,6 +503,7 @@ static void printRunSummary(const RunStats &stats, const std::string &reportPath
         }
     }
     llvm::outs() << "  Coverage mode: " << coverageModeName(coverageMode) << "\n";
+    llvm::outs() << "  Oracle mode: " << oracleModeName(oracleMode) << "\n";
     llvm::outs() << "  Output: " << config["route"]["ut"].get<std::string>() << "\n";
     if (!reportPath.empty()) {
         llvm::outs() << "  Report: " << reportPath << "\n";
@@ -590,6 +598,13 @@ int main(int argc, const char **argv) {
         exitWithError("ERROR: Invalid coverage mode. Please use one of the "
                       "following: strict, balanced, aggressive\n");
     }
+    std::optional<OracleMode> selectedOracleMode = parseOracleMode(OracleModeOption);
+    if (!selectedOracleMode.has_value()) {
+        exitWithError("ERROR: Invalid oracle mode. Please use one of the "
+                      "following: mirror, explicit, property\n");
+    }
+    const OracleMode resolvedOracleMode =
+        effectiveOracleMode(selectedOracleMode.value());
 
     std::optional<long long> refresh_ms;
     if (!NoSystemFilesRefresh.getValue()) {
@@ -610,6 +625,8 @@ int main(int argc, const char **argv) {
 
     Generator::MAX_DEPTH = DeepLevel.getValue();
     ConfigGenerator::setProfile(ProfileOption.getValue());
+    ConfigGenerator::setOracleMode(selectedOracleMode.value());
+    Generator::setOracleMode(selectedOracleMode.value());
     if (SeedOption.getValue() >= 0) {
         ConfigGenerator::setSeed(static_cast<uint32_t>(SeedOption.getValue()));
     }
@@ -618,11 +635,18 @@ int main(int argc, const char **argv) {
             llvm::outs() << "Data generation: profile=" << ProfileOption.getValue()
                          << " seed=" << SeedOption.getValue()
                          << " coverage=" << coverageModeName(coverageMode.value())
+                         << " oracle=" << oracleModeName(resolvedOracleMode)
                          << "\n";
         } else {
             llvm::outs() << "Data generation: profile=" << ProfileOption.getValue()
                          << " coverage=" << coverageModeName(coverageMode.value())
+                         << " oracle=" << oracleModeName(resolvedOracleMode)
                          << "\n";
+        }
+        if (selectedOracleMode.value() == OracleMode::Property &&
+            resolvedOracleMode != OracleMode::Property) {
+            llvm::outs()
+                << "Oracle mode 'property' currently falls back to mirror execution.\n";
         }
     }
 
@@ -644,6 +668,7 @@ int main(int argc, const char **argv) {
     if (!reportPath.empty()) {
         report.setMetadata(
             buildReportMetadata(selectedFramework.value(), coverageMode.value(),
+                                resolvedOracleMode,
                                 options->getSourcePathList()));
     }
 
@@ -672,7 +697,8 @@ int main(int argc, const char **argv) {
         sources = std::move(filtered);
         if (!reportPath.empty()) {
             report.setMetadata(
-                buildReportMetadata(selectedFramework.value(), coverageMode.value(), sources));
+                buildReportMetadata(selectedFramework.value(), coverageMode.value(),
+                                    resolvedOracleMode, sources));
         }
     }
 
@@ -778,7 +804,8 @@ int main(int argc, const char **argv) {
 
     Logger::instance().printWarningsSummary();
 
-    printRunSummary(stats, reportPath, coverageMode.value(), tool_start, tool_end,
+    printRunSummary(stats, reportPath, coverageMode.value(), resolvedOracleMode,
+                    tool_start, tool_end,
                     refresh_ms);
     writeExecutionLogJson(stats, time_start, tool_start, tool_end, refresh_ms);
     return result;

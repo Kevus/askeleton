@@ -32,7 +32,7 @@ void BoostGen::generateFullAssert(const std::string &function,
     const unsigned number = getFunctionCounter(function) + 1;
     const string returnTypeOriginal = buildExpectedType(returnType);
     const string returnReadMethod =
-        buildExpectedInvocation(parameters, function, isStatic, returnType);
+        buildExpectedInvocation(parameters, function, number, isStatic, returnType);
 
     string pointers = generatePointersAsserts(parameters, function);
     if (!pointers.empty())

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ConfigGenerator.hpp"
+#include "OracleMode.hpp"
 #include "VariableInfo.hpp"
 
 #include <map>
@@ -54,6 +55,7 @@ public:
             &rules);
     bool setInstanceConstruction(const std::vector<InfoVariable> &constructorParams,
                                  bool useDefaultConstructor);
+    static void setOracleMode(OracleMode mode);
 
 protected:
     virtual void generateFullAssert(const std::string &function,
@@ -107,6 +109,7 @@ protected:
     std::string buildExpectedType(const InfoType &returnType) const;
     std::string buildExpectedInvocation(const std::vector<InfoVariable> &parameters,
                                         const std::string &function,
+                                        unsigned invocation,
                                         bool isStatic,
                                         const InfoType &returnType) const;
 
@@ -142,6 +145,7 @@ protected:
     std::filesystem::path utPath, fixturePath, makefilePath, supportedPath, testPath;
     static const nlohmann::json &config;
     static const nlohmann::json &templateItems;
+    static OracleMode oracleMode;
 
 private:
     void setOutputFilesPath();

@@ -48,6 +48,7 @@ json Report::toJson() const {
     root["generated_at"] = metadata.generated_at;
     root["profile"] = metadata.profile;
     root["coverage_mode"] = metadata.coverage_mode;
+    root["oracle_mode"] = metadata.oracle_mode;
     if (metadata.seed.has_value()) {
         root["seed"] = metadata.seed.value();
     }
