@@ -212,6 +212,11 @@ tupleValue.1=5;#short
 tupleValue.2=6;#long long
 ```
 
+When a callable has an `std::optional<T>` parameter, ASkeleTon now generates at
+least two cases when possible so the generated data covers both:
+- a present value (`has_value=true`)
+- an empty optional (`has_value=false`)
+
 **Report JSON**
 Use `--report` or `--report-json` to generate a machine-readable summary with:
 - Per-entity status: `generated` or `skipped`.
@@ -223,11 +228,12 @@ Use `--report` or `--report-json` to generate a machine-readable summary with:
 
 Common `reason` values include:
 - `abstract_record`
+- `coverage_policy_instance_construction`
+- `coverage_policy_mutable_parameter`
 - `missing_fixture_strategy`
 - `missing_instance_strategy`
 - `non_public_lifecycle`
 - `unsupported_indirection`
-- `unsupported_mutable_parameter`
 
 **Troubleshooting**
 - `compile_commands.json` not found: pass `-p <build-path>` to its directory.

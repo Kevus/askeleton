@@ -131,6 +131,14 @@ bool requiresMutableAliasHandling(const std::vector<InfoVariable> &params) {
     });
 }
 
+unsigned minimumCoverageInvocations(const std::vector<InfoVariable> &params) {
+    return std::any_of(params.begin(), params.end(), [](const InfoVariable &param) {
+               return param.getUnderlyingType().isOptional();
+           })
+               ? 2u
+               : 1u;
+}
+
 std::optional<ConstructorSelection>
 selectConstructorForInstantiation(const CXXRecordDecl *record,
                                   const std::string &functionName) {
@@ -1169,11 +1177,11 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     }
     if (coverageMode == CoverageMode::Strict && requiresMutableAliasHandling(parameters)) {
         throw ComplexTypeException(
-            "unsupported_mutable_parameter",
-            "strict coverage mode does not generate mutable pointer/reference "
-            "parameters: " +
+            "coverage_policy_mutable_parameter",
+            "strict coverage mode skips mutable pointer/reference parameters: " +
                 UT->getQualifiedNameAsString());
     }
+    ruleInvocations = std::max(ruleInvocations, minimumCoverageInvocations(parameters));
     validateTypesMaterialization(parameters, functionName);
     validateTypeMaterialization(returnType);
 
@@ -1218,8 +1226,8 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
         if (coverageMode == CoverageMode::Strict && ctorSelection.has_value() &&
             !ctorSelection->useDefaultConstructor) {
             throw ComplexTypeException(
-                "missing_instance_strategy",
-                "strict coverage mode requires default-constructible instances: " +
+                "coverage_policy_instance_construction",
+                "strict coverage mode skips non-default instance construction: " +
                     UT->getParent()->getQualifiedNameAsString());
         }
         if (!ctorSelection.has_value() ||
@@ -1238,11 +1246,11 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     }
     if (coverageMode == CoverageMode::Strict && requiresMutableAliasHandling(parameters)) {
         throw ComplexTypeException(
-            "unsupported_mutable_parameter",
-            "strict coverage mode does not generate mutable pointer/reference "
-            "parameters: " +
+            "coverage_policy_mutable_parameter",
+            "strict coverage mode skips mutable pointer/reference parameters: " +
                 UT->getQualifiedNameAsString());
     }
+    ruleInvocations = std::max(ruleInvocations, minimumCoverageInvocations(parameters));
     validateTypesMaterialization(parameters, functionName);
     validateTypeMaterialization(returnType);
 
@@ -1267,6 +1275,7 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     if (function_occurrences[constructorName]++ > 1) {
         constructorName += "_" + std::to_string(function_occurrences[constructorName]);
     }
+    const unsigned constructorInvocations = minimumCoverageInvocations(parameters);
     validateTypesMaterialization(parameters, constructorName);
 
 #ifdef FULL_DEBUG
@@ -1275,8 +1284,10 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
 
     generateReadMethod(testGen, parameters);
 
-    testGen.generateConstructorAssert(parameters);
-    return 1;
+    for (unsigned i = 0; i < constructorInvocations; ++i) {
+        testGen.generateConstructorAssert(parameters);
+    }
+    return constructorInvocations;
 }
 
 ReportEntry ASKGen::makeReportEntry(const std::string &kind, const std::string &name,
