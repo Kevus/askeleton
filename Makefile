@@ -1,5 +1,15 @@
 CXX ?= clang++
+LLVM_SUFFIX := $(patsubst clang++%,%,$(notdir $(CXX)))
+ifneq ($(LLVM_SUFFIX),)
+LLVM_CONFIG_CANDIDATE := llvm-config$(LLVM_SUFFIX)
+ifneq ($(shell command -v $(LLVM_CONFIG_CANDIDATE) 2>/dev/null),)
+LLVM_CONFIG ?= $(LLVM_CONFIG_CANDIDATE)
+else
 LLVM_CONFIG ?= llvm-config
+endif
+else
+LLVM_CONFIG ?= llvm-config
+endif
 INCLUDES = -Iinclude/ -I$(shell $(LLVM_CONFIG) --includedir)
 CXXFLAGS = -std=c++20 -Wall -Wextra -Wcast-qual -Wwrite-strings -Wno-unused-parameter \
            -Wdelete-non-virtual-dtor -fPIC -ffunction-sections -fdata-sections #-MMD -MP
