@@ -14,6 +14,7 @@
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
 #include "utils/templating.hpp"
+#include "clang/AST/ASTContext.h"
 #include "clang/AST/DeclCXX.h"
 
 using namespace askeleton;
@@ -142,6 +143,117 @@ std::string getEnclosingNamespace(const InfoType &type) {
         ss << parts[i];
     }
     return ss.str();
+}
+
+const clang::CXXRecordDecl *getRecordDecl(const InfoType &type) {
+    if (type.type.isNull()) {
+        return nullptr;
+    }
+    return type.type->getAsCXXRecordDecl();
+}
+
+clang::QualType normalizeComparableType(clang::QualType type) {
+    if (type.isNull()) {
+        return type;
+    }
+    return type.getNonReferenceType().getCanonicalType().getUnqualifiedType();
+}
+
+std::string normalizedComparableName(clang::QualType type) {
+    if (type.isNull()) {
+        return "";
+    }
+    std::string name = normalizeComparableType(type).getAsString();
+    removeTypeQualifiers(name);
+    return name;
+}
+
+bool isSameRecordType(clang::QualType candidate, const InfoType &type) {
+    if (type.type.isNull() || candidate.isNull()) {
+        return false;
+    }
+    return normalizedComparableName(candidate) == normalizedComparableName(type.type);
+}
+
+bool isOstreamLike(clang::QualType type) {
+    if (type.isNull()) {
+        return false;
+    }
+    const std::string name =
+        normalizeComparableType(type).getAsString();
+    return containsSubstring(name, "basic_ostream") || containsSubstring(name, "ostream");
+}
+
+bool hasMatchingFreeOperatorInContext(const clang::DeclContext *context,
+                                      const InfoType &type,
+                                      clang::OverloadedOperatorKind op) {
+    if (!context) {
+        return false;
+    }
+
+    for (const auto *decl : context->decls()) {
+        if (const auto *function = llvm::dyn_cast<clang::FunctionDecl>(decl)) {
+            if (!function->isOverloadedOperator() ||
+                function->getOverloadedOperator() != op) {
+                continue;
+            }
+
+            if (op == clang::OO_EqualEqual && function->getNumParams() == 2 &&
+                isSameRecordType(function->getParamDecl(0)->getType(), type) &&
+                isSameRecordType(function->getParamDecl(1)->getType(), type)) {
+                return true;
+            }
+
+            if (op == clang::OO_LessLess && function->getNumParams() == 2 &&
+                isOstreamLike(function->getParamDecl(0)->getType()) &&
+                isSameRecordType(function->getParamDecl(1)->getType(), type)) {
+                return true;
+            }
+        }
+
+        if (const auto *namespaceDecl = llvm::dyn_cast<clang::NamespaceDecl>(decl)) {
+            if (hasMatchingFreeOperatorInContext(namespaceDecl, type, op)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool hasExistingEqualityOperator(const InfoType &type) {
+    const auto *record = getRecordDecl(type);
+    if (!record) {
+        return false;
+    }
+
+    for (const auto *method : record->methods()) {
+        if (method && method->isOverloadedOperator() &&
+            method->getOverloadedOperator() == clang::OO_EqualEqual) {
+            return true;
+        }
+    }
+
+    if (hasMatchingFreeOperatorInContext(record, type, clang::OO_EqualEqual)) {
+        return true;
+    }
+
+    return hasMatchingFreeOperatorInContext(
+        record->getASTContext().getTranslationUnitDecl(), type, clang::OO_EqualEqual);
+}
+
+bool hasExistingStreamOperator(const InfoType &type) {
+    const auto *record = getRecordDecl(type);
+    if (!record) {
+        return false;
+    }
+
+    if (hasMatchingFreeOperatorInContext(record, type, clang::OO_LessLess)) {
+        return true;
+    }
+
+    return hasMatchingFreeOperatorInContext(
+        record->getASTContext().getTranslationUnitDecl(), type, clang::OO_LessLess);
 }
 } // namespace
 
@@ -355,18 +467,41 @@ void Generator::createRecordOverloadToFixture(const InfoType &type) const {
         }
     }
 
-    string method = readFromFile(
-        getMethodTemplatePath(config["file"]["template"]["method"]["record_overload"]));
-    replaceTokensInText(method,
-                        {{templateItems["tplitem"]["type"], overloadType},
-                         {templateItems["tplitem"]["formatted"], type.formatted},
-                         {templateItems["tplitem"]["comparisons"], comparisons.str()},
-                         {templateItems["tplitem"]["insertions"], insertions.str()}});
+    const bool needsStreamOperator = !hasExistingStreamOperator(type);
+    const bool needsEqualityOperator = !hasExistingEqualityOperator(type);
+    if (!needsStreamOperator && !needsEqualityOperator) {
+        return;
+    }
+
+    std::ostringstream method;
+    if (needsStreamOperator) {
+        method << "ostream &operator<<(ostream &os, const " << overloadType
+               << " &object) {\n";
+        method << "\tos << \"" << overloadType << " {\\n\";\n";
+        method << insertions.str() << "\n";
+        method << "\tos << \"}\";\n";
+        method << "\treturn os;\n";
+        method << "}\n";
+    }
+
+    if (needsEqualityOperator) {
+        if (needsStreamOperator) {
+            method << "\n";
+        }
+        method << "bool operator==(const " << overloadType << "& a, const "
+               << overloadType << "& b) {\n";
+        method << "\treturn (\n" << comparisons.str() << "\n\t);\n";
+        method << "}\n";
+    }
 
     if (!enclosingNamespace.empty()) {
-        method = "namespace " + enclosingNamespace + " {\n\n" + method + "\n}\n";
+        std::ostringstream namespaced;
+        namespaced << "namespace " << enclosingNamespace << " {\n\n"
+                   << method.str() << "\n}\n";
+        appendOverloadMethodsToFixture(namespaced.str());
+        return;
     }
-    appendOverloadMethodsToFixture(method);
+    appendOverloadMethodsToFixture(method.str());
 }
 
 void Generator::createTypeReadToFixture(const InfoType &type, unsigned level) {

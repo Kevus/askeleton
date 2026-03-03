@@ -1,22 +1,4 @@
 {
-    "types": {
-        "MyType": { "strategy": "factory", "expr": "MakeMyType()" },
-        "OtherType": { "strategy": "zeroed" },
-        "ThirdType": { "strategy": "dummy" },
-        "tinyxml2::XMLDocument": { "strategy": "factory", "expr": "tinyxml2::XMLDocument()" },
-        "tinyxml2::XMLPrinter": { "strategy": "factory", "expr": "tinyxml2::XMLPrinter()" },
-        "tinyxml2::XMLAttribute": { "strategy": "factory", "expr": "tinyxml2::XMLAttribute()" },
-        "tinyxml2::XMLText": { "strategy": "factory", "expr": "[](){ static tinyxml2::XMLDocument doc; return tinyxml2::XMLText(&doc); }()" },
-        "tinyxml2::XMLComment": { "strategy": "factory", "expr": "[](){ static tinyxml2::XMLDocument doc; return tinyxml2::XMLComment(&doc); }()" },
-        "tinyxml2::XMLDeclaration": { "strategy": "factory", "expr": "[](){ static tinyxml2::XMLDocument doc; return tinyxml2::XMLDeclaration(&doc); }()" },
-        "tinyxml2::XMLUnknown": { "strategy": "factory", "expr": "[](){ static tinyxml2::XMLDocument doc; return tinyxml2::XMLUnknown(&doc); }()" },
-        "tinyxml2::XMLElement": { "strategy": "factory", "expr": "[](){ static tinyxml2::XMLDocument doc; return tinyxml2::XMLElement(&doc); }()" }
-    },
-    "functions": {
-        "ExampleFunction": {
-            "types": {
-                "MyType": { "strategy": "factory", "expr": "MakeMyTypeForExample()" }
-            }
-        }
-    }
+    "types": {},
+    "functions": {}
 }

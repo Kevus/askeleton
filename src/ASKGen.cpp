@@ -283,6 +283,10 @@ std::optional<std::string> resolveAbsoluteSourcePath(ASTContext *context,
     }
     return fs::absolute(rawFilePath).string();
 }
+
+std::string getFunctionKey(const clang::FunctionDecl *function) {
+    return function->getNameInfo().getAsString();
+}
 } // namespace
 
 void ASKGen::run(const MatchFinder::MatchResult &Result) {
@@ -305,7 +309,7 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
             !Context->getSourceManager().isInSystemHeader(FullLocation)) {
 
             // In this case, we do not want class functions
-            if (!isa<CXXMethodDecl>(UT)) {
+            if (!isa<CXXMethodDecl>(UT) && !UT->isOverloadedOperator()) {
 
                 // Get the file name
                 const auto filePath =
@@ -562,7 +566,7 @@ void ASKGen::addStringRuleValuesForParamName(
     if (paramName.empty() || !FD)
         return;
 
-    auto &perFunc = ruleStringValues[FD->getName().str()];
+    auto &perFunc = ruleStringValues[getFunctionKey(FD)];
     auto &vals = perFunc[paramName];
     for (const auto &v : candidates) {
         if (std::find(vals.begin(), vals.end(), v) == vals.end())
@@ -575,7 +579,7 @@ void ASKGen::addRuleValuesForParamName(
     if (paramName.empty() || !FD)
         return;
 
-    auto &perFunc = ruleValues[FD->getName().str()];
+    auto &perFunc = ruleValues[getFunctionKey(FD)];
     auto &vals = perFunc[paramName];
     for (long long v : candidates) {
         if (std::find(vals.begin(), vals.end(), v) == vals.end())
@@ -589,7 +593,7 @@ void ASKGen::setRuleValuesForParamName(
     if (paramName.empty() || !FD)
         return;
 
-    auto &perFunc = ruleValues[FD->getName().str()];
+    auto &perFunc = ruleValues[getFunctionKey(FD)];
     auto &vals = perFunc[paramName];
     vals.clear();
     for (long long v : candidates) {
@@ -1104,23 +1108,23 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     unsigned ruleInvocations = 1;
     if (ruleDataEnabled) {
         collectRuleValuesFromFunction(UT);
-        auto it = ruleValues.find(UT->getName().str());
+        const std::string ruleKey = getFunctionKey(UT);
+        auto it = ruleValues.find(ruleKey);
         if (it != ruleValues.end()) {
             const auto &rulesForFunction = it->second;
-            testGen.setRuleValues({{UT->getName().str(), rulesForFunction}});
-            configGenerator.setRuleValues({{UT->getName().str(), rulesForFunction}});
+            testGen.setRuleValues({{ruleKey, rulesForFunction}});
+            configGenerator.setRuleValues({{ruleKey, rulesForFunction}});
             ruleInvocations = computeRuleInvocationLimit(rulesForFunction);
         }
-        auto strIt = ruleStringValues.find(UT->getName().str());
+        auto strIt = ruleStringValues.find(ruleKey);
         if (strIt != ruleStringValues.end()) {
-            testGen.setStringRuleValues({{UT->getName().str(), strIt->second}});
-            configGenerator.setStringRuleValues(
-                {{UT->getName().str(), strIt->second}});
+            testGen.setStringRuleValues({{ruleKey, strIt->second}});
+            configGenerator.setStringRuleValues({{ruleKey, strIt->second}});
         }
     }
     InfoType returnType(UT->getReturnType());
     std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
-    std::string functionName = UT->getName().str();
+    std::string functionName = getFunctionKey(UT);
     if (function_occurrences[functionName]++ > 1) {
         functionName += "_" + std::to_string(function_occurrences[functionName]);
     }
@@ -1145,18 +1149,18 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     unsigned ruleInvocations = 1;
     if (ruleDataEnabled) {
         collectRuleValuesFromFunction(UT);
-        auto it = ruleValues.find(UT->getName().str());
+        const std::string ruleKey = getFunctionKey(UT);
+        auto it = ruleValues.find(ruleKey);
         if (it != ruleValues.end()) {
             const auto &rulesForFunction = it->second;
-            testGen.setRuleValues({{UT->getName().str(), rulesForFunction}});
-            configGenerator.setRuleValues({{UT->getName().str(), rulesForFunction}});
+            testGen.setRuleValues({{ruleKey, rulesForFunction}});
+            configGenerator.setRuleValues({{ruleKey, rulesForFunction}});
             ruleInvocations = computeRuleInvocationLimit(rulesForFunction);
         }
-        auto strIt = ruleStringValues.find(UT->getName().str());
+        auto strIt = ruleStringValues.find(ruleKey);
         if (strIt != ruleStringValues.end()) {
-            testGen.setStringRuleValues({{UT->getName().str(), strIt->second}});
-            configGenerator.setStringRuleValues(
-                {{UT->getName().str(), strIt->second}});
+            testGen.setStringRuleValues({{ruleKey, strIt->second}});
+            configGenerator.setStringRuleValues({{ruleKey, strIt->second}});
         }
     }
     InfoType returnType(UT->getReturnType());
