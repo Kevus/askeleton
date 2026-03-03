@@ -70,13 +70,19 @@ protected:
     std::string
     generateParameterInitialization(const std::vector<InfoVariable> &parameters,
                                     const std::string &function,
-                                    unsigned invocation = 1) const;
+                                    unsigned invocation = 1,
+                                    const std::string &variablePrefix = "",
+                                    const std::string &keyPrefix = "") const;
     std::string generateParameterInitialization(const InfoType &type,
                                                 const std::string &function,
-                                                unsigned invocation = 1) const;
+                                                unsigned invocation = 1,
+                                                const std::string &variablePrefix = "",
+                                                const std::string &keyPrefix = "") const;
     std::string generateParameterInitialization(const InfoVariable &variable,
                                                 const std::string &function,
-                                                unsigned invocation = 1) const;
+                                                unsigned invocation = 1,
+                                                const std::string &variablePrefix = "",
+                                                const std::string &keyPrefix = "") const;
 
     std::string generateReadInvocation(const InfoVariable &type,
                                        const std::string &function,
@@ -84,19 +90,23 @@ protected:
     std::string generateReturnTypeInvocation(const InfoType &type,
                                              const std::string &function) const;
 
-    std::string generateParameterInvocation(const std::vector<InfoVariable> &) const;
+    std::string generateParameterInvocation(
+        const std::vector<InfoVariable> &parameters,
+        const std::string &variablePrefix = "") const;
 
     std::string buildInitializations(const std::vector<InfoVariable> &parameters,
                                      const std::string &function,
                                      unsigned invocation, bool isStatic) const;
-    std::string buildReturnReadMethod(const InfoType &underlying,
-                                      const std::string &function,
-                                      unsigned invocation) const;
+    std::string buildExpectedInvocation(const std::vector<InfoVariable> &parameters,
+                                        const std::string &function,
+                                        bool isStatic,
+                                        bool returnsPointer) const;
 
     std::string normalizeReadMethodType(const InfoType &type) const;
 
     std::string buildInvocation(const std::string &function, bool isStatic,
-                                bool returnsPointer) const;
+                                bool returnsPointer,
+                                const std::string &instancePrefix = "") const;
 
     std::string generatePointersAssertsWithTemplate(
         const std::vector<InfoVariable> &parameters, const std::string &paramToken,
@@ -128,8 +138,11 @@ protected:
 private:
     void setOutputFilesPath();
     void setSupportedTypes();
-    std::string buildConstructorArgumentExpression(const InfoType &type) const;
-    std::string buildInstanceInitialization(bool isStatic) const;
+    std::string buildInstanceInitialization(const std::string &function,
+                                            unsigned invocation, bool isStatic,
+                                            const std::string &variablePrefix,
+                                            const std::string &keyPrefix,
+                                            const std::string &instancePrefix) const;
 
     void createPointerReadToFixture(const InfoType &type) const;
     void createEnumReadToFixture(const InfoType &type) const;
@@ -144,6 +157,7 @@ private:
     std::set<std::string> supportedTypes;
     std::map<std::string, unsigned> functionCounter;
     bool missingFilesWarn = false;
-    std::string instanceConstruction_;
+    std::vector<InfoVariable> constructorParams_;
+    bool useDefaultConstructor_ = true;
     ConfigGenerator configGenerator;
 };

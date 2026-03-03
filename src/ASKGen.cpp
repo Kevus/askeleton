@@ -125,17 +125,9 @@ selectConstructorForInstantiation(const CXXRecordDecl *record) {
 
         ConstructorSelection candidate;
         candidate.useDefaultConstructor = ctor->isDefaultConstructor();
-        bool usable = true;
         for (const auto *param : ctor->parameters()) {
             InfoVariable info(param);
-            if (info.isReference()) {
-                usable = false;
-                break;
-            }
             candidate.params.push_back(info);
-        }
-        if (!usable) {
-            continue;
         }
 
         if (candidate.useDefaultConstructor) {

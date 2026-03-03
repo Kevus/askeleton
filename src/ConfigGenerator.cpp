@@ -76,20 +76,25 @@ void ConfigGenerator::generateTestCase(const string &functionName,
                                        const vector<InfoVariable> &params,
                                        const InfoType &returnType,
                                        unsigned invocationNumber) const {
+    generateTestCaseWithSetup(functionName, params, {}, "", returnType, invocationNumber);
+}
+
+void ConfigGenerator::generateTestCaseWithSetup(
+    const string &functionName, const vector<InfoVariable> &params,
+    const vector<InfoVariable> &setupParams, const string &setupPrefix,
+    const InfoType &returnType, unsigned invocationNumber) const {
+    (void)returnType;
+    // The cfg stores only source case inputs. Any mirrored `oracle_*` variables
+    // are reconstructed in generated test code from these same keys.
     currentFunctionName = functionName;
     currentInvocation = invocationNumber;
     stringstream ss;
-    const string returnVarName =
-        returnType.getUnderlyingType().getFormattedNotParametrized();
-    InfoVariable returnVar{returnVarName, returnType};
-    const static string returnPrefix = tplItems["tplitem"]["return_prefix"];
 
     ss << functionName << "_" << invocationNumber << ":\n{\n";
-    ss << generateParam(params);
-    // TODO: Replace this synthetic expected-value generation with a real oracle
-    // strategy. Today we generate return_* like any other input, so tests may
-    // compile and run but still fail because "expected" is not derived from the SUT.
-    ss << generateParam(returnVar, false, returnPrefix);
+    ss << generateParam(params, false);
+    if (!setupParams.empty()) {
+        ss << generateParam(setupParams, false, setupPrefix);
+    }
     ss << "\n};\n\n";
 
     appendToConfigFile(ss.str());

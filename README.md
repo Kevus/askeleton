@@ -97,6 +97,34 @@ Profiled data:
 ASKELETON_HOME=$(pwd) ./askeleton --profile=boundary -p examples examples/sut.cpp
 ```
 
+**Expected Value Strategy**
+Today ASkeleTon does not generate a semantic oracle independent from the SUT.
+Instead, generated tests derive `expected` through a second isolated execution of
+the same function or method using the same case data.
+
+What this means in practice:
+- The `.cfg` file stores only the source case data that users are expected to edit.
+- Generated test code creates internal `oracle_*` variables by re-reading that same
+  data into a second set of local variables.
+- `expected` is computed from that isolated mirror execution, not from a separate
+  specification or golden value.
+- This also lets the generated test compare side effects on pointer/reference
+  parameters against the mirrored execution.
+
+What this strategy is good for:
+- Stable, reproducible scaffold tests.
+- Detecting accidental mutations or aliasing differences in generated checks.
+- Keeping generated `.cfg` files simpler because users do not maintain a separate
+  `return_*` field.
+
+What this strategy is not:
+- It is not an independent semantic oracle.
+- It does not prove the SUT is correct if the same deterministic bug appears in
+  both executions.
+
+This is an intentional first-phase approach. Future phases may replace or extend
+it with stronger domain-specific or property-based oracles.
+
 **Reproducible Runs**
 Use `--seed` to make data generation deterministic. For fully reproducible
 outputs across machines, keep these inputs identical:

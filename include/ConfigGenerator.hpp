@@ -27,6 +27,12 @@ public:
                           const std::vector<InfoVariable> &params,
                           const InfoType &returnType,
                           unsigned invocationNumber = 1) const;
+    void generateTestCaseWithSetup(const std::string &functionName,
+                                   const std::vector<InfoVariable> &params,
+                                   const std::vector<InfoVariable> &setupParams,
+                                   const std::string &setupPrefix,
+                                   const InfoType &returnType,
+                                   unsigned invocationNumber = 1) const;
     void generateConstructorTest(const std::string &ctorName,
                                  const std::vector<InfoVariable> &params,
                                  unsigned invocationNumber = 1) const;

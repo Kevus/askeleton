@@ -19,6 +19,14 @@ using json = nlohmann::json;
 namespace fs = std::filesystem;
 
 namespace {
+// Internal-only prefix for the mirrored execution used to derive `expected`.
+// These variables are not extra user inputs; they are reloaded from the same
+// `.cfg` case to keep the "oracle" run isolated from the assertion run.
+constexpr const char *kOraclePrefix = "oracle_";
+// Constructor parameters are also read from the case data so instance setup
+// uses the same inputs as the test body instead of compile-only placeholders.
+constexpr const char *kCtorPrefix = "ctor_";
+
 std::string buildFactoryReadMethod(const InfoType &type, const std::string &expr) {
     std::ostringstream ss;
     ss << "    " << type.original << " Read_" << type.formatted
@@ -330,17 +338,15 @@ void Generator::setFrameworkTemplatePath(const fs::path &frameworkPath) {
 std::string
 Generator::generateParameterInitialization(const std::vector<InfoVariable> &parameters,
                                            const std::string &function,
-                                           unsigned invocation) const {
+                                           unsigned invocation,
+                                           const std::string &variablePrefix,
+                                           const std::string &keyPrefix) const {
     std::stringstream ss;
     for (const auto &param : parameters) {
-        pair<InfoVariable, InfoVariable> pointers = param.getPointers();
-        ss << "\t"
-           << generateParameterInitialization(pointers.first, function, invocation)
+        ss << "\t" << generateParameterInitialization(param.getPointers().first, function,
+                                                      invocation, variablePrefix,
+                                                      keyPrefix)
            << ";";
-        if (param.isPointer() || param.isReference())
-            ss << "\n\t"
-               << generateParameterInitialization(pointers.second, function, invocation)
-               << ";";
         if (&param != &parameters.back())
             ss << "\n";
     }
@@ -350,19 +356,23 @@ Generator::generateParameterInitialization(const std::vector<InfoVariable> &para
 
 std::string Generator::generateParameterInitialization(const InfoVariable &variable,
                                                        const std::string &function,
-                                                       unsigned invocation) const {
+                                                       unsigned invocation,
+                                                       const std::string &variablePrefix,
+                                                       const std::string &keyPrefix) const {
 
     std::string readInstructionContent =
         templateItems["templating"]["assign_instruction"];
     InfoType underlying = variable.getUnderlyingType();
     std::string typeForReadMethod = normalizeReadMethodType(underlying);
+    const std::string variableName = variablePrefix + variable.name;
+    const std::string readKeyName = keyPrefix + variable.name;
 
     std::map<std::string, std::string> replacements = {
         {templateItems["tplitem"]["underlying"], underlying.original},
-        {templateItems["tplitem"]["name"], variable.name},
+        {templateItems["tplitem"]["name"], variableName},
         {templateItems["tplitem"]["target"], function},
         {templateItems["tplitem"]["number"], to_string(invocation)},
-        {templateItems["tplitem"]["formatted"], variable.name},
+        {templateItems["tplitem"]["formatted"], readKeyName},
         {templateItems["tplitem"]["underlying_formatted"], typeForReadMethod}};
 
     replaceTokensInText(readInstructionContent, replacements);
@@ -371,9 +381,12 @@ std::string Generator::generateParameterInitialization(const InfoVariable &varia
 
 std::string Generator::generateParameterInitialization(const InfoType &type,
                                                        const std::string &function,
-                                                       unsigned invocation) const {
+                                                       unsigned invocation,
+                                                       const std::string &variablePrefix,
+                                                       const std::string &keyPrefix) const {
     InfoVariable variable{type.original, type.formatted, function + "_return"};
-    return generateParameterInitialization(variable, function, invocation);
+    return generateParameterInitialization(variable, function, invocation, variablePrefix,
+                                           keyPrefix);
 }
 
 std::string Generator::generateReadInvocation(const InfoVariable &type,
@@ -401,13 +414,14 @@ std::string Generator::generateReturnTypeInvocation(const InfoType &type,
 }
 
 std::string Generator::generateParameterInvocation(
-    const std::vector<InfoVariable> &parameters) const {
+    const std::vector<InfoVariable> &parameters,
+    const std::string &variablePrefix) const {
 
     std::stringstream ss;
     for (const auto &param : parameters) {
         if (param.isPointer())
             ss << "&";
-        ss << param.name;
+        ss << variablePrefix << param.name;
         if (&param != &parameters.back())
             ss << ", ";
     }
@@ -418,24 +432,56 @@ std::string Generator::generateParameterInvocation(
 std::string Generator::buildInitializations(
     const std::vector<InfoVariable> &parameters, const std::string &function,
     unsigned invocation, bool isStatic) const {
-    std::string init = generateParameterInitialization(parameters, function, invocation);
-    const std::string instanceInit = buildInstanceInitialization(isStatic);
+    std::vector<std::string> blocks;
+
+    const std::string instanceInit = buildInstanceInitialization(
+        function, invocation, isStatic, kCtorPrefix, kCtorPrefix, "");
     if (!instanceInit.empty()) {
-        if (!init.empty()) {
-            init = instanceInit + "\n" + init;
-        } else {
-            init = instanceInit;
-        }
+        blocks.push_back(instanceInit);
     }
-    if (!init.empty())
-        init = "\n" + init;
-    return init;
+
+    const std::string paramInit =
+        generateParameterInitialization(parameters, function, invocation);
+    if (!paramInit.empty()) {
+        blocks.push_back(paramInit);
+    }
+
+    const std::string oracleInstanceInit = buildInstanceInitialization(
+        function, invocation, isStatic, std::string(kOraclePrefix) + kCtorPrefix,
+        kCtorPrefix, kOraclePrefix);
+    if (!oracleInstanceInit.empty()) {
+        blocks.push_back(oracleInstanceInit);
+    }
+
+    const std::string oracleParamInit = generateParameterInitialization(
+        parameters, function, invocation, kOraclePrefix);
+    if (!oracleParamInit.empty()) {
+        blocks.push_back(oracleParamInit);
+    }
+
+    if (blocks.empty()) {
+        return "";
+    }
+
+    std::ostringstream ss;
+    for (size_t i = 0; i < blocks.size(); ++i) {
+        if (i > 0) {
+            ss << "\n\n";
+        }
+        ss << blocks[i];
+    }
+
+    return "\n" + ss.str();
 }
 
-std::string Generator::buildReturnReadMethod(const InfoType &underlying,
-                                             const std::string &function,
-                                             unsigned invocation) const {
-    return generateReadInvocation(underlying.getTypeAsReturn(), function, invocation);
+std::string Generator::buildExpectedInvocation(
+    const std::vector<InfoVariable> &parameters, const std::string &function,
+    bool isStatic, bool returnsPointer) const {
+    // This is a mirror execution of the same SUT, not an independent oracle.
+    std::ostringstream ss;
+    ss << buildInvocation(function, isStatic, returnsPointer, kOraclePrefix) << "("
+       << generateParameterInvocation(parameters, kOraclePrefix) << ")";
+    return ss.str();
 }
 
 std::string Generator::normalizeReadMethodType(const InfoType &type) const {
@@ -487,12 +533,13 @@ std::string Generator::normalizeReadMethodType(const InfoType &type) const {
 }
 
 std::string Generator::buildInvocation(const std::string &function, bool isStatic,
-                                       bool returnsPointer) const {
+                                       bool returnsPointer,
+                                       const std::string &instancePrefix) const {
     std::string invocation = returnsPointer ? "*" : "";
     if (isStatic)
         invocation += targetQualifiedName + "::";
     else if (isFromClass)
-        invocation += generateTestObjectForTarget(targetName) + ".";
+        invocation += instancePrefix + generateTestObjectForTarget(targetName) + ".";
     invocation += function;
     return invocation;
 }
@@ -500,59 +547,49 @@ std::string Generator::buildInvocation(const std::string &function, bool isStati
 bool Generator::setInstanceConstruction(
     const std::vector<InfoVariable> &constructorParams, bool useDefaultConstructor) {
     if (!isFromClass) {
-        instanceConstruction_.clear();
+        constructorParams_.clear();
+        useDefaultConstructor_ = true;
         return true;
     }
 
-    std::ostringstream ss;
-    ss << targetQualifiedName << " " << generateTestObjectForTarget(targetName) << "{";
+    constructorParams_.clear();
+    constructorParams_.reserve(constructorParams.size());
+    for (const auto &param : constructorParams) {
+        constructorParams_.emplace_back(param.name, param);
+    }
+    useDefaultConstructor_ = useDefaultConstructor;
+    return true;
+}
 
-    if (!useDefaultConstructor) {
-        for (size_t i = 0; i < constructorParams.size(); ++i) {
-            const auto &param = constructorParams[i];
-            if (param.isReference()) {
-                return false;
-            }
-            ss << buildConstructorArgumentExpression(param);
-            if (i + 1 < constructorParams.size()) {
+std::string Generator::buildInstanceInitialization(const std::string &function,
+                                                   unsigned invocation, bool isStatic,
+                                                   const std::string &variablePrefix,
+                                                   const std::string &keyPrefix,
+                                                   const std::string &instancePrefix) const {
+    if (isStatic || !isFromClass) {
+        return "";
+    }
+
+    std::ostringstream ss;
+    if (!useDefaultConstructor_ && !constructorParams_.empty()) {
+        ss << generateParameterInitialization(constructorParams_, function, invocation,
+                                             variablePrefix, keyPrefix)
+           << "\n";
+    }
+
+    ss << "\t" << targetQualifiedName << " "
+       << instancePrefix + generateTestObjectForTarget(targetName) << "{";
+    if (!useDefaultConstructor_) {
+        for (size_t i = 0; i < constructorParams_.size(); ++i) {
+            ss << variablePrefix << constructorParams_[i].name;
+            if (i + 1 < constructorParams_.size()) {
                 ss << ", ";
             }
         }
     }
-
     ss << "};";
-    instanceConstruction_ = ss.str();
-    return true;
-}
 
-std::string Generator::buildConstructorArgumentExpression(const InfoType &type) const {
-    // TODO: This is only a compile-oriented fallback. Revisit it together with the
-    // test-oracle work so instance construction uses semantically meaningful data,
-    // not just "something that compiles".
-    if (type.isPointer()) {
-        return "nullptr";
-    }
-    if (containsSubstring(type.original, "string")) {
-        return type.original + "{}";
-    }
-    if (type.isContainer() || type.isRecord()) {
-        return type.original + "{}";
-    }
-    if (type.isEnum()) {
-        return type.original + "{}";
-    }
-
-    const auto def = getDefaultValueForType(type);
-    const std::string literal =
-        def.has_value() ? def.value() : getZeroValueForType(type);
-    return formatLiteralForType(literal, type);
-}
-
-std::string Generator::buildInstanceInitialization(bool isStatic) const {
-    if (isStatic || !isFromClass) {
-        return "";
-    }
-    return instanceConstruction_;
+    return ss.str();
 }
 
 std::string Generator::generatePointersAssertsWithTemplate(
@@ -564,7 +601,7 @@ std::string Generator::generatePointersAssertsWithTemplate(
             auto pointers = param.getPointersVarName();
             std::map<std::string, std::string> tokens = {
                 {paramToken, pointers.first},
-                {expectedToken, pointers.second},
+                {expectedToken, std::string(kOraclePrefix) + pointers.first},
             };
 
             std::string pointerAssert = assertTemplate;
@@ -593,7 +630,13 @@ void Generator::generateConfigFileTestCase(const std::string &functionName,
                                            const std::vector<InfoVariable> &params,
                                            const InfoType &returnType,
                                            unsigned invocation) const {
-    configGenerator.generateTestCase(functionName, params, returnType, invocation);
+    if (constructorParams_.empty()) {
+        configGenerator.generateTestCase(functionName, params, returnType, invocation);
+        return;
+    }
+
+    configGenerator.generateTestCaseWithSetup(functionName, params, constructorParams_,
+                                              kCtorPrefix, returnType, invocation);
 }
 
 void Generator::generateConfigFileTestCase(const std::string &functionName,
