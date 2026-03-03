@@ -245,9 +245,11 @@ Common `reason` values include:
 - Link errors mentioning `APINotesManager`: install `libclang-18-dev`.
 
 **Docs**
-Architecture overview: `doc/Arquitectura.md`  
-Rule catalog: `doc/Reglas para datos`  
-Release checklist: `doc/Checklist.md`  
+Architecture overview: `doc/Architecture.md`  
+Rule catalog: `doc/DataRules.md`  
+Release checklist: `doc/ReleaseChecklist.md`  
+Known issues: `doc/KnownIssues.md`  
+Dependencies: `doc/Dependencies.md`  
 Examples: `examples/README.md`
 
 If you are working with C++ headers use the option `-xc++` at the end.
