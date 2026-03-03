@@ -120,6 +120,7 @@ void showOpenFileError(const std::string &filePath);
  */
 std::filesystem::path getAskeletonHome();
 void refreshSystemFiles(bool force = true);
+std::vector<std::string> getSystemFilesToCheck(Framework framework);
 
 /**
  * @brief Searches for a file with one of the specified extensions.

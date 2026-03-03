@@ -2,11 +2,13 @@
 #include "color.h"
 #include "utils/strings.hpp"
 
+#include <array>
 #include <ctime>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <set>
 #include <sstream>
 #include <vector>
 #include <unistd.h>
@@ -16,6 +18,28 @@ namespace fs = filesystem;
 using json = nlohmann::json;
 
 namespace {
+
+bool readJsonFile(const fs::path &filePath, json &output, std::string &error) {
+    if (!fileExists(filePath.string())) {
+        error = "ERROR: File not found. Check " + filePath.string();
+        return false;
+    }
+
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
+        error = "Error opening file: " + filePath.string();
+        return false;
+    }
+
+    try {
+        file >> output;
+        return true;
+    } catch (const json::parse_error &e) {
+        error = "JSON parsing error in file: " + filePath.string() +
+                "\nError: " + std::string(e.what());
+        return false;
+    }
+}
 
 bool writeTextFileAtomicallyImpl(const fs::path &filePath, const std::string &content) {
     if (!filePath.parent_path().empty()) {
@@ -68,6 +92,35 @@ bool writeTextFileAtomicallyImpl(const fs::path &filePath, const std::string &co
     return false;
 }
 
+std::string frameworkTemplateDir(Framework framework) {
+    switch (framework) {
+    case Framework::BOOST:
+        return "/data/templates/boost/";
+    case Framework::CATCH:
+        return "/data/templates/catch2/";
+    case Framework::GTEST:
+        return "/data/templates/gtest/";
+    }
+    return "";
+}
+
+bool isTemplateFileForOtherFramework(const std::string &path, Framework framework) {
+    static const std::array<std::string, 3> templateDirs = {
+        "/data/templates/boost/",
+        "/data/templates/catch2/",
+        "/data/templates/gtest/",
+    };
+
+    const std::string currentDir = frameworkTemplateDir(framework);
+    for (const auto &dir : templateDirs) {
+        if (path.find(dir) == std::string::npos) {
+            continue;
+        }
+        return dir != currentDir;
+    }
+    return false;
+}
+
 } // namespace
 
 bool fileExists(const string &filename) {
@@ -115,7 +168,7 @@ void refreshSystemFiles(bool force) {
         frameworks = {"boost", "catch2", "gtest"};
     }
 
-    std::vector<std::string> files;
+    std::set<std::string> files;
 
     const auto &templateFiles = config["file"]["template"];
     for (auto it = templateFiles.begin(); it != templateFiles.end(); ++it) {
@@ -123,7 +176,7 @@ void refreshSystemFiles(bool force) {
         const auto &value = it.value();
 
         if (key == "cfg_tpl") {
-            files.push_back(
+            files.insert(
                 (askeletonHome / "data" / "templates" / value.get<string>())
                     .string());
             continue;
@@ -131,7 +184,7 @@ void refreshSystemFiles(bool force) {
 
         if (key == "method" && value.is_object()) {
             for (auto methodIt = value.begin(); methodIt != value.end(); ++methodIt) {
-                files.push_back(
+                files.insert(
                     (askeletonHome / "data" / "templates" /
                      methodIt.value().get<string>())
                         .string());
@@ -142,7 +195,7 @@ void refreshSystemFiles(bool force) {
         if (value.is_object()) {
             for (const auto &fw : frameworks) {
                 for (auto subIt = value.begin(); subIt != value.end(); ++subIt) {
-                    files.push_back(
+                    files.insert(
                         (askeletonHome / "data" / "templates" / fw /
                          subIt.value().get<string>())
                             .string());
@@ -156,7 +209,7 @@ void refreshSystemFiles(bool force) {
                 if (key == "main" && fw == "catch2") {
                     continue;
                 }
-                files.push_back(
+                files.insert(
                     (askeletonHome / "data" / "templates" / fw /
                      value.get<string>())
                         .string());
@@ -166,10 +219,13 @@ void refreshSystemFiles(bool force) {
 
     const auto &dataFiles = config["file"]["data"];
     for (auto it = dataFiles.begin(); it != dataFiles.end(); ++it) {
-        files.push_back((askeletonHome / it.value().get<string>()).string());
+        files.insert((askeletonHome / it.value().get<string>()).string());
     }
 
-    json output = files;
+    json output = json::array();
+    for (const auto &path : files) {
+        output.push_back(path);
+    }
     (void)writeJsonFileAtomically(outputPath, output, 4);
 }
 
@@ -251,6 +307,35 @@ fs::path getAskeletonHome() {
     return home;
 }
 
+std::vector<std::string> getSystemFilesToCheck(Framework framework) {
+    const json &config = getConfig();
+    fs::path fileSystemPath = getAskeletonHome() / config["system_files"].get<string>();
+    json filesToCheck;
+    std::string error;
+    if (!readJsonFile(fileSystemPath, filesToCheck, error)) {
+        exitWithError(error);
+    }
+
+    if (!filesToCheck.is_array()) {
+        exitWithError("ERROR: Invalid system files manifest format. Check " +
+                      fileSystemPath.string());
+    }
+
+    std::vector<std::string> result;
+    result.reserve(filesToCheck.size());
+    for (const auto &file : filesToCheck) {
+        if (!file.is_string()) {
+            continue;
+        }
+        const std::string fileString = file.get<std::string>();
+        if (isTemplateFileForOtherFramework(fileString, framework)) {
+            continue;
+        }
+        result.push_back(fileString);
+    }
+    return result;
+}
+
 optional<string> getFileWithExtensions(const string &filePath,
                                        const vector<string> &extensions) {
     string basePath = filePath.substr(0, filePath.find_last_of("."));
@@ -278,12 +363,10 @@ json &getTemplateItems() {
     if (templateItems.empty()) {
         string tplItemFile = getConfig()["file"]["data"]["template_items"];
         fs::path tplItemPath = getAskeletonHome() / tplItemFile;
-
-        ifstream file(tplItemPath);
-        if (!file.is_open())
-            exitWithError("Error opening file: " + tplItemPath.string());
-
-        file >> templateItems;
+        std::string error;
+        if (!readJsonFile(tplItemPath, templateItems, error)) {
+            exitWithError(error);
+        }
     }
 
     return templateItems;
@@ -295,22 +378,9 @@ json &getConfig() {
 
     if (!initialized) {
         std::filesystem::path configPath = getAskeletonHome() / "data/configuration.json";
-
-        if (!fileExists(configPath))
-            throw std::runtime_error("Failed to open config file: " +
-                                     configPath.string());
-
-        std::ifstream file(configPath);
-        if (!file.is_open())
-            throw std::runtime_error("Failed to open config file: " +
-                                     configPath.string());
-
-        try {
-            file >> configData;
-        } catch (const json::parse_error &e) {
-            throw std::runtime_error(
-                "JSON parsing error in config file: " + configPath.string() +
-                "\nError: " + std::string(e.what()));
+        std::string error;
+        if (!readJsonFile(configPath, configData, error)) {
+            throw std::runtime_error(error);
         }
 
         initialized = true;

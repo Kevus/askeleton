@@ -271,24 +271,9 @@ static std::string frameworkName(Framework framework) {
 json &config = getConfig();
 
 void exitIfFilesDoNotExist() {
-    fs::path fileSystemPath = getAskeletonHome() / config["system_files"];
-    ifstream file(fileSystemPath);
-    json filesToCheck;
-
-    if (!fileExists(fileSystemPath))
-        exitWithError("ERROR: File not found. Check " + fileSystemPath.string());
-
-    if (!file.is_open())
-        exitWithError("Error opening file: " + fileSystemPath.string());
-
-    file >> filesToCheck;
-
-    for (auto &file : filesToCheck) {
-        string fileString = file;
+    for (const auto &fileString : getSystemFilesToCheck(getFramework())) {
         if (!fileExists(fileString))
             exitWithError("ERROR: File not found. Check " + fileString);
-        // else
-        //     cout << "File checked: " << fileString << endl;
     }
 }
 
