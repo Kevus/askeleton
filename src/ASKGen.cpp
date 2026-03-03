@@ -330,39 +330,11 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
 
                 try {
                     unsigned cases = generateTest(*generator, *configGenerator, UT);
-                    Logger::instance().verbose(
-                        std::string("Generated test for function ") +
-                        UT->getNameInfo().getAsString());
-                    if (reporter) {
-                        entry.status = "generated";
-                        entry.test_cases = cases;
-                        reporter->addEntry(entry);
-                    }
-                    if (stats) {
-                        stats->found++;
-                        stats->generated++;
-                        stats->by_kind["function"]++;
-                        if (!entry.target.empty())
-                            stats->by_target[entry.target]++;
-                    }
+                    recordGeneratedResult("function", UT->getNameInfo().getAsString(),
+                                          entry, cases);
                 } catch (const ComplexTypeException &e) {
-                    Logger::instance().verbose(
-                        std::string("Skipped function ") +
-                        UT->getNameInfo().getAsString() + " (reason: " + e.type + ")");
-                    if (reporter) {
-                        entry.status = "skipped";
-                        entry.reason = "complex_type";
-                        entry.detail = e.type;
-                        reporter->addEntry(entry);
-                    }
-                    if (stats) {
-                        stats->found++;
-                        stats->skipped++;
-                        stats->by_kind["function"]++;
-                        stats->skipped_by_reason["complex_type"]++;
-                        if (!entry.target.empty())
-                            stats->by_target[entry.target]++;
-                    }
+                    recordSkippedResult("function", UT->getNameInfo().getAsString(),
+                                        entry, e.type);
                 }
 
                 Logger::instance().debug("--------------");
@@ -425,39 +397,11 @@ void ASKGen::apply_MD1(const MatchFinder::MatchResult &Result) {
 
                 try {
                     unsigned cases = generateTest(*generator, *configGenerator, UT);
-                    Logger::instance().verbose(
-                        std::string("Generated test for method ") +
-                        UT->getNameInfo().getAsString());
-                    if (reporter) {
-                        entry.status = "generated";
-                        entry.test_cases = cases;
-                        reporter->addEntry(entry);
-                    }
-                    if (stats) {
-                        stats->found++;
-                        stats->generated++;
-                        stats->by_kind["method"]++;
-                        if (!entry.target.empty())
-                            stats->by_target[entry.target]++;
-                    }
+                    recordGeneratedResult("method", UT->getNameInfo().getAsString(),
+                                          entry, cases);
                 } catch (const ComplexTypeException &e) {
-                    Logger::instance().verbose(
-                        std::string("Skipped method ") +
-                        UT->getNameInfo().getAsString() + " (reason: " + e.type + ")");
-                    if (reporter) {
-                        entry.status = "skipped";
-                        entry.reason = "complex_type";
-                        entry.detail = e.type;
-                        reporter->addEntry(entry);
-                    }
-                    if (stats) {
-                        stats->found++;
-                        stats->skipped++;
-                        stats->by_kind["method"]++;
-                        stats->skipped_by_reason["complex_type"]++;
-                        if (!entry.target.empty())
-                            stats->by_target[entry.target]++;
-                    }
+                    recordSkippedResult("method", UT->getNameInfo().getAsString(),
+                                        entry, e.type);
                 }
 
                 Logger::instance().debug("--------------");
@@ -517,39 +461,11 @@ void ASKGen::apply_CC1(const MatchFinder::MatchResult &Result) {
 
             try {
                 unsigned cases = generateTest(*generator, *configGenerator, UT);
-                Logger::instance().verbose(
-                    std::string("Generated test for constructor ") +
-                    UT->getNameInfo().getAsString());
-                if (reporter) {
-                    entry.status = "generated";
-                    entry.test_cases = cases;
-                    reporter->addEntry(entry);
-                }
-                if (stats) {
-                    stats->found++;
-                    stats->generated++;
-                    stats->by_kind["constructor"]++;
-                    if (!entry.target.empty())
-                        stats->by_target[entry.target]++;
-                }
+                recordGeneratedResult("constructor", UT->getNameInfo().getAsString(),
+                                      entry, cases);
             } catch (const ComplexTypeException &e) {
-                Logger::instance().verbose(
-                    std::string("Skipped constructor ") +
-                    UT->getNameInfo().getAsString() + " (reason: " + e.type + ")");
-                if (reporter) {
-                    entry.status = "skipped";
-                    entry.reason = "complex_type";
-                    entry.detail = e.type;
-                    reporter->addEntry(entry);
-                }
-                if (stats) {
-                    stats->found++;
-                    stats->skipped++;
-                    stats->by_kind["constructor"]++;
-                    stats->skipped_by_reason["complex_type"]++;
-                    if (!entry.target.empty())
-                        stats->by_target[entry.target]++;
-                }
+                recordSkippedResult("constructor", UT->getNameInfo().getAsString(),
+                                    entry, e.type);
             }
 
             Logger::instance().debug("--------------");
@@ -1311,6 +1227,51 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
 
     testGen.generateConstructorAssert(parameters);
     return 1;
+}
+
+void ASKGen::recordGeneratedResult(const std::string &kind,
+                                   const std::string &entityName,
+                                   ReportEntry &entry, unsigned testCases) {
+    Logger::instance().verbose("Generated test for " + kind + " " + entityName);
+
+    if (reporter) {
+        entry.status = "generated";
+        entry.test_cases = testCases;
+        reporter->addEntry(entry);
+    }
+
+    if (stats) {
+        stats->found++;
+        stats->generated++;
+        stats->by_kind[kind]++;
+        if (!entry.target.empty()) {
+            stats->by_target[entry.target]++;
+        }
+    }
+}
+
+void ASKGen::recordSkippedResult(const std::string &kind,
+                                 const std::string &entityName,
+                                 ReportEntry &entry, const std::string &detail) {
+    Logger::instance().verbose("Skipped " + kind + " " + entityName +
+                               " (reason: " + detail + ")");
+
+    if (reporter) {
+        entry.status = "skipped";
+        entry.reason = "complex_type";
+        entry.detail = detail;
+        reporter->addEntry(entry);
+    }
+
+    if (stats) {
+        stats->found++;
+        stats->skipped++;
+        stats->by_kind[kind]++;
+        stats->skipped_by_reason["complex_type"]++;
+        if (!entry.target.empty()) {
+            stats->by_target[entry.target]++;
+        }
+    }
 }
 
 

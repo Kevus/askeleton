@@ -75,6 +75,13 @@ private:
     unsigned computeRuleInvocationLimit(
         const std::map<std::string, std::vector<long long>> &rulesForFunction) const;
 
+    void recordGeneratedResult(const std::string &kind,
+                               const std::string &entityName,
+                               ReportEntry &entry, unsigned testCases);
+    void recordSkippedResult(const std::string &kind,
+                             const std::string &entityName,
+                             ReportEntry &entry, const std::string &detail);
+
     bool ruleDataEnabled = false;
     unsigned ruleMaxCases = 3;
     std::map<std::string, std::map<std::string, std::vector<long long>>> ruleValues;
