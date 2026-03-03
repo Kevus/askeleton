@@ -254,18 +254,6 @@ static bool ensureCompileCommandEntries(const fs::path &compdbPath,
     return writeCompilationDatabaseJson(compdbPath, db);
 }
 
-static std::string frameworkName(Framework framework) {
-    switch (framework) {
-    case Framework::GTEST:
-        return "gtest";
-    case Framework::BOOST:
-        return "boost";
-    case Framework::CATCH:
-        return "catch";
-    }
-    return "gtest";
-}
-
 } // namespace
 
 json &config = getConfig();
@@ -275,20 +263,6 @@ void exitIfFilesDoNotExist() {
         if (!fileExists(fileString))
             exitWithError("ERROR: File not found. Check " + fileString);
     }
-}
-
-std::optional<Framework> checkFramework(std::string framework) {
-    framework = toLower(framework);
-    if (set<string>({"gtest", "googletest", "google test", "google"}).contains(framework))
-        return Framework::GTEST;
-    else if (set<string>({"boost", "boost.test", "boosttest", "boost test"})
-                 .contains(framework))
-        return Framework::BOOST;
-    else if (set<string>({"catch", "catch2", "catch.test", "catchtest", "catch test"})
-                 .contains(framework))
-        return Framework::CATCH;
-    else
-        return std::nullopt;
 }
 
 void exitIfNotValidFramework(std::optional<Framework> framework) {
@@ -303,17 +277,7 @@ void selectFrameworkFromOption(Framework framework) {
     if (Logger::instance().level() < LogLevel::Normal)
         return;
     llvm::outs() << "Generating test for " << ANSI_BOLD;
-    switch (framework) {
-    case Framework::GTEST:
-        llvm::outs() << "Google Test";
-        break;
-    case Framework::BOOST:
-        llvm::outs() << "Boost.Test";
-        break;
-    case Framework::CATCH:
-        llvm::outs() << "Catch2";
-        break;
-    }
+    llvm::outs() << frameworkDisplayName(framework);
     llvm::outs() << ANSI_RESET << " framework\n";
 }
 
@@ -414,9 +378,138 @@ static ReportMetadata buildReportMetadata(Framework framework,
     }
     meta.rule_data = RuleDataOption.getValue();
     meta.rule_max_cases = RuleMaxCasesOption.getValue();
-    meta.framework = frameworkName(framework);
+    meta.framework = std::string(frameworkKey(framework));
     meta.sources = sources;
     return meta;
+}
+
+static void configureLoggingFromOptions() {
+    LogLevel level = LogLevel::Normal;
+    if (QuietOption)
+        level = LogLevel::Quiet;
+    if (VerboseOption)
+        level = LogLevel::Verbose;
+    if (DebugOption)
+        level = LogLevel::Debug;
+    Logger::instance().setLevel(level);
+}
+
+static std::string resolveOutputDirectory(const CommonOptionsParser &options) {
+    if (!OutDirOption.empty()) {
+        return OutDirOption;
+    }
+
+    const auto &sources = options.getSourcePathList();
+    if (!sources.empty()) {
+        std::filesystem::path sourcePath = sources.front();
+        if (sourcePath.is_relative()) {
+            sourcePath = std::filesystem::absolute(sourcePath);
+        }
+        return (sourcePath.parent_path() / "tests" / "generated").string();
+    }
+
+    return (getAskeletonHome() / config["route"]["ut"]).string();
+}
+
+static void applyOutputDirectoryOverride(const std::string &outDir) {
+    if (outDir.empty()) {
+        return;
+    }
+
+    std::filesystem::path outPath = outDir;
+    if (outPath.is_relative()) {
+        outPath = std::filesystem::absolute(outPath);
+    }
+    config["route"]["ut"] = outPath.string();
+    config["route"]["generated"] = outPath.string();
+    config["route"]["log"] = (outPath.parent_path() / "Generated_log").string();
+}
+
+static std::string resolveReportPath() {
+    if (!ReportPathOption.empty()) {
+        return ReportPathOption;
+    }
+    if (ReportJsonOption) {
+        return (getAskeletonHome() / config["route"]["ut"] / "askeleton_report.json")
+            .string();
+    }
+    return "";
+}
+
+static void printRunSummary(const RunStats &stats, const std::string &reportPath,
+                            const std::chrono::steady_clock::time_point &tool_start,
+                            const std::chrono::steady_clock::time_point &tool_end,
+                            const std::optional<long long> &refresh_ms) {
+    if (Logger::instance().level() < LogLevel::Normal) {
+        return;
+    }
+
+    llvm::outs() << "\nSummary:\n";
+    llvm::outs() << "  Found: " << stats.found << "\n";
+    llvm::outs() << "  Generated: " << stats.generated << "\n";
+    llvm::outs() << "  Skipped: " << stats.skipped << "\n";
+    if (!stats.skipped_by_reason.empty()) {
+        llvm::outs() << "  Skipped by reason:\n";
+        for (const auto &it : stats.skipped_by_reason) {
+            llvm::outs() << "    - " << it.first << ": " << it.second << "\n";
+        }
+    }
+    llvm::outs() << "  Output: " << config["route"]["ut"].get<std::string>() << "\n";
+    if (!reportPath.empty()) {
+        llvm::outs() << "  Report: " << reportPath << "\n";
+    }
+    const auto tool_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(tool_end - tool_start)
+            .count();
+    llvm::outs() << "  Time: " << tool_ms << " ms";
+    if (refresh_ms.has_value()) {
+        llvm::outs() << " (system files: " << refresh_ms.value() << " ms)";
+    }
+    llvm::outs() << "\n";
+}
+
+static void writeExecutionLogJson(
+    const RunStats &stats, const std::chrono::steady_clock::time_point &time_start,
+    const std::chrono::steady_clock::time_point &tool_start,
+    const std::chrono::steady_clock::time_point &tool_end,
+    const std::optional<long long> &refresh_ms) {
+    if (LogJsonOption.empty()) {
+        return;
+    }
+
+    json log;
+    log["summary"] = {
+        {"found", stats.found},
+        {"generated", stats.generated},
+        {"skipped", stats.skipped},
+        {"skipped_by_reason", stats.skipped_by_reason},
+    };
+    log["by_kind"] = stats.by_kind;
+    log["by_target"] = stats.by_target;
+    log["warnings"]["missing_source"] =
+        std::vector<std::string>(Logger::instance().missingSourceFiles().begin(),
+                                 Logger::instance().missingSourceFiles().end());
+    log["warnings"]["missing_header"] =
+        std::vector<std::string>(Logger::instance().missingHeaderFiles().begin(),
+                                 Logger::instance().missingHeaderFiles().end());
+    log["files_seen"] =
+        std::vector<std::string>(Logger::instance().filesSeen().begin(),
+                                 Logger::instance().filesSeen().end());
+    log["timings_ms"]["tool_run"] =
+        std::chrono::duration_cast<std::chrono::milliseconds>(tool_end - tool_start)
+            .count();
+    if (refresh_ms.has_value()) {
+        log["timings_ms"]["system_files_refresh"] = refresh_ms.value();
+    }
+    log["timings_ms"]["total"] =
+        std::chrono::duration_cast<std::chrono::milliseconds>(tool_end - time_start)
+            .count();
+
+    const std::filesystem::path logPath = LogJsonOption.getValue();
+    if (!logPath.parent_path().empty()) {
+        std::filesystem::create_directories(logPath.parent_path());
+    }
+    (void)writeJsonFileAtomically(logPath, log, 2);
 }
 
 int main(int argc, const char **argv) {
@@ -442,16 +535,9 @@ int main(int argc, const char **argv) {
         return 1;
     }
 
-    LogLevel level = LogLevel::Normal;
-    if (QuietOption)
-        level = LogLevel::Quiet;
-    if (VerboseOption)
-        level = LogLevel::Verbose;
-    if (DebugOption)
-        level = LogLevel::Debug;
-    Logger::instance().setLevel(level);
+    configureLoggingFromOptions();
 
-    std::optional<Framework> selectedFramework = checkFramework(FrameworkOption);
+    std::optional<Framework> selectedFramework = parseFramework(FrameworkOption);
     exitIfNotValidFramework(selectedFramework);
     selectFrameworkFromOption(selectedFramework.value());
 
@@ -464,32 +550,7 @@ int main(int argc, const char **argv) {
             std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
     }
 
-    std::string outDir;
-    if (!OutDirOption.empty()) {
-        outDir = OutDirOption;
-    } else {
-        const auto &sources = options->getSourcePathList();
-        if (!sources.empty()) {
-            std::filesystem::path sourcePath = sources.front();
-            if (sourcePath.is_relative()) {
-                sourcePath = std::filesystem::absolute(sourcePath);
-            }
-            std::filesystem::path baseDir = sourcePath.parent_path();
-            outDir = (baseDir / "tests" / "generated").string();
-        } else {
-            outDir = (getAskeletonHome() / config["route"]["ut"]).string();
-        }
-    }
-
-    if (!outDir.empty()) {
-        std::filesystem::path outPath = outDir;
-        if (outPath.is_relative()) {
-            outPath = std::filesystem::absolute(outPath);
-        }
-        config["route"]["ut"] = outPath.string();
-        config["route"]["generated"] = outPath.string();
-        config["route"]["log"] = (outPath.parent_path() / "Generated_log").string();
-    }
+    applyOutputDirectoryOverride(resolveOutputDirectory(*options));
 
     exitIfFolderDoesNotExist(getAskeletonHome() / config["route"]["templates"]);
     Logger::instance().info("Checking ASkeleTon files...");
@@ -523,14 +584,7 @@ int main(int argc, const char **argv) {
                      << ANSI_RESET;
     }
 
-    std::string reportPath;
-    if (!ReportPathOption.empty()) {
-        reportPath = ReportPathOption;
-    } else if (ReportJsonOption) {
-        reportPath = (getAskeletonHome() / config["route"]["ut"] /
-                      "askeleton_report.json")
-                         .string();
-    }
+    std::string reportPath = resolveReportPath();
 
     RunStats stats;
     Report report;
@@ -668,65 +722,7 @@ int main(int argc, const char **argv) {
 
     Logger::instance().printWarningsSummary();
 
-    if (Logger::instance().level() >= LogLevel::Normal) {
-        llvm::outs() << "\nSummary:\n";
-        llvm::outs() << "  Found: " << stats.found << "\n";
-        llvm::outs() << "  Generated: " << stats.generated << "\n";
-        llvm::outs() << "  Skipped: " << stats.skipped << "\n";
-        if (!stats.skipped_by_reason.empty()) {
-            llvm::outs() << "  Skipped by reason:\n";
-            for (const auto &it : stats.skipped_by_reason) {
-                llvm::outs() << "    - " << it.first << ": " << it.second << "\n";
-            }
-        }
-        llvm::outs() << "  Output: " << config["route"]["ut"].get<std::string>() << "\n";
-        if (!reportPath.empty()) {
-            llvm::outs() << "  Report: " << reportPath << "\n";
-        }
-        auto tool_ms =
-            std::chrono::duration_cast<std::chrono::milliseconds>(tool_end - tool_start)
-                .count();
-        llvm::outs() << "  Time: " << tool_ms << " ms";
-        if (refresh_ms.has_value())
-            llvm::outs() << " (system files: " << refresh_ms.value() << " ms)";
-        llvm::outs() << "\n";
-    }
-
-    if (!LogJsonOption.empty()) {
-        json log;
-        log["summary"] = {
-            {"found", stats.found},
-            {"generated", stats.generated},
-            {"skipped", stats.skipped},
-            {"skipped_by_reason", stats.skipped_by_reason},
-        };
-        log["by_kind"] = stats.by_kind;
-        log["by_target"] = stats.by_target;
-        log["warnings"]["missing_source"] =
-            std::vector<std::string>(Logger::instance().missingSourceFiles().begin(),
-                                     Logger::instance().missingSourceFiles().end());
-        log["warnings"]["missing_header"] =
-            std::vector<std::string>(Logger::instance().missingHeaderFiles().begin(),
-                                     Logger::instance().missingHeaderFiles().end());
-        log["files_seen"] =
-            std::vector<std::string>(Logger::instance().filesSeen().begin(),
-                                     Logger::instance().filesSeen().end());
-        auto tool_ms =
-            std::chrono::duration_cast<std::chrono::milliseconds>(tool_end - tool_start)
-                .count();
-        log["timings_ms"]["tool_run"] = tool_ms;
-        if (refresh_ms.has_value())
-            log["timings_ms"]["system_files_refresh"] = refresh_ms.value();
-        auto total_ms =
-            std::chrono::duration_cast<std::chrono::milliseconds>(tool_end - time_start)
-                .count();
-        log["timings_ms"]["total"] = total_ms;
-
-        std::filesystem::path logPath = LogJsonOption.getValue();
-        if (!logPath.parent_path().empty()) {
-            std::filesystem::create_directories(logPath.parent_path());
-        }
-        (void)writeJsonFileAtomically(logPath, log, 2);
-    }
+    printRunSummary(stats, reportPath, tool_start, tool_end, refresh_ms);
+    writeExecutionLogJson(stats, time_start, tool_start, tool_end, refresh_ms);
     return result;
 }

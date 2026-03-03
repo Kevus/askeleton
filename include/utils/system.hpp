@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <optional>
+#include <string_view>
 #include <string>
 #include <vector>
 
@@ -184,6 +185,10 @@ nlohmann::json &getTemplateItems();
  * @param framework The framework to be set.
  */
 void setFramework(Framework framework);
+std::optional<Framework> parseFramework(std::string_view framework);
+std::string_view frameworkKey(Framework framework);
+std::string_view frameworkDisplayName(Framework framework);
+std::string_view frameworkTemplateDir(Framework framework);
 
 /**
  * @brief Retrieves the currently selected framework.

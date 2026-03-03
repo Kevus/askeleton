@@ -13,6 +13,7 @@
     "/home/kevus/astutmatcher/data/templates/catch2/constructorCase.tpl",
     "/home/kevus/astutmatcher/data/templates/catch2/fixture.tpl",
     "/home/kevus/astutmatcher/data/templates/catch2/functionCase.tpl",
+    "/home/kevus/astutmatcher/data/templates/catch2/main.cpp",
     "/home/kevus/astutmatcher/data/templates/catch2/makefile.tpl",
     "/home/kevus/astutmatcher/data/templates/catch2/methodCase.tpl",
     "/home/kevus/astutmatcher/data/templates/catch2/test.tpl",
