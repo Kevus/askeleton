@@ -206,9 +206,6 @@ std::string ConfigGenerator::generateParam(const InfoVariable &param,
         value = param.defaultValue.value();
     }
 
-    if (value.empty()) {
-        value = rvg.getRandomValue(cStringPointer ? "string" : typeForValue);
-    }
     stringstream ss;
 
     const bool isRecord = underlying.isRecord() && !underlying.isContainer();
@@ -231,7 +228,19 @@ std::string ConfigGenerator::generateParam(const InfoVariable &param,
                                 prefix + pointers.second.name + ".", depth + 1,
                                 stack);
         stack.erase(key);
+    } else if (underlying.isOptional() || underlying.isPair() || underlying.isTuple()) {
+        ss << generateStructuredParam(pointers.first.name, underlying, prefix, depth, stack);
+        if (generatePointers && (param.isPointer() || param.isReference())) {
+            const std::string extra =
+                generateStructuredParam(pointers.second.name, underlying, prefix, depth, stack);
+            if (!extra.empty()) {
+                ss << "\n" << extra;
+            }
+        }
     } else {
+        if (value.empty()) {
+            value = generateScalarValue(cStringPointer ? InfoType("std::string") : underlying);
+        }
         ss << "\t" << prefix + pointers.first.name << "=" << value << ";#"
            << param.original;
         if (generatePointers && (param.isPointer() || param.isReference()))
@@ -240,6 +249,81 @@ std::string ConfigGenerator::generateParam(const InfoVariable &param,
     }
 
     return ss.str();
+}
+
+std::string ConfigGenerator::generateStructuredParam(const std::string &name,
+                                                     const InfoType &type,
+                                                     const std::string &prefix,
+                                                     unsigned depth,
+                                                     std::set<std::string> &stack) const {
+    if (depth > 3) {
+        return "";
+    }
+
+    const auto args = type.getTemplateArguments();
+    std::ostringstream ss;
+
+    if (type.isOptional() && !args.empty()) {
+        const bool hasValue = (currentInvocation % 2) != 0;
+        ss << "\t" << prefix + name << ".has_value=" << (hasValue ? "true" : "false")
+           << ";#bool";
+        if (hasValue) {
+            InfoVariable nested{"value", args.front()};
+            const std::string nestedContent =
+                generateParam(nested, false, prefix + name + ".", depth + 1, stack);
+            if (!nestedContent.empty()) {
+                ss << "\n" << nestedContent;
+            }
+        }
+        return ss.str();
+    }
+
+    if (type.isPair() && args.size() == 2) {
+        InfoVariable first{"first", args[0]};
+        InfoVariable second{"second", args[1]};
+        ss << generateParam(first, false, prefix + name + ".", depth + 1, stack);
+        const std::string secondContent =
+            generateParam(second, false, prefix + name + ".", depth + 1, stack);
+        if (!secondContent.empty()) {
+            if (!ss.str().empty()) {
+                ss << "\n";
+            }
+            ss << secondContent;
+        }
+        return ss.str();
+    }
+
+    if (type.isTuple() && !args.empty()) {
+        for (size_t i = 0; i < args.size(); ++i) {
+            InfoVariable item{std::to_string(i), args[i]};
+            const std::string itemContent =
+                generateParam(item, false, prefix + name + ".", depth + 1, stack);
+            if (!itemContent.empty()) {
+                if (!ss.str().empty()) {
+                    ss << "\n";
+                }
+                ss << itemContent;
+            }
+        }
+        return ss.str();
+    }
+
+    return "";
+}
+
+std::string ConfigGenerator::generateScalarValue(const InfoType &type) const {
+    if (type.isOptional() || type.isPair() || type.isTuple()) {
+        return "0";
+    }
+
+    std::string typeForValue = type.formatted;
+    if (containsSubstring(type.original, "string")) {
+        typeForValue = "string";
+    } else if (type.isMap() && typeForValue.find("<") == std::string::npos) {
+        typeForValue = type.original;
+    }
+
+    return rvg.getRandomValue(typeForValue);
 }
 
 void ConfigGenerator::appendToConfigFile(const string &content) const {

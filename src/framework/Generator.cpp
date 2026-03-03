@@ -35,6 +35,16 @@ bool isCStringLike(const InfoType &type) {
     return type.isPointer() && type.getUnderlyingType().original == "char";
 }
 
+std::string buildStructuredReadSuffix(const InfoType &type) {
+    std::string suffix = removeNamespaceQualifier(type.original);
+    replaceAll(suffix, " ", "_");
+    replaceAll(suffix, "<", "_");
+    replaceAll(suffix, ">", "");
+    replaceAll(suffix, ",", "_");
+    replaceTypeCharacters(suffix);
+    return suffix;
+}
+
 std::string buildFactoryReadMethod(const InfoType &type, const std::string &expr) {
     std::ostringstream ss;
     ss << "    " << type.original << " Read_" << type.formatted
@@ -102,6 +112,52 @@ std::string buildDummyRecordReadMethod(const InfoType &type) {
     }
 
     ss << "        return result;\n";
+    ss << "    }\n";
+    return ss.str();
+}
+
+std::string buildOptionalReadMethod(const InfoType &type,
+                                    const std::string &valueReader) {
+    std::ostringstream ss;
+    ss << "    " << type.original << " Read_" << buildStructuredReadSuffix(type)
+       << "(string objectKey) {\n";
+    ss << "        bool hasValue = Read_bool(objectKey + \".has_value\");\n";
+    ss << "        if (!hasValue) {\n";
+    ss << "            return std::nullopt;\n";
+    ss << "        }\n";
+    ss << "        return " << type.original << "{";
+    ss << valueReader << "(objectKey + \".value\")};\n";
+    ss << "    }\n";
+    return ss.str();
+}
+
+std::string buildPairReadMethod(const InfoType &type,
+                                const std::vector<std::string> &readers) {
+    std::ostringstream ss;
+    ss << "    " << type.original << " Read_" << buildStructuredReadSuffix(type)
+       << "(string objectKey) {\n";
+    ss << "        return " << type.original << "{";
+    ss << readers[0] << "(objectKey + \".first\"), ";
+    ss << readers[1] << "(objectKey + \".second\")";
+    ss << "};\n";
+    ss << "    }\n";
+    return ss.str();
+}
+
+std::string buildTupleReadMethod(const InfoType &type,
+                                 const std::vector<std::string> &readers) {
+    std::ostringstream ss;
+    ss << "    " << type.original << " Read_" << buildStructuredReadSuffix(type)
+       << "(string objectKey) {\n";
+    ss << "        return std::make_tuple(";
+    for (size_t i = 0; i < readers.size(); ++i) {
+        if (i > 0) {
+            ss << ", ";
+        }
+        ss << readers[i] << "(objectKey + \"."
+           << i << "\")";
+    }
+    ss << ");\n";
     ss << "    }\n";
     return ss.str();
 }
@@ -508,6 +564,47 @@ void Generator::createTypeReadToFixture(const InfoType &type, unsigned level) {
     if (level > 1 || isTypeSupported(type))
         return;
 
+    if (type.isOptional()) {
+        const auto args = type.getTemplateArguments();
+        if (args.size() == 1) {
+            createTypeReadToFixture(args[0], level + 1);
+            appendReadMethodToFixture(
+                buildOptionalReadMethod(type, "Read_" + normalizeReadMethodType(args[0])));
+            markTypeAsSupported(type);
+            return;
+        }
+    }
+
+    if (type.isPair()) {
+        const auto args = type.getTemplateArguments();
+        if (args.size() == 2) {
+            std::vector<std::string> readers;
+            readers.reserve(2);
+            for (const auto &arg : args) {
+                createTypeReadToFixture(arg, level + 1);
+                readers.push_back("Read_" + normalizeReadMethodType(arg));
+            }
+            appendReadMethodToFixture(buildPairReadMethod(type, readers));
+            markTypeAsSupported(type);
+            return;
+        }
+    }
+
+    if (type.isTuple()) {
+        const auto args = type.getTemplateArguments();
+        if (!args.empty()) {
+            std::vector<std::string> readers;
+            readers.reserve(args.size());
+            for (const auto &arg : args) {
+                createTypeReadToFixture(arg, level + 1);
+                readers.push_back("Read_" + normalizeReadMethodType(arg));
+            }
+            appendReadMethodToFixture(buildTupleReadMethod(type, readers));
+            markTypeAsSupported(type);
+            return;
+        }
+    }
+
     if (type.isRecord()) {
         const auto scopedFactories = TypeFactoryRegistry::get().findFunctionFactories(type);
         const auto factory = TypeFactoryRegistry::get().find(type);
@@ -773,6 +870,9 @@ std::string Generator::buildExpectedInvocation(
 std::string Generator::normalizeReadMethodType(const InfoType &type) const {
     if (containsSubstring(type.original, "string")) {
         return "string";
+    }
+    if (type.isOptional() || type.isPair() || type.isTuple()) {
+        return buildStructuredReadSuffix(type);
     }
     if (!type.isMap()) {
         return type.formatted;

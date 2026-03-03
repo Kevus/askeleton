@@ -51,6 +51,10 @@ private:
     std::string generateParam(const std::vector<InfoVariable> &params,
                               bool generatePointers, const std::string &prefix,
                               unsigned depth, std::set<std::string> &stack) const;
+    std::string generateStructuredParam(const std::string &name, const InfoType &type,
+                                        const std::string &prefix, unsigned depth,
+                                        std::set<std::string> &stack) const;
+    std::string generateScalarValue(const InfoType &type) const;
     std::string generateReturn(const InfoType &returnType) const;
 
     void appendToConfigFile(const std::string &content) const;

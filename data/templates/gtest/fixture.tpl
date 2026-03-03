@@ -25,9 +25,12 @@
 #include <iostream>
 #include <list>
 #include <map>
+#include <optional>
 #include <sstream>
 #include <streambuf>
 #include <string>
+#include <tuple>
+#include <utility>
 #include <vector>
 {includes}
 {namespaces}

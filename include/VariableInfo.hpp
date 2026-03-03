@@ -34,6 +34,9 @@ struct InfoType {
     bool isContainer() const;
     bool isList() const;
     bool isMap() const;
+    bool isOptional() const;
+    bool isPair() const;
+    bool isTuple() const;
 
     bool isPointer() const;
     bool isReference() const;
@@ -47,6 +50,7 @@ struct InfoType {
     InfoType getUnderlyingType() const;
     InfoVariable getTypeAsReturn() const;
     std::vector<InfoVariable> getRecordFields() const;
+    std::vector<InfoType> getTemplateArguments() const;
     std::string getFormattedNotParametrized() const;
 
     std::string original, formatted;

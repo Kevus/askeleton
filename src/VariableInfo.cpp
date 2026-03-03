@@ -143,6 +143,9 @@ InfoType::InfoType(const string &original)
       recordFields() {
     removeTypeQualifiers(this->original);
     this->formatted = removeNamespaceQualifier(this->original);
+    if (!isTemplateParametrized()) {
+        replaceAll(this->formatted, " ", "_");
+    }
     replaceTypeCharacters(this->formatted);
 }
 
@@ -161,6 +164,12 @@ bool InfoType::isList() const {
 }
 
 bool InfoType::isMap() const { return containsSubstring(original, "map"); }
+
+bool InfoType::isOptional() const { return containsSubstring(original, "optional<"); }
+
+bool InfoType::isPair() const { return containsSubstring(original, "pair<"); }
+
+bool InfoType::isTuple() const { return containsSubstring(original, "tuple<"); }
 
 bool InfoType::isPointer() const {
     return containsSubstring(original, "*") && !isArray_;
@@ -220,6 +229,46 @@ bool InfoType::typeIsComplex(const string &type) {
 }
 
 std::vector<InfoVariable> InfoType::getRecordFields() const { return recordFields; }
+
+std::vector<InfoType> InfoType::getTemplateArguments() const {
+    std::vector<InfoType> args;
+
+    const size_t left = original.find('<');
+    const size_t right = original.find_last_of('>');
+    if (left == std::string::npos || right == std::string::npos || right <= left) {
+        return args;
+    }
+
+    std::string current;
+    int depth = 0;
+    for (size_t i = left + 1; i < right; ++i) {
+        const char c = original[i];
+        if (c == '<') {
+            ++depth;
+            current.push_back(c);
+        } else if (c == '>') {
+            --depth;
+            current.push_back(c);
+        } else if (c == ',' && depth == 0) {
+            ltrim(current);
+            rtrim(current);
+            if (!current.empty()) {
+                args.emplace_back(current);
+            }
+            current.clear();
+        } else {
+            current.push_back(c);
+        }
+    }
+
+    ltrim(current);
+    rtrim(current);
+    if (!current.empty()) {
+        args.emplace_back(current);
+    }
+
+    return args;
+}
 
 InfoVariable::InfoVariable(const clang::ParmVarDecl *param)
     : InfoType(param->getOriginalType()), name(param->getQualifiedNameAsString()) {
