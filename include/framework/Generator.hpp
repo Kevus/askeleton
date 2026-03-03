@@ -90,6 +90,10 @@ protected:
     std::string generateReturnTypeInvocation(const InfoType &type,
                                              const std::string &function) const;
 
+    std::pair<std::string, std::string> buildInvocationTokens(
+        const std::vector<InfoVariable> &parameters, const std::string &function,
+        bool isStatic, const InfoType &returnType,
+        const std::string &symbolPrefix = "") const;
     std::string generateParameterInvocation(
         const std::vector<InfoVariable> &parameters,
         const std::string &variablePrefix = "") const;
@@ -97,10 +101,11 @@ protected:
     std::string buildInitializations(const std::vector<InfoVariable> &parameters,
                                      const std::string &function,
                                      unsigned invocation, bool isStatic) const;
+    std::string buildExpectedType(const InfoType &returnType) const;
     std::string buildExpectedInvocation(const std::vector<InfoVariable> &parameters,
                                         const std::string &function,
                                         bool isStatic,
-                                        bool returnsPointer) const;
+                                        const InfoType &returnType) const;
 
     std::string normalizeReadMethodType(const InfoType &type) const;
 

@@ -24,21 +24,21 @@ void GTestGenerator::generateFullAssert(const string &function,
                                         const InfoType &returnType, bool isStatic) {
     const static fs::path tplFunctionPath =
         templateFrameworkPath / config["file"]["template"]["case"]["function"];
-    InfoType underlying = returnType.getUnderlyingType();
     const unsigned number = getFunctionCounter(function) + 1;
+    const auto invocationTokens =
+        buildInvocationTokens(parameters, function, isStatic, returnType);
 
     string init = buildInitializations(parameters, function, number, isStatic);
 
-    const string returnTypeOriginal = underlying.original;
+    const string returnTypeOriginal = buildExpectedType(returnType);
     const string returnReadMethod =
-        buildExpectedInvocation(parameters, function, isStatic, returnType.isPointer());
+        buildExpectedInvocation(parameters, function, isStatic, returnType);
 
-    const string parametersInvocation = generateParameterInvocation(parameters);
+    const string parametersInvocation = invocationTokens.second;
     string pointers = generatePointersAsserts(parameters, function);
     if (!pointers.empty())
         pointers = pointers + "\n";
-
-    string invocation = buildInvocation(function, isStatic, returnType.isPointer());
+    const string invocation = invocationTokens.first;
 
     map<string, string> tokensToReplace = {
         {templateItems["tplitem"]["gtest"]["target"], targetName},

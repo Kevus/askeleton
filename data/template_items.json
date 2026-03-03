@@ -94,8 +94,8 @@
         "field_insertion": "os << \"{field}:\" << object.{field} << \"\\n\";",
         "boost": {
             "assert_pointer": "BOOST_CHECK_EQUAL({parameter}, {expected});",
-            "assert_pointer_list": "BOOST_TEST({parameter} == expected, tt::per_element());",
-            "assert_pointer_map": "BOOST_TEST({parameter} == expected);",
+            "assert_pointer_list": "BOOST_TEST({parameter} == {expected}, tt::per_element());",
+            "assert_pointer_map": "BOOST_TEST({parameter} == {expected});",
             "assert_function": "BOOST_CHECK_EQUAL({invocation}({parameters}), expected);",
             "assert_function_list": "BOOST_TEST({invocation}({parameters}) == expected, tt::per_element());",
             "assert_function_map": "BOOST_TEST({invocation}({parameters}) == expected);"

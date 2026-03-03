@@ -105,7 +105,7 @@ bool InfoType::isContainer() const {
 }
 
 bool InfoType::isList() const {
-    return containsAnySubstring(original, {"list", "vector"});
+    return !isMap() && containsAnySubstring(original, {"list", "vector"});
 }
 
 bool InfoType::isMap() const { return containsSubstring(original, "map"); }

@@ -12,6 +12,7 @@
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
 #include "utils/templating.hpp"
+#include "clang/AST/DeclCXX.h"
 
 using namespace askeleton;
 using namespace std;
@@ -26,6 +27,10 @@ constexpr const char *kOraclePrefix = "oracle_";
 // Constructor parameters are also read from the case data so instance setup
 // uses the same inputs as the test body instead of compile-only placeholders.
 constexpr const char *kCtorPrefix = "ctor_";
+
+bool isCStringLike(const InfoType &type) {
+    return type.isPointer() && type.getUnderlyingType().original == "char";
+}
 
 std::string buildFactoryReadMethod(const InfoType &type, const std::string &expr) {
     std::ostringstream ss;
@@ -62,6 +67,45 @@ std::string buildDummyRecordReadMethod(const InfoType &type) {
 
     ss << "        return result;\n";
     ss << "    }\n";
+    return ss.str();
+}
+
+std::string getEnclosingNamespace(const InfoType &type) {
+    if (type.type.isNull()) {
+        return "";
+    }
+
+    const auto *record = type.type->getAsCXXRecordDecl();
+    if (!record) {
+        return "";
+    }
+
+    std::vector<std::string> parts;
+    const auto *ctx = record->getDeclContext();
+    while (ctx && !ctx->isTranslationUnit()) {
+        if (const auto *ns = llvm::dyn_cast<clang::NamespaceDecl>(ctx)) {
+            if (!ns->isAnonymousNamespace()) {
+                parts.push_back(ns->getNameAsString());
+            }
+        } else if (llvm::isa<clang::RecordDecl>(ctx)) {
+            // Nested classes are not namespace scopes for ADL overload injection.
+            return "";
+        }
+        ctx = ctx->getParent();
+    }
+
+    if (parts.empty()) {
+        return "";
+    }
+
+    std::reverse(parts.begin(), parts.end());
+    std::ostringstream ss;
+    for (size_t i = 0; i < parts.size(); ++i) {
+        if (i > 0) {
+            ss << "::";
+        }
+        ss << parts[i];
+    }
     return ss.str();
 }
 } // namespace
@@ -246,6 +290,9 @@ void Generator::createRecordOverloadToFixture(const InfoType &type) const {
                         tplitemField = templateItems["tplitem"]["field"],
                         tplitemFieldFormatted =
                             templateItems["tplitem"]["field_formatted"];
+    const std::string enclosingNamespace = getEnclosingNamespace(type);
+    const std::string overloadType =
+        enclosingNamespace.empty() ? type.original : removeNamespaceQualifier(type.original);
 
     stringstream comparisons, insertions;
     unsigned n_fields = type.getRecordFields().size();
@@ -276,10 +323,14 @@ void Generator::createRecordOverloadToFixture(const InfoType &type) const {
     string method = readFromFile(
         getMethodTemplatePath(config["file"]["template"]["method"]["record_overload"]));
     replaceTokensInText(method,
-                        {{templateItems["tplitem"]["type"], type.original},
+                        {{templateItems["tplitem"]["type"], overloadType},
                          {templateItems["tplitem"]["formatted"], type.formatted},
                          {templateItems["tplitem"]["comparisons"], comparisons.str()},
                          {templateItems["tplitem"]["insertions"], insertions.str()}});
+
+    if (!enclosingNamespace.empty()) {
+        method = "namespace " + enclosingNamespace + " {\n\n" + method + "\n}\n";
+    }
     appendOverloadMethodsToFixture(method);
 }
 
@@ -343,10 +394,23 @@ Generator::generateParameterInitialization(const std::vector<InfoVariable> &para
                                            const std::string &keyPrefix) const {
     std::stringstream ss;
     for (const auto &param : parameters) {
-        ss << "\t" << generateParameterInitialization(param.getPointers().first, function,
-                                                      invocation, variablePrefix,
-                                                      keyPrefix)
-           << ";";
+        if (isCStringLike(param)) {
+            const std::string storageName = variablePrefix + param.name + "_storage";
+            const std::string variableName = variablePrefix + param.name;
+            const std::string readKey = function + "_" + std::to_string(invocation) + "." +
+                                        keyPrefix + param.name;
+            const bool isConstCString = containsSubstring(param.original, "const");
+            ss << "\tstd::string " << storageName << " = Read_string(\"" << readKey
+               << "\");\n\t" << param.original << " " << variableName << " = "
+               << storageName
+               << (isConstCString ? ".c_str()" : ".data()");
+        } else {
+            ss << "\t" << generateParameterInitialization(param.getPointers().first, function,
+                                                          invocation, variablePrefix,
+                                                          keyPrefix)
+               ;
+        }
+        ss << ";";
         if (&param != &parameters.back())
             ss << "\n";
     }
@@ -413,13 +477,29 @@ std::string Generator::generateReturnTypeInvocation(const InfoType &type,
     return generateReadInvocation(variable, function);
 }
 
+std::pair<std::string, std::string> Generator::buildInvocationTokens(
+    const std::vector<InfoVariable> &parameters, const std::string &function,
+    bool isStatic, const InfoType &returnType, const std::string &symbolPrefix) const {
+    const bool cStringReturn = isCStringLike(returnType);
+    const std::string invocationHead = buildInvocation(
+        function, isStatic, cStringReturn ? false : returnType.isPointer(), symbolPrefix);
+    const std::string parametersExpr = generateParameterInvocation(parameters, symbolPrefix);
+
+    if (!cStringReturn) {
+        return {invocationHead, parametersExpr};
+    }
+
+    return {"([&]() { auto ptr = " + invocationHead,
+            parametersExpr + "); return std::string(ptr ? ptr : \"\"); }()"};
+}
+
 std::string Generator::generateParameterInvocation(
     const std::vector<InfoVariable> &parameters,
     const std::string &variablePrefix) const {
 
     std::stringstream ss;
     for (const auto &param : parameters) {
-        if (param.isPointer())
+        if (param.isPointer() && !isCStringLike(param))
             ss << "&";
         ss << variablePrefix << param.name;
         if (&param != &parameters.back())
@@ -474,14 +554,18 @@ std::string Generator::buildInitializations(
     return "\n" + ss.str();
 }
 
+std::string Generator::buildExpectedType(const InfoType &returnType) const {
+    return isCStringLike(returnType) ? "std::string"
+                                     : returnType.getUnderlyingType().original;
+}
+
 std::string Generator::buildExpectedInvocation(
     const std::vector<InfoVariable> &parameters, const std::string &function,
-    bool isStatic, bool returnsPointer) const {
+    bool isStatic, const InfoType &returnType) const {
     // This is a mirror execution of the same SUT, not an independent oracle.
-    std::ostringstream ss;
-    ss << buildInvocation(function, isStatic, returnsPointer, kOraclePrefix) << "("
-       << generateParameterInvocation(parameters, kOraclePrefix) << ")";
-    return ss.str();
+    const auto tokens =
+        buildInvocationTokens(parameters, function, isStatic, returnType, kOraclePrefix);
+    return tokens.first + "(" + tokens.second + ")";
 }
 
 std::string Generator::normalizeReadMethodType(const InfoType &type) const {
@@ -599,6 +683,9 @@ std::string Generator::generatePointersAssertsWithTemplate(
     for (const auto &param : parameters) {
         if (param.isPointer() || param.isReference()) {
             auto pointers = param.getPointersVarName();
+            if (isCStringLike(param)) {
+                continue;
+            }
             std::map<std::string, std::string> tokens = {
                 {paramToken, pointers.first},
                 {expectedToken, std::string(kOraclePrefix) + pointers.first},

@@ -158,6 +158,7 @@ std::string ConfigGenerator::generateParam(const InfoVariable &param,
     if (underlying.isMap() && typeForValue.find("<") == std::string::npos) {
         typeForValue = underlying.original;
     }
+    const bool cStringPointer = param.isPointer() && underlying.original == "char";
 
     string value;
     auto funcStrIt = ruleStringValues.find(currentFunctionName);
@@ -198,7 +199,7 @@ std::string ConfigGenerator::generateParam(const InfoVariable &param,
     }
 
     if (value.empty()) {
-        value = rvg.getRandomValue(typeForValue);
+        value = rvg.getRandomValue(cStringPointer ? "string" : typeForValue);
     }
     stringstream ss;
 

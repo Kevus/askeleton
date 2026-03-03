@@ -24,15 +24,15 @@ void CatchGenerator::generateFullAssert(const string &function,
                                         const InfoType &returnType, bool isStatic) {
     const static fs::path tplFunctionPath =
         templateFrameworkPath / config["file"]["template"]["case"]["function"];
-    InfoType underlying = returnType.getUnderlyingType();
-
     const unsigned number = getFunctionCounter(function) + 1;
-    const string parametersInvocation = generateParameterInvocation(parameters);
-    const string returnTypeOriginal = underlying.original;
+    const auto invocationTokens =
+        buildInvocationTokens(parameters, function, isStatic, returnType);
+    const string parametersInvocation = invocationTokens.second;
+    const string returnTypeOriginal = buildExpectedType(returnType);
     const string returnReadMethod =
-        buildExpectedInvocation(parameters, function, isStatic, returnType.isPointer());
+        buildExpectedInvocation(parameters, function, isStatic, returnType);
 
-    string invocation = buildInvocation(function, isStatic, returnType.isPointer());
+    string invocation = invocationTokens.first;
 
     string pointers = generatePointersAsserts(parameters, function);
     if (!pointers.empty())

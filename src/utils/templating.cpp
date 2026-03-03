@@ -7,6 +7,7 @@
 #include <initializer_list>
 #include <iomanip>
 #include <iostream>
+#include <regex>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -80,8 +81,11 @@ void replaceTypeCharacters(string &type) {
 }
 
 string removeNamespaceQualifier(string stringToReplace) {
-    removeAll(stringToReplace, {"std::", "__cxx11::"});
-    // replaceAll(stringToReplace, " ", "_");
+    // `formatted` names are used to build identifiers such as Read_TypeName().
+    // Strip namespace qualifiers broadly so names like `tinyxml2::XMLNode`
+    // become valid identifier fragments (`XMLNode`).
+    static const std::regex namespaceQualifier(R"(\b[a-zA-Z_]\w*::)");
+    stringToReplace = std::regex_replace(stringToReplace, namespaceQualifier, "");
 
     return stringToReplace;
 }

@@ -5,6 +5,7 @@
 #include "utils/templating.hpp"
 #include <cctype>
 #include <iostream>
+#include <sstream>
 
 using namespace askeleton;
 using namespace std;
@@ -28,12 +29,10 @@ void BoostGen::generateFullAssert(const std::string &function,
                                   const InfoType &returnType, bool isStatic) {
     const static fs::path tplFunctionPath =
         templateFrameworkPath / config["file"]["template"]["case"]["function"];
-    InfoType underlying = returnType.getUnderlyingType();
-
     const unsigned number = getFunctionCounter(function) + 1;
-    const string returnTypeOriginal = underlying.original;
+    const string returnTypeOriginal = buildExpectedType(returnType);
     const string returnReadMethod =
-        buildExpectedInvocation(parameters, function, isStatic, returnType.isPointer());
+        buildExpectedInvocation(parameters, function, isStatic, returnType);
 
     string pointers = generatePointersAsserts(parameters, function);
     if (!pointers.empty())
@@ -83,10 +82,42 @@ std::string BoostGen::generatePointersAsserts(const std::vector<InfoVariable> &p
                         TPLITEM_BOOST_EXPECTED =
                             templateItems["tplitem"]["boost"]["expected"],
                         TPLITEM_BOOST_ASSERT =
-                            templateItems["templating"]["boost"]["assert_pointer"];
-    return generatePointersAssertsWithTemplate(
-        parameters, TPLITEM_BOOST_PARAMETER, TPLITEM_BOOST_EXPECTED,
-        TPLITEM_BOOST_ASSERT);
+                            templateItems["templating"]["boost"]["assert_pointer"],
+                        TPLITEM_BOOST_ASSERT_LIST =
+                            templateItems["templating"]["boost"]["assert_pointer_list"],
+                        TPLITEM_BOOST_ASSERT_MAP =
+                            templateItems["templating"]["boost"]["assert_pointer_map"];
+
+    std::stringstream ss;
+    for (const auto &param : parameters) {
+        if (!(param.isPointer() || param.isReference())) {
+            continue;
+        }
+
+        if (param.isPointer() && param.getUnderlyingType().original == "char") {
+            continue;
+        }
+
+        std::string assertTemplate;
+        if (param.getUnderlyingType().isList()) {
+            assertTemplate = TPLITEM_BOOST_ASSERT_LIST;
+        } else if (param.getUnderlyingType().isMap()) {
+            assertTemplate = TPLITEM_BOOST_ASSERT_MAP;
+        } else {
+            assertTemplate = TPLITEM_BOOST_ASSERT;
+        }
+
+        auto pointers = param.getPointersVarName();
+        std::map<std::string, std::string> tokens = {
+            {TPLITEM_BOOST_PARAMETER, pointers.first},
+            {TPLITEM_BOOST_EXPECTED, std::string("oracle_") + pointers.first},
+        };
+
+        replaceTokensInText(assertTemplate, tokens);
+        ss << "\n\t" << assertTemplate;
+    }
+
+    return ss.str();
 }
 
 string BoostGen::generateAssertForFunction(const string &function,
@@ -99,8 +130,9 @@ string BoostGen::generateAssertForFunction(const string &function,
                             templateItems["templating"]["boost"]["assert_function_list"],
                         TPLITEM_FUNC_MAP =
                             templateItems["templating"]["boost"]["assert_function_map"];
-    const string paramsList = generateParameterInvocation(params);
-    string invocation = buildInvocation(function, isStatic, returnType.isPointer());
+    const auto invocationTokens = buildInvocationTokens(params, function, isStatic, returnType);
+    const string paramsList = invocationTokens.second;
+    string invocation = invocationTokens.first;
 
     const map<string, string> tokensToReplace = {
         {templateItems["tplitem"]["boost"]["invocation"], invocation},
