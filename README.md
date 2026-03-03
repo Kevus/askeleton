@@ -125,6 +125,11 @@ generate a test for a callable. This is separate from the data-generation
 - `aggressive`: currently behaves like `balanced`, but is exposed as the forward
   compatibility mode for more permissive generation in future iterations.
 
+Current framework note:
+- Constructors are still discovered and reported, but the current `gtest`,
+  `boost`, and `catch` generators do not emit constructor test cases. They are
+  reported as `unsupported_framework_feature`.
+
 **Expected Value Strategy**
 ASkeleTon currently exposes three oracle modes:
 
