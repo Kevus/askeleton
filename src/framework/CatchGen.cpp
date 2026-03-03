@@ -15,6 +15,7 @@ CatchGenerator::CatchGenerator(const string &targetName,
     map<string, string> tokensToReplace;
     setValuesToChange(tokensToReplace);
     setOutputFiles(tokensToReplace);
+    copyMainFile();
 }
 
 void CatchGenerator::generateFullAssert(const string &function,
@@ -86,4 +87,10 @@ string CatchGenerator::generatePointersAsserts(const vector<InfoVariable> &param
     return generatePointersAssertsWithTemplate(
         parameters, TPLITEM_CATCH_PARAMETER, TPLITEM_CATCH_EXPECTED,
         TPLITEM_CATCH_POINTER);
+}
+
+void CatchGenerator::copyMainFile() const {
+    fs::path tplMain = templateFrameworkPath / config["file"]["template"]["main"],
+             outputMain = utPath / "main.cpp";
+    fs::copy_file(tplMain, outputMain, fs::copy_options::overwrite_existing);
 }

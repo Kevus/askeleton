@@ -92,7 +92,7 @@ bool writeTextFileAtomicallyImpl(const fs::path &filePath, const std::string &co
     return false;
 }
 
-std::string frameworkTemplateDir(Framework framework) {
+std::string_view frameworkTemplateDirImpl(Framework framework) {
     switch (framework) {
     case Framework::BOOST:
         return "/data/templates/boost/";
@@ -111,7 +111,7 @@ bool isTemplateFileForOtherFramework(const std::string &path, Framework framewor
         "/data/templates/gtest/",
     };
 
-    const std::string currentDir = frameworkTemplateDir(framework);
+    const std::string_view currentDir = frameworkTemplateDirImpl(framework);
     for (const auto &dir : templateDirs) {
         if (path.find(dir) == std::string::npos) {
             continue;
@@ -206,9 +206,6 @@ void refreshSystemFiles(bool force) {
 
         if (value.is_string()) {
             for (const auto &fw : frameworks) {
-                if (key == "main" && fw == "catch2") {
-                    continue;
-                }
                 files.insert(
                     (askeletonHome / "data" / "templates" / fw /
                      value.get<string>())
@@ -392,6 +389,51 @@ json &getConfig() {
 void setFramework(Framework framework) {
     json &configData = getConfig();
     configData["framework"] = static_cast<int>(framework);
+}
+
+std::optional<Framework> parseFramework(std::string_view framework) {
+    const std::string normalized = toLower(std::string(framework));
+    if (set<string>({"gtest", "googletest", "google test", "google"})
+            .contains(normalized)) {
+        return Framework::GTEST;
+    }
+    if (set<string>({"boost", "boost.test", "boosttest", "boost test"})
+            .contains(normalized)) {
+        return Framework::BOOST;
+    }
+    if (set<string>({"catch", "catch2", "catch.test", "catchtest", "catch test"})
+            .contains(normalized)) {
+        return Framework::CATCH;
+    }
+    return std::nullopt;
+}
+
+std::string_view frameworkKey(Framework framework) {
+    switch (framework) {
+    case Framework::GTEST:
+        return "gtest";
+    case Framework::BOOST:
+        return "boost";
+    case Framework::CATCH:
+        return "catch";
+    }
+    return "gtest";
+}
+
+std::string_view frameworkDisplayName(Framework framework) {
+    switch (framework) {
+    case Framework::GTEST:
+        return "Google Test";
+    case Framework::BOOST:
+        return "Boost.Test";
+    case Framework::CATCH:
+        return "Catch2";
+    }
+    return "Google Test";
+}
+
+std::string_view frameworkTemplateDir(Framework framework) {
+    return frameworkTemplateDirImpl(framework);
 }
 
 Framework getFramework() {
