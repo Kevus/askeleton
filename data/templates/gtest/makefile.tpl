@@ -1,6 +1,8 @@
 CXX=clang++ --std=c++17
+DEPFLAGS = -MMD -MP
 LIBS = -lgtest -lgtest_main -pthread
 OBJS = {objectFiles}
+DEPS = $(OBJS:.o=.d)
 TARGET = {target}_test
 
 all: $(TARGET)
@@ -11,10 +13,12 @@ $(TARGET): $(OBJS)
 {sourceBuildRule}
 
 tests.o: $(TARGET).cpp
-	$(CXX) -c $< -o $@
+	$(CXX) $(DEPFLAGS) -c $< -o $@
 
 main.o: main.cpp
-	$(CXX) -c $< -o $@
+	$(CXX) $(DEPFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(TARGET) $(OBJS) *~
+	rm -rf $(TARGET) $(OBJS) $(DEPS) *~
+
+-include $(DEPS)
