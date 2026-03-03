@@ -7,6 +7,7 @@
 
 #include "ConfigGenerator.hpp"
 #include "CoverageMode.hpp"
+#include "GenerationEligibility.hpp"
 #include "framework/Generator.hpp"
 #include "Report.hpp"
 #include "RunStats.hpp"
