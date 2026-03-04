@@ -354,6 +354,10 @@ cl::opt<bool> RuleDataOption(
     "rule-data",
     cl::desc("Generate basic rule-based data from simple AST comparisons"),
     cl::init(true), cl::cat(OptC));
+cl::opt<bool> NoRuleDataOption(
+    "no-rule-data",
+    cl::desc("Disable the default AST-guided rule-based data generation"),
+    cl::init(false), cl::cat(OptC));
 cl::opt<unsigned> RuleMaxCasesOption(
     "rule-max-cases",
     cl::desc("Max number of rule-based cases to generate per function (default: 3)"),
@@ -409,7 +413,7 @@ cl::opt<bool> BootstrapCompdbOption(
 
 static ReportMetadata buildReportMetadata(Framework framework,
                                           CoverageMode coverageMode,
-                                          OracleMode oracleMode,
+                                          OracleMode oracleMode, bool ruleDataEnabled,
                                           const std::vector<std::string> &sources) {
     ReportMetadata meta;
     meta.generated_at = getTodayString("%Y-%m-%d %H:%M:%S");
@@ -419,7 +423,7 @@ static ReportMetadata buildReportMetadata(Framework framework,
     if (SeedOption.getValue() >= 0) {
         meta.seed = static_cast<uint32_t>(SeedOption.getValue());
     }
-    meta.rule_data = RuleDataOption.getValue();
+    meta.rule_data = ruleDataEnabled;
     meta.rule_max_cases = RuleMaxCasesOption.getValue();
     meta.framework = std::string(frameworkKey(framework));
     meta.sources = sources;
@@ -603,6 +607,7 @@ int main(int argc, const char **argv) {
         exitWithError("ERROR: Invalid oracle mode. Please use one of the "
                       "following: mirror, explicit, property\n");
     }
+    const bool ruleDataEnabled = RuleDataOption.getValue() && !NoRuleDataOption.getValue();
     const OracleMode resolvedOracleMode =
         effectiveOracleMode(selectedOracleMode.value());
 
@@ -668,7 +673,7 @@ int main(int argc, const char **argv) {
     if (!reportPath.empty()) {
         report.setMetadata(
             buildReportMetadata(selectedFramework.value(), coverageMode.value(),
-                                resolvedOracleMode,
+                                resolvedOracleMode, ruleDataEnabled,
                                 options->getSourcePathList()));
     }
 
@@ -698,7 +703,7 @@ int main(int argc, const char **argv) {
         if (!reportPath.empty()) {
             report.setMetadata(
                 buildReportMetadata(selectedFramework.value(), coverageMode.value(),
-                                    resolvedOracleMode, sources));
+                                    resolvedOracleMode, ruleDataEnabled, sources));
         }
     }
 
@@ -712,10 +717,10 @@ int main(int argc, const char **argv) {
     }
 
     clang::ast_matchers::MatchFinder Finder;
-    ASKGen Functionality(RuleDataOption, RuleMaxCasesOption,
+    ASKGen Functionality(ruleDataEnabled, RuleMaxCasesOption,
                          reportPath.empty() ? nullptr : &report, &stats,
                          coverageMode.value());
-    for (auto i : createMapMatchers(RuleDataOption))
+    for (auto i : createMapMatchers(ruleDataEnabled))
         Finder.addMatcher(i.second, &Functionality);
 
 

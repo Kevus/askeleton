@@ -65,6 +65,7 @@ Key options:
 - `--oracle-mode=<mirror|explicit|property>`: expected-value strategy.
 - `--seed=<N>`: deterministic data generation.
 - `--rule-data`: explicitly enable the default AST-guided rule-based values.
+- `--no-rule-data`: disable AST-guided rule-based values and use fallback-only data generation.
 - `--rule-max-cases=<N>`: limit rule-based test cases per function.
 - `--out-dir=<path>`: output directory for generated tests.
 - `--include-impl-under-include`: allow compiling `.c/.cc/.cpp` under `include/`.
@@ -92,6 +93,10 @@ use `--log-json=<path>`.
 Rule-based values are enabled by default:
 ```bash
 ASKELETON_HOME=$(pwd) ./askeleton -p examples examples/sut.cpp
+```
+Disable them explicitly:
+```bash
+ASKELETON_HOME=$(pwd) ./askeleton --no-rule-data -p examples examples/sut.cpp
 ```
 Explicit parity check:
 ```bash

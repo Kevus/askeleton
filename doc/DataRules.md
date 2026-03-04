@@ -4,6 +4,8 @@ Activation
 - Basic AST-derived rules are enabled by default.
 - `--rule-data` explicitly enables the same behavior (useful for parity checks in
   scripts and CI).
+- `--no-rule-data` disables AST-derived rules and leaves generation to the
+  remaining factories/defaults/profile fallback path.
 - `--rule-max-cases=N` limits the number of generated cases per function when
   multiple candidates are available (default: 3).
 - Candidate selection is deterministic and keeps a representative subset when
