@@ -133,12 +133,12 @@ Current framework note:
 **Expected Value Strategy**
 ASkeleTon currently exposes three oracle modes:
 
-- `mirror`: default behavior. Generated tests derive `expected` through a second
-  isolated execution of the same function or method using the same case data.
-- `explicit`: generated tests first look for `expected` in the `.cfg`; if the
-  key is missing, they fall back to `mirror`. This keeps freshly generated tests
-  passing while allowing users to override specific cases with independent
-  expectations.
+- `mirror`: generated tests derive `expected` through a second isolated
+  execution of the same function or method using the same case data.
+- `explicit`: default behavior. Generated tests first look for `expected` in
+  the `.cfg`; if the key is missing, they fall back to `mirror`. This keeps
+  freshly generated tests passing while allowing users to override specific
+  cases with independent expectations.
 - `property`: currently reserved for the next phase and intentionally falls back
   to `mirror`.
 

@@ -373,7 +373,7 @@ cl::opt<std::string> CoverageModeOption(
 cl::opt<std::string> OracleModeOption(
     "oracle-mode",
     cl::desc("Oracle strategy (mirror, explicit, property)"),
-    cl::init("mirror"), cl::cat(OptC));
+    cl::init("explicit"), cl::cat(OptC));
 cl::opt<std::string> OutDirOption(
     "out-dir",
     cl::desc("Output directory for generated tests (overrides default)"),

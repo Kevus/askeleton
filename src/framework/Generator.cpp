@@ -316,7 +316,7 @@ bool hasExistingStreamOperator(const InfoType &type) {
 unsigned Generator::MAX_DEPTH;
 const json &Generator::config = getConfig();
 const nlohmann::json &Generator::templateItems = getTemplateItems();
-OracleMode Generator::oracleMode = OracleMode::Mirror;
+OracleMode Generator::oracleMode = OracleMode::Explicit;
 
 Generator::Generator(const string &targetName, const string &targetQualifiedName,
                      const string &filePath, bool isFromClass)

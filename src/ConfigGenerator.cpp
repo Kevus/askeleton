@@ -20,7 +20,7 @@ const json &ConfigGenerator::config = getConfig();
 const json &ConfigGenerator::tplItems = getTemplateItems();
 std::string ConfigGenerator::dataProfile = "random";
 std::optional<uint32_t> ConfigGenerator::seedValue = std::nullopt;
-OracleMode ConfigGenerator::oracleMode = OracleMode::Mirror;
+OracleMode ConfigGenerator::oracleMode = OracleMode::Explicit;
 
 ConfigGenerator::ConfigGenerator(const string &target)
     : target(target), testFolder(getAskeletonHome() / config["route"]["ut"] / target),
