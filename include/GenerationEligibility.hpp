@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <optional>
 #include <string>
 #include <vector>
@@ -7,10 +8,32 @@
 #include "VariableInfo.hpp"
 #include "clang/AST/DeclCXX.h"
 
-struct ConstructorSelection {
-    std::vector<InfoVariable> params;
-    bool useDefaultConstructor = false;
+enum class InstancePlanKind {
+    Configured,
+    DefaultConstructor,
+    Constructor,
+    StaticFactory,
+    FreeFactory,
+    OwnerFactory,
+};
+
+struct InstancePlan {
+    InstancePlanKind kind = InstancePlanKind::DefaultConstructor;
+    std::vector<InfoVariable> setupParams;
+    std::string callableExpr;
+    std::string initExpr;
+    std::string ownerTypeName;
+    std::shared_ptr<InstancePlan> ownerPlan;
     unsigned totalParameters = 0;
+
+    bool usesDefaultConstructor() const {
+        return kind == InstancePlanKind::DefaultConstructor;
+    }
+
+    bool requiresSetupInputs() const { return !setupParams.empty(); }
+    bool usesCallable() const { return !callableExpr.empty(); }
+    bool usesDirectExpression() const { return !initExpr.empty(); }
+    bool usesOwner() const { return ownerPlan != nullptr; }
 };
 
 bool requiresMutableAliasHandling(const std::vector<InfoVariable> &params);
@@ -21,6 +44,5 @@ void validateTypeMaterialization(const InfoType &type,
 void validateTypesMaterialization(const std::vector<InfoVariable> &variables,
                                   const std::string &functionName = "");
 
-std::optional<ConstructorSelection>
-selectConstructorForInstantiation(const clang::CXXRecordDecl *record,
-                                  const std::string &functionName);
+std::optional<InstancePlan> resolveInstancePlan(const clang::CXXRecordDecl *record,
+                                                const std::string &functionName);

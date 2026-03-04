@@ -222,6 +222,43 @@ Notes:
   specific function or method. Function-scoped factories currently support only
   explicit `factory` expressions.
 
+**Instance Resolution Cascade**
+For non-static methods, ASkeleTon now resolves the test instance using a fixed
+cascade. This is part of the default behavior; it is not a separate CLI mode.
+
+Resolution order:
+1. `data/instance_strategies.json` override for the exact method, if present
+2. `data/instance_strategies.json` override for the target type, if present
+3. Public usable constructor on the class
+4. Public `static` factory on the class returning the same type by value
+5. Externally visible free factory in the same scope returning the same type by value
+6. Public instance method on a resolvable owner type returning the same type by value
+
+The first usable strategy wins.
+
+Use `data/instance_strategies.json` when the AST cannot infer a safe instance
+construction plan on its own:
+```json
+{
+  "types": {
+    "Widget": { "expr": "MakeWidget()" }
+  },
+  "functions": {
+    "Widget::Run": {
+      "instance": { "expr": "BuildReadyWidget()" }
+    }
+  }
+}
+```
+
+Notes:
+- `types` applies to all instance methods of that class unless a function-level
+  override exists.
+- `functions` applies to the exact method key and takes precedence over `types`.
+- `expr` is emitted as the direct initialization expression for the test object.
+- Owner factories are inferred only after direct strategies fail, so constructor
+  and direct factory paths still win when they are available.
+
 **Supported Structured Inputs**
 ASkeleTon now has first-class input support for some common C++ standard library
 shapes in generated `.cfg` files and fixtures:

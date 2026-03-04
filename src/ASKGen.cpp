@@ -1079,23 +1079,23 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
     bool isStatic = UT->isStatic();
     if (!isStatic) {
-        auto ctorSelection =
-            selectConstructorForInstantiation(UT->getParent(), UT->getNameInfo().getAsString());
-        if (coverageMode == CoverageMode::Strict && ctorSelection.has_value() &&
-            !ctorSelection->useDefaultConstructor) {
+        auto instancePlan =
+            resolveInstancePlan(UT->getParent(), UT->getNameInfo().getAsString());
+        if (coverageMode == CoverageMode::Strict && instancePlan.has_value() &&
+            !instancePlan->usesDefaultConstructor()) {
             throw ComplexTypeException(
                 "coverage_policy_instance_construction",
                 "strict coverage mode skips non-default instance construction: " +
                     UT->getParent()->getQualifiedNameAsString());
         }
-        if (!ctorSelection.has_value() ||
-            !testGen.setInstanceConstruction(ctorSelection->params,
-                                             ctorSelection->useDefaultConstructor)) {
+        if (!instancePlan.has_value() || !testGen.setInstancePlan(instancePlan)) {
             throw ComplexTypeException(
                 "missing_instance_strategy",
                 "no usable public constructor for test instance: " +
                     UT->getParent()->getQualifiedNameAsString());
         }
+    } else {
+        testGen.setInstancePlan(std::nullopt);
     }
 
     std::string functionName = UT->getNameInfo().getAsString();

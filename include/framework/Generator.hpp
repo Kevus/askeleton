@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ConfigGenerator.hpp"
+#include "GenerationEligibility.hpp"
 #include "OracleMode.hpp"
 #include "VariableInfo.hpp"
 
@@ -54,8 +55,7 @@ public:
     void setStringRuleValues(
         const std::map<std::string, std::map<std::string, std::vector<std::string>>>
             &rules);
-    bool setInstanceConstruction(const std::vector<InfoVariable> &constructorParams,
-                                 bool useDefaultConstructor);
+    bool setInstancePlan(const std::optional<InstancePlan> &plan);
     static void setOracleMode(OracleMode mode);
     static void
     setCompileFlags(const std::map<std::string, std::string> &flagsBySourcePath);
@@ -159,6 +159,16 @@ protected:
 private:
     void setOutputFilesPath();
     void setSupportedTypes();
+    std::vector<InfoVariable>
+    collectSetupVariables(const InstancePlan &plan,
+                          const std::string &prefix = "") const;
+    std::string buildPlanInitialization(const std::string &declType,
+                                        const std::string &objectName,
+                                        const InstancePlan &plan,
+                                        const std::string &function,
+                                        unsigned invocation,
+                                        const std::string &variablePrefix,
+                                        const std::string &keyPrefix) const;
     std::string buildInstanceInitialization(const std::string &function,
                                             unsigned invocation, bool isStatic,
                                             const std::string &variablePrefix,
@@ -179,7 +189,6 @@ private:
     std::map<std::string, unsigned> functionCounter;
     std::map<std::string, std::string> invocationNameByFunction;
     bool missingFilesWarn = false;
-    std::vector<InfoVariable> constructorParams_;
-    bool useDefaultConstructor_ = true;
+    std::optional<InstancePlan> instancePlan_;
     ConfigGenerator configGenerator;
 };

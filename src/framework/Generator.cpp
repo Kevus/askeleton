@@ -27,9 +27,9 @@ namespace {
 // These variables are not extra user inputs; they are reloaded from the same
 // `.cfg` case to keep the "oracle" run isolated from the assertion run.
 constexpr const char *kOraclePrefix = "oracle_";
-// Constructor parameters are also read from the case data so instance setup
-// uses the same inputs as the test body instead of compile-only placeholders.
-constexpr const char *kCtorPrefix = "ctor_";
+// Instance setup inputs are also read from the case data so setup uses the
+// same inputs as the test body instead of compile-only placeholders.
+constexpr const char *kSetupPrefix = "setup_";
 
 bool isCStringLike(const InfoType &type) {
     return type.isPointer() && type.getUnderlyingType().original == "char";
@@ -43,6 +43,20 @@ std::string buildStructuredReadSuffix(const InfoType &type) {
     replaceAll(suffix, ",", "_");
     replaceTypeCharacters(suffix);
     return suffix;
+}
+
+std::string buildInstanceCallableInvocation(const InstancePlan &plan,
+                                           const std::string &variablePrefix) {
+    std::ostringstream ss;
+    ss << plan.callableExpr << "(";
+    for (size_t i = 0; i < plan.setupParams.size(); ++i) {
+        ss << variablePrefix << plan.setupParams[i].name;
+        if (i + 1 < plan.setupParams.size()) {
+            ss << ", ";
+        }
+    }
+    ss << ")";
+    return ss.str();
 }
 
 std::string buildFactoryReadMethod(const InfoType &type, const std::string &expr) {
@@ -868,7 +882,7 @@ std::string Generator::buildInitializations(
     std::vector<std::string> blocks;
 
     const std::string instanceInit = buildInstanceInitialization(
-        function, invocation, isStatic, kCtorPrefix, kCtorPrefix, "");
+        function, invocation, isStatic, kSetupPrefix, kSetupPrefix, "");
     if (!instanceInit.empty()) {
         blocks.push_back(instanceInit);
     }
@@ -880,8 +894,8 @@ std::string Generator::buildInitializations(
     }
 
     const std::string oracleInstanceInit = buildInstanceInitialization(
-        function, invocation, isStatic, std::string(kOraclePrefix) + kCtorPrefix,
-        kCtorPrefix, kOraclePrefix);
+        function, invocation, isStatic, std::string(kOraclePrefix) + kSetupPrefix,
+        kSetupPrefix, kOraclePrefix);
     if (!oracleInstanceInit.empty()) {
         blocks.push_back(oracleInstanceInit);
     }
@@ -1023,25 +1037,100 @@ std::string Generator::buildInvocation(const std::string &function, bool isStati
     return invocation;
 }
 
-bool Generator::setInstanceConstruction(
-    const std::vector<InfoVariable> &constructorParams, bool useDefaultConstructor) {
-    if (!isFromClass) {
-        constructorParams_.clear();
-        useDefaultConstructor_ = true;
+bool Generator::setInstancePlan(const std::optional<InstancePlan> &plan) {
+    if (!isFromClass || !plan.has_value()) {
+        instancePlan_.reset();
         return true;
     }
 
-    constructorParams_.clear();
-    constructorParams_.reserve(constructorParams.size());
-    for (const auto &param : constructorParams) {
-        constructorParams_.emplace_back(param.name, param);
-    }
-    useDefaultConstructor_ = useDefaultConstructor;
+    instancePlan_.reset();
+    instancePlan_.emplace(*plan);
     return true;
 }
 
 void Generator::setOracleMode(OracleMode mode) {
     oracleMode = effectiveOracleMode(mode);
+}
+
+std::vector<InfoVariable>
+Generator::collectSetupVariables(const InstancePlan &plan,
+                                 const std::string &prefix) const {
+    std::vector<InfoVariable> result;
+
+    if (plan.usesOwner()) {
+        const auto nested = collectSetupVariables(*plan.ownerPlan, prefix + "owner_");
+        for (const auto &param : nested) {
+            result.emplace_back(param.name, param);
+        }
+    }
+
+    for (const auto &param : plan.setupParams) {
+        result.emplace_back(prefix + param.name, param);
+    }
+
+    return result;
+}
+
+std::string Generator::buildPlanInitialization(const std::string &declType,
+                                               const std::string &objectName,
+                                               const InstancePlan &plan,
+                                               const std::string &function,
+                                               unsigned invocation,
+                                               const std::string &variablePrefix,
+                                               const std::string &keyPrefix) const {
+    std::vector<std::string> blocks;
+
+    if (plan.usesOwner()) {
+        const std::string ownerVarName = objectName + "_owner";
+        const std::string ownerInit = buildPlanInitialization(
+            plan.ownerTypeName, ownerVarName, *plan.ownerPlan, function, invocation,
+            variablePrefix + "owner_", keyPrefix + "owner_");
+        if (!ownerInit.empty()) {
+            blocks.push_back(ownerInit);
+        }
+    }
+
+    if (plan.requiresSetupInputs()) {
+        const std::string setupInit = generateParameterInitialization(
+            plan.setupParams, function, invocation, variablePrefix, keyPrefix);
+        if (!setupInit.empty()) {
+            blocks.push_back(setupInit);
+        }
+    }
+
+    std::ostringstream line;
+    line << "\t" << declType << " " << objectName;
+
+    if (plan.usesOwner()) {
+        line << " = " << objectName << "_owner." << plan.callableExpr << "("
+             << generateParameterInvocation(plan.setupParams, variablePrefix) << ");";
+    } else if (plan.usesDirectExpression()) {
+        line << " = " << plan.initExpr << ";";
+    } else if (plan.usesCallable()) {
+        line << " = " << buildInstanceCallableInvocation(plan, variablePrefix) << ";";
+    } else {
+        line << "{";
+        if (!plan.usesDefaultConstructor()) {
+            for (size_t i = 0; i < plan.setupParams.size(); ++i) {
+                line << variablePrefix << plan.setupParams[i].name;
+                if (i + 1 < plan.setupParams.size()) {
+                    line << ", ";
+                }
+            }
+        }
+        line << "};";
+    }
+
+    blocks.push_back(line.str());
+
+    std::ostringstream ss;
+    for (size_t i = 0; i < blocks.size(); ++i) {
+        if (i > 0) {
+            ss << "\n";
+        }
+        ss << blocks[i];
+    }
+    return ss.str();
 }
 
 std::string Generator::buildInstanceInitialization(const std::string &function,
@@ -1053,26 +1142,10 @@ std::string Generator::buildInstanceInitialization(const std::string &function,
         return "";
     }
 
-    std::ostringstream ss;
-    if (!useDefaultConstructor_ && !constructorParams_.empty()) {
-        ss << generateParameterInitialization(constructorParams_, function, invocation,
-                                             variablePrefix, keyPrefix)
-           << "\n";
-    }
-
-    ss << "\t" << targetQualifiedName << " "
-       << instancePrefix + generateTestObjectForTarget(targetName) << "{";
-    if (!useDefaultConstructor_) {
-        for (size_t i = 0; i < constructorParams_.size(); ++i) {
-            ss << variablePrefix << constructorParams_[i].name;
-            if (i + 1 < constructorParams_.size()) {
-                ss << ", ";
-            }
-        }
-    }
-    ss << "};";
-
-    return ss.str();
+    const InstancePlan plan = instancePlan_.value_or(InstancePlan{});
+    return buildPlanInitialization(targetQualifiedName,
+                                   instancePrefix + generateTestObjectForTarget(targetName),
+                                   plan, function, invocation, variablePrefix, keyPrefix);
 }
 
 std::string Generator::generatePointersAssertsWithTemplate(
@@ -1116,13 +1189,19 @@ void Generator::generateConfigFileTestCase(const std::string &functionName,
                                            const std::vector<InfoVariable> &params,
                                            const InfoType &returnType,
                                            unsigned invocation) const {
-    if (constructorParams_.empty()) {
+    if (!instancePlan_.has_value()) {
         configGenerator.generateTestCase(functionName, params, returnType, invocation);
         return;
     }
 
-    configGenerator.generateTestCaseWithSetup(functionName, params, constructorParams_,
-                                              kCtorPrefix, returnType, invocation);
+    const auto setupVars = collectSetupVariables(*instancePlan_, kSetupPrefix);
+    if (setupVars.empty()) {
+        configGenerator.generateTestCase(functionName, params, returnType, invocation);
+        return;
+    }
+
+    configGenerator.generateTestCaseWithSetup(functionName, params, setupVars, "",
+                                              returnType, invocation);
 }
 
 void Generator::generateConfigFileTestCase(const std::string &functionName,
