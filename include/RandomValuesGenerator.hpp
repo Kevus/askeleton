@@ -68,4 +68,6 @@ private:
     std::string getRandomFloat();
     std::string getRandomBool();
     std::string getRandomString();
+
+    friend class ConfigGenerator;
 };

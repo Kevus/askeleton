@@ -53,6 +53,20 @@ jobs:
             --out-dir=/tmp/askeleton_smoke \
             --report=/tmp/askeleton_smoke/askeleton_report.json
 
+      - name: Validate default rule-data parity
+        run: |
+          ASKELETON_HOME=$(pwd) ./askeleton -p examples ${GITHUB_WORKSPACE}/examples/sut.cpp \
+            --seed=123 \
+            --out-dir=/tmp/askeleton_default_rules
+          ASKELETON_HOME=$(pwd) ./askeleton --rule-data --rule-max-cases=3 \
+            -p examples ${GITHUB_WORKSPACE}/examples/sut.cpp \
+            --seed=123 \
+            --out-dir=/tmp/askeleton_explicit_rules
+          sed '/^\/\/\/\/ DATE:/d' /tmp/askeleton_default_rules/sut/sut.cfg > /tmp/default_sut.cfg
+          sed '/^\/\/\/\/ DATE:/d' /tmp/askeleton_explicit_rules/sut/sut.cfg > /tmp/explicit_sut.cfg
+          diff -u /tmp/default_sut.cfg /tmp/explicit_sut.cfg
+          diff -u /tmp/askeleton_default_rules/sut/sut_test.cpp /tmp/askeleton_explicit_rules/sut/sut_test.cpp
+
       - name: Validate generated tests (GoogleTest)
         run: |
           ASKELETON_HOME=$(pwd) ./askeleton -p examples ${GITHUB_WORKSPACE}/examples/sut.cpp \

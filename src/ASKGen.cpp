@@ -1,6 +1,7 @@
 #include "ASKGen.hpp"
 
 #include <algorithm>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -446,6 +447,73 @@ unsigned ASKGen::computeRuleInvocationLimit(
         return 1;
 
     return std::min(ruleMaxCases, maxCandidates);
+}
+
+std::map<std::string, std::vector<long long>> ASKGen::selectRepresentativeRuleValues(
+    const std::map<std::string, std::vector<long long>> &rulesForFunction) const {
+    std::map<std::string, std::vector<long long>> reduced;
+
+    for (const auto &entry : rulesForFunction) {
+        std::vector<long long> values = entry.second;
+        if (values.size() <= ruleMaxCases) {
+            reduced.insert(entry);
+            continue;
+        }
+
+        std::sort(values.begin(), values.end());
+        values.erase(std::unique(values.begin(), values.end()), values.end());
+        if (values.size() <= ruleMaxCases) {
+            reduced[entry.first] = values;
+            continue;
+        }
+
+        std::vector<long long> selected;
+        selected.reserve(ruleMaxCases);
+
+        auto zeroIt = std::find(values.begin(), values.end(), 0);
+        if (zeroIt != values.end()) {
+            selected.push_back(*zeroIt);
+        } else {
+            selected.push_back(values.front());
+        }
+
+        while (selected.size() < ruleMaxCases) {
+            long long bestCandidate = values.front();
+            long long bestScore = -1;
+            bool found = false;
+
+            for (long long candidate : values) {
+                if (std::find(selected.begin(), selected.end(), candidate) != selected.end()) {
+                    continue;
+                }
+
+                long long minDistance = std::numeric_limits<long long>::max();
+                for (long long chosen : selected) {
+                    minDistance =
+                        std::min(minDistance, static_cast<long long>(std::llabs(candidate - chosen)));
+                }
+
+                if (!found || minDistance > bestScore ||
+                    (minDistance == bestScore &&
+                     std::llabs(candidate) < std::llabs(bestCandidate))) {
+                    bestCandidate = candidate;
+                    bestScore = minDistance;
+                    found = true;
+                }
+            }
+
+            if (!found) {
+                break;
+            }
+
+            selected.push_back(bestCandidate);
+        }
+
+        std::sort(selected.begin(), selected.end());
+        reduced[entry.first] = selected;
+    }
+
+    return reduced;
 }
 
 void ASKGen::collectRuleValuesFromFunction(const FunctionDecl *FD) {
@@ -944,7 +1012,7 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
         const std::string ruleKey = getFunctionKey(UT);
         auto it = ruleValues.find(ruleKey);
         if (it != ruleValues.end()) {
-            const auto &rulesForFunction = it->second;
+            const auto rulesForFunction = selectRepresentativeRuleValues(it->second);
             testGen.setRuleValues({{ruleKey, rulesForFunction}});
             configGenerator.setRuleValues({{ruleKey, rulesForFunction}});
             ruleInvocations = computeRuleInvocationLimit(rulesForFunction);
@@ -992,7 +1060,7 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
         const std::string ruleKey = getFunctionKey(UT);
         auto it = ruleValues.find(ruleKey);
         if (it != ruleValues.end()) {
-            const auto &rulesForFunction = it->second;
+            const auto rulesForFunction = selectRepresentativeRuleValues(it->second);
             testGen.setRuleValues({{ruleKey, rulesForFunction}});
             configGenerator.setRuleValues({{ruleKey, rulesForFunction}});
             ruleInvocations = computeRuleInvocationLimit(rulesForFunction);

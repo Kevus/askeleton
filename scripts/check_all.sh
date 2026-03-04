@@ -25,7 +25,7 @@ EOF
 echo "== Examples baseline =="
 "$ASKELETON_HOME/askeleton" -p "$ASKELETON_HOME/examples" "$ASKELETON_HOME/examples/sut.cpp"
 
-echo "== Rule data =="
+echo "== Rule data explicit parity =="
 "$ASKELETON_HOME/askeleton" --rule-data --rule-max-cases=3 -p "$ASKELETON_HOME/examples" "$ASKELETON_HOME/examples/sut.cpp"
 
 echo "== Profiles =="

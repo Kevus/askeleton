@@ -353,7 +353,7 @@ cl::opt<unsigned> DeepLevel("deep-level", cl::desc("Specify the maximum depth le
 cl::opt<bool> RuleDataOption(
     "rule-data",
     cl::desc("Generate basic rule-based data from simple AST comparisons"),
-    cl::init(false), cl::cat(OptC));
+    cl::init(true), cl::cat(OptC));
 cl::opt<unsigned> RuleMaxCasesOption(
     "rule-max-cases",
     cl::desc("Max number of rule-based cases to generate per function (default: 3)"),

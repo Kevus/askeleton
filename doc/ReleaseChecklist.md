@@ -26,3 +26,5 @@ Expected results
 - The `.cfg` contains non-empty values for `random` and `safe`.
 - `boundary` may intentionally include empty containers.
 - Rule-based data generates multiple cases for supported comparisons.
+- The default run and the explicit `--rule-data` run generate equivalent outputs
+  (ignoring timestamps).

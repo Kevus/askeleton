@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
 
 #include "constants.hpp"
@@ -243,7 +244,8 @@ std::string ConfigGenerator::generateParam(const InfoVariable &param,
         }
     } else {
         if (value.empty()) {
-            value = generateScalarValue(cStringPointer ? InfoType("std::string") : underlying);
+            value = generateScalarValue(cStringPointer ? InfoType("std::string") : underlying,
+                                        prefix + pointers.first.name);
         }
         ss << "\t" << prefix + pointers.first.name << "=" << value << ";#"
            << param.original;
@@ -315,7 +317,17 @@ std::string ConfigGenerator::generateStructuredParam(const std::string &name,
     return "";
 }
 
-std::string ConfigGenerator::generateScalarValue(const InfoType &type) const {
+uint32_t ConfigGenerator::buildDeterministicSeed(const std::string &keyHint) const {
+    uint64_t state = static_cast<uint64_t>(seedValue.value_or(0));
+    const std::string fullKey = currentFunctionName + "|" +
+                                std::to_string(currentInvocation) + "|" + keyHint;
+    const uint64_t hashed = static_cast<uint64_t>(std::hash<std::string>{}(fullKey));
+    state ^= hashed + 0x9e3779b97f4a7c15ULL + (state << 6U) + (state >> 2U);
+    return static_cast<uint32_t>(state & 0xffffffffULL);
+}
+
+std::string ConfigGenerator::generateScalarValue(const InfoType &type,
+                                                 const std::string &keyHint) const {
     if (type.isOptional() || type.isPair() || type.isTuple()) {
         return "0";
     }
@@ -325,6 +337,13 @@ std::string ConfigGenerator::generateScalarValue(const InfoType &type) const {
         typeForValue = "string";
     } else if (type.isMap() && typeForValue.find("<") == std::string::npos) {
         typeForValue = type.original;
+    }
+
+    if (seedValue.has_value()) {
+        RandomValuesGenerator localRvg;
+        localRvg.setProfile(rvg.profile);
+        localRvg.setSeed(buildDeterministicSeed(keyHint + "|" + typeForValue));
+        return localRvg.getRandomValue(typeForValue);
     }
 
     return rvg.getRandomValue(typeForValue);

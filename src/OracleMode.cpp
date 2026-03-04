@@ -90,9 +90,6 @@ const char *oracleModeName(OracleMode mode) {
 }
 
 OracleMode effectiveOracleMode(OracleMode mode) {
-    if (mode == OracleMode::Property) {
-        return OracleMode::Mirror;
-    }
     return mode;
 }
 

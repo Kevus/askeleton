@@ -56,7 +56,9 @@ private:
     std::string generateStructuredParam(const std::string &name, const InfoType &type,
                                         const std::string &prefix, unsigned depth,
                                         std::set<std::string> &stack) const;
-    std::string generateScalarValue(const InfoType &type) const;
+    std::string generateScalarValue(const InfoType &type,
+                                    const std::string &keyHint = "") const;
+    uint32_t buildDeterministicSeed(const std::string &keyHint) const;
 
     void appendToConfigFile(const std::string &content) const;
 

@@ -64,7 +64,7 @@ Key options:
 - `--coverage-mode=<strict|balanced|aggressive>`: generation coverage policy.
 - `--oracle-mode=<mirror|explicit|property>`: expected-value strategy.
 - `--seed=<N>`: deterministic data generation.
-- `--rule-data`: enable rule-based values from AST.
+- `--rule-data`: explicitly enable the default AST-guided rule-based values.
 - `--rule-max-cases=<N>`: limit rule-based test cases per function.
 - `--out-dir=<path>`: output directory for generated tests.
 - `--include-impl-under-include`: allow compiling `.c/.cc/.cpp` under `include/`.
@@ -89,7 +89,11 @@ To collect a machine-readable execution log (inputs, counts, warnings, timings),
 use `--log-json=<path>`.
 
 **Data Generation**
-Rule-based values:
+Rule-based values are enabled by default:
+```bash
+ASKELETON_HOME=$(pwd) ./askeleton -p examples examples/sut.cpp
+```
+Explicit parity check:
 ```bash
 ASKELETON_HOME=$(pwd) ./askeleton --rule-data --rule-max-cases=3 -p examples examples/sut.cpp
 ```
@@ -139,8 +143,9 @@ ASkeleTon currently exposes three oracle modes:
   the `.cfg`; if the key is missing, they fall back to `mirror`. This keeps
   freshly generated tests passing while allowing users to override specific
   cases with independent expectations.
-- `property`: currently reserved for the next phase and intentionally falls back
-  to `mirror`.
+- `property`: first-pass repeatability oracle. Generated tests replay the same
+  callable with a second isolated copy of the inputs and assert that the
+  observable result matches across both executions.
 
 What this means in practice:
 - The `.cfg` file stores the source case data that users are expected to edit.
@@ -154,6 +159,8 @@ What this means in practice:
   parameters against the mirrored execution.
 - Parameters inferred as pure `out` values are no longer persisted as editable
   `.cfg` inputs; they are initialized internally in generated test code.
+- In `property`, the generated oracle always comes from that isolated replay and
+  never reads an `expected` override from the `.cfg`.
 
 What this strategy is good for:
 - Stable, reproducible scaffold tests.
@@ -166,8 +173,8 @@ What this strategy is not:
 - It does not prove the SUT is correct if the same deterministic bug appears in
   both executions.
 
-This is an intentional first-phase approach. Future phases may replace or extend
-it with stronger domain-specific or property-based oracles.
+This is still a conservative first phase. Future phases may extend `property`
+with stronger domain-specific or metamorphic checks beyond simple repeatability.
 
 **Reproducible Runs**
 Use `--seed` to make data generation deterministic. For fully reproducible

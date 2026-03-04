@@ -1,10 +1,13 @@
 Data Rules (ASkeleTon)
 
 Activation
-- `--rule-data` enables basic AST-derived rules.
+- Basic AST-derived rules are enabled by default.
+- `--rule-data` explicitly enables the same behavior (useful for parity checks in
+  scripts and CI).
 - `--rule-max-cases=N` limits the number of generated cases per function when
   multiple candidates are available (default: 3).
-- Candidate selection is deterministic and follows detection order.
+- Candidate selection is deterministic and keeps a representative subset when
+  more candidates are detected than `--rule-max-cases` allows.
 
 Example
 `askeleton --rule-data --rule-max-cases=3 -p build src/foo.cpp`

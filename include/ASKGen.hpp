@@ -77,6 +77,8 @@ private:
 
     unsigned computeRuleInvocationLimit(
         const std::map<std::string, std::vector<long long>> &rulesForFunction) const;
+    std::map<std::string, std::vector<long long>> selectRepresentativeRuleValues(
+        const std::map<std::string, std::vector<long long>> &rulesForFunction) const;
 
     void recordGeneratedResult(const std::string &kind,
                                const std::string &entityName,

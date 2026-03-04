@@ -869,6 +869,12 @@ std::string Generator::buildExpectedInvocation(
     const std::string mirrorInvocation =
         mirrorTokens.first + "(" + mirrorTokens.second + ")";
 
+    if (oracleMode == OracleMode::Property) {
+        return "([&]() { /* Property oracle: replay the SUT with isolated inputs. */ "
+               "return " +
+               mirrorInvocation + "; }())";
+    }
+
     if (oracleMode == OracleMode::Explicit && supportsExplicitOracle(returnType)) {
         const std::string expectedKey =
             function + "_" + std::to_string(invocation) + ".expected";
