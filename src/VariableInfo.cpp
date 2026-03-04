@@ -60,6 +60,36 @@ ParameterIntent inferIntent(const ParmVarDecl *param) {
 
     return ParameterIntent::InOut;
 }
+
+std::optional<std::string> getEquivalentWrappedType(clang::QualType type) {
+    if (type.isNull()) {
+        return std::nullopt;
+    }
+
+    std::string suffix;
+    while (!type.isNull() && (type->isPointerType() || type->isReferenceType())) {
+        if (type->isPointerType()) {
+            suffix += " *";
+            type = type->getPointeeType();
+        } else {
+            suffix += " &";
+            type = type->getPointeeType();
+        }
+    }
+
+    if (type.isNull()) {
+        return std::nullopt;
+    }
+
+    std::string base = type.getCanonicalType().getAsString();
+    removeTypeQualifiers(base);
+    auto equivalent = getEquivalentType(base);
+    if (!equivalent.has_value()) {
+        return std::nullopt;
+    }
+
+    return equivalent.value() + suffix;
+}
 } // namespace
 
 ComplexTypeException::ComplexTypeException(const string &complexType)
@@ -81,6 +111,9 @@ InfoType::InfoType(const clang::QualType &type)
         removeTypeQualifiers(normalized);
         equivalent = getEquivalentType(normalized);
     }
+    if (!equivalent.has_value()) {
+        equivalent = getEquivalentWrappedType(type);
+    }
     if (equivalent.has_value()) {
         original = equivalent.value();
     } else if (type->isArrayType()) {
@@ -96,8 +129,6 @@ InfoType::InfoType(const clang::QualType &type)
         } else {
             throw ComplexTypeException("unsupported_array_shape", original);
         }
-    } else if (typeIsComplex(original)) {
-        throw ComplexTypeException(original);
     } else if (const CXXRecordDecl *record = type->getAsCXXRecordDecl()) {
         isRecord_ = true;
         // Preserve the original type string (which may include template args),
@@ -110,7 +141,8 @@ InfoType::InfoType(const clang::QualType &type)
         copy_if(record->fields().begin(), record->fields().end(),
                 back_inserter(recordFields),
                 [](const FieldDecl *field) { return field->getAccess() == AS_public; });
-
+    } else if (typeIsComplex(original)) {
+        throw ComplexTypeException(original);
     } else if (const Type *unqualified = type.getUnqualifiedType().getTypePtrOrNull()) {
         if (unqualified->isEnumeralType())
             isEnum_ = true;
