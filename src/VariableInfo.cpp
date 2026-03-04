@@ -138,9 +138,20 @@ InfoType::InfoType(const clang::QualType &type)
                 this->original = typedefDecl->getNameAsString();
             }
         }
-        copy_if(record->fields().begin(), record->fields().end(),
-                back_inserter(recordFields),
-                [](const FieldDecl *field) { return field->getAccess() == AS_public; });
+        for (const auto *field : record->fields()) {
+            if (!field || field->getAccess() != AS_public) {
+                continue;
+            }
+
+            // Fixed-size C arrays cannot be assigned or compared as plain
+            // fields in the generated record helpers, so omit them instead of
+            // rejecting the whole record type.
+            if (field->getType()->isArrayType()) {
+                continue;
+            }
+
+            recordFields.emplace_back(field);
+        }
     } else if (typeIsComplex(original)) {
         throw ComplexTypeException(original);
     } else if (const Type *unqualified = type.getUnqualifiedType().getTypePtrOrNull()) {
