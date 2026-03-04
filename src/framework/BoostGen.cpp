@@ -124,9 +124,7 @@ string BoostGen::generateAssertForFunction(const string &function,
                                            const vector<InfoVariable> &params,
                                            const InfoType &returnType,
                                            bool isStatic) const {
-    const static string TPLITEM_FUNC =
-                            templateItems["templating"]["boost"]["assert_function"],
-                        TPLITEM_FUNC_LIST =
+    const static string TPLITEM_FUNC_LIST =
                             templateItems["templating"]["boost"]["assert_function_list"],
                         TPLITEM_FUNC_MAP =
                             templateItems["templating"]["boost"]["assert_function_map"];
@@ -144,7 +142,10 @@ string BoostGen::generateAssertForFunction(const string &function,
     } else if (returnType.isMap()) {
         assertFunction = TPLITEM_FUNC_MAP;
     } else {
-        assertFunction = TPLITEM_FUNC;
+        // BOOST_CHECK_EQUAL requires stream output for diagnostics. Use a plain
+        // boolean comparison so records and other non-streamable types still
+        // compile as long as operator== is available.
+        assertFunction = "BOOST_CHECK(({invocation}({parameters}) == expected));";
     }
 
     replaceTokensInText(assertFunction, tokensToReplace);
