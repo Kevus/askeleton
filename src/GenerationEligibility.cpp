@@ -500,6 +500,42 @@ void validateTypeMaterialization(const InfoType &type,
     }
 }
 
+void validateReturnTypeMaterialization(const InfoType &type,
+                                       const std::string &functionName) {
+    if (type.isPointer()) {
+        if (countIndirections(type) > 1) {
+            throwUnsupportedType("unsupported_indirection", type.original,
+                                 "more than one pointer/reference indirection is not supported");
+        }
+
+        const InfoType materialized = type.getUnderlyingType();
+        if (materialized.isPointer() || materialized.isReference()) {
+            throwUnsupportedType("unsupported_indirection", type.original,
+                                 "nested pointer/reference materialization is not supported");
+        }
+
+        if (!materialized.isRecord()) {
+            return;
+        }
+
+        const auto *record = getRecordDecl(materialized);
+        if (!record) {
+            return;
+        }
+
+        if (record->isAbstract()) {
+            return;
+        }
+
+        // Returned pointees are observed, not instantiated locally. Their
+        // lifetime remains owned by the callee/owner chain, so a non-public
+        // destructor should not block generation here.
+        return;
+    }
+
+    validateTypeMaterialization(type, functionName);
+}
+
 void validateTypesMaterialization(const std::vector<InfoVariable> &variables,
                                   const std::string &functionName) {
     for (const auto &variable : variables) {

@@ -35,6 +35,10 @@ bool isCStringLike(const InfoType &type) {
     return type.isPointer() && type.getUnderlyingType().original == "char";
 }
 
+bool usesPointerPresenceOracle(const InfoType &type) {
+    return type.isPointer() && !isCStringLike(type) && type.getUnderlyingType().isRecord();
+}
+
 std::string buildStructuredReadSuffix(const InfoType &type) {
     std::string suffix = removeNamespaceQualifier(type.original);
     replaceAll(suffix, " ", "_");
@@ -561,6 +565,11 @@ void Generator::createEnumReadToFixture(const InfoType &type) const {
 }
 
 void Generator::createRecordReadToFixture(const InfoType &type) const {
+    if (type.getRecordFields().empty()) {
+        appendReadMethodToFixture(buildFactoryReadMethod(type, type.original + "{}"));
+        return;
+    }
+
     stringstream assigns;
     string method = readFromFile(
         getMethodTemplatePath(config["file"]["template"]["method"]["record_read"]));
@@ -873,11 +882,18 @@ std::pair<std::string, std::string> Generator::buildInvocationTokens(
     const std::vector<InfoVariable> &parameters, const std::string &function,
     bool isStatic, const InfoType &returnType, const std::string &symbolPrefix) const {
     const bool cStringReturn = isCStringLike(returnType);
+    const bool pointerPresenceReturn = usesPointerPresenceOracle(returnType);
     const std::string invocationHead = buildInvocation(
-        function, isStatic, cStringReturn ? false : returnType.isPointer(), symbolPrefix);
+        function, isStatic,
+        (cStringReturn || pointerPresenceReturn) ? false : returnType.isPointer(),
+        symbolPrefix);
     const std::string parametersExpr = generateParameterInvocation(parameters, symbolPrefix);
 
     if (!cStringReturn) {
+        if (pointerPresenceReturn) {
+            return {"([&]() { auto ptr = " + invocationHead,
+                    parametersExpr + "); return ptr != nullptr; }()"};
+        }
         return {invocationHead, parametersExpr};
     }
 
@@ -947,6 +963,9 @@ std::string Generator::buildInitializations(
 }
 
 std::string Generator::buildExpectedType(const InfoType &returnType) const {
+    if (usesPointerPresenceOracle(returnType)) {
+        return "bool";
+    }
     return isCStringLike(returnType) ? "std::string"
                                      : returnType.getUnderlyingType().original;
 }
@@ -971,7 +990,9 @@ std::string Generator::buildExpectedInvocation(
         const std::string expectedKey =
             function + "_" + std::to_string(invocation) + ".expected";
         std::string readExpected;
-        if (isCStringLike(returnType)) {
+        if (usesPointerPresenceOracle(returnType)) {
+            readExpected = "Read_bool(\"" + expectedKey + "\")";
+        } else if (isCStringLike(returnType)) {
             readExpected = "Read_string(\"" + expectedKey + "\")";
         } else {
             readExpected = "Read_" +

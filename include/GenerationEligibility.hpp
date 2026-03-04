@@ -51,6 +51,8 @@ unsigned minimumCoverageInvocations(const std::vector<InfoVariable> &params);
 
 void validateTypeMaterialization(const InfoType &type,
                                  const std::string &functionName = "");
+void validateReturnTypeMaterialization(const InfoType &type,
+                                       const std::string &functionName = "");
 void validateTypesMaterialization(const std::vector<InfoVariable> &variables,
                                   const std::string &functionName = "");
 

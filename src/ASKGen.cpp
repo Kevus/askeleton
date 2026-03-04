@@ -13,6 +13,7 @@
 #include "framework/CatchGen.hpp"
 #include "framework/GTestGen.hpp"
 #include "Logging.hpp"
+#include "OracleMode.hpp"
 #include "utils/ast_values.hpp"
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
@@ -1041,14 +1042,17 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     }
     ruleInvocations = std::max(ruleInvocations, minimumCoverageInvocations(parameters));
     validateTypesMaterialization(parameters, functionName);
-    validateTypeMaterialization(returnType);
+    validateReturnTypeMaterialization(returnType);
 
 #ifdef FULL_DEBUG
     printDebugInfo(parameters, returnType);
 #endif /* FULL_DEBUG */
 
     generateReadMethod(testGen, parameters);
-    generateReadMethod(testGen, returnType);
+    if (supportsExplicitOracle(returnType) &&
+        !(returnType.isPointer() && returnType.getUnderlyingType().isRecord())) {
+        generateReadMethod(testGen, returnType);
+    }
 
     for (unsigned i = 0; i < ruleInvocations; ++i) {
         testGen.generateFunctionAssert(functionName, parameters, returnType);
@@ -1111,14 +1115,17 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     }
     ruleInvocations = std::max(ruleInvocations, minimumCoverageInvocations(parameters));
     validateTypesMaterialization(parameters, functionName);
-    validateTypeMaterialization(returnType);
+    validateReturnTypeMaterialization(returnType);
 
 #ifdef FULL_DEBUG
     printDebugInfo(parameters, returnType);
 #endif /* FULL_DEBUG */
 
     generateReadMethod(testGen, parameters);
-    generateReadMethod(testGen, returnType);
+    if (supportsExplicitOracle(returnType) &&
+        !(returnType.isPointer() && returnType.getUnderlyingType().isRecord())) {
+        generateReadMethod(testGen, returnType);
+    }
 
     for (unsigned i = 0; i < ruleInvocations; ++i) {
         testGen.generateMethodAssert(functionName, parameters, returnType, isStatic);
