@@ -1,4 +1,4 @@
-CXX=clang++ --std=c++17
+CXX=clang++ --std=c++17 {extraCompileFlags}
 DEPFLAGS = -MMD -MP
 OBJS = tests.o # Please add your own .o files here
 DEPS = $(OBJS:.o=.d)

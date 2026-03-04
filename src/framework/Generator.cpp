@@ -205,7 +205,11 @@ const clang::CXXRecordDecl *getRecordDecl(const InfoType &type) {
     if (type.type.isNull()) {
         return nullptr;
     }
-    return type.type->getAsCXXRecordDecl();
+    const auto *record = type.type->getAsCXXRecordDecl();
+    if (!record) {
+        return nullptr;
+    }
+    return record->getDefinition();
 }
 
 clang::QualType normalizeComparableType(clang::QualType type) {
@@ -298,7 +302,7 @@ bool hasExistingEqualityOperator(const InfoType &type) {
         record->getASTContext().getTranslationUnitDecl(), type, clang::OO_EqualEqual);
 }
 
-bool hasExistingStreamOperator(const InfoType &type) {
+[[maybe_unused]] bool hasExistingStreamOperator(const InfoType &type) {
     const auto *record = getRecordDecl(type);
     if (!record) {
         return false;
@@ -317,6 +321,8 @@ unsigned Generator::MAX_DEPTH;
 const json &Generator::config = getConfig();
 const nlohmann::json &Generator::templateItems = getTemplateItems();
 OracleMode Generator::oracleMode = OracleMode::Explicit;
+std::map<std::string, std::string> Generator::compileFlagsBySourcePath;
+std::map<std::string, std::vector<std::string>> Generator::companionSourcesBySourcePath;
 
 Generator::Generator(const string &targetName, const string &targetQualifiedName,
                      const string &filePath, bool isFromClass)
@@ -334,6 +340,11 @@ Generator::Generator(const string &targetName, const string &targetQualifiedName
 }
 
 bool Generator::supportsConstructorTests() const { return false; }
+
+void Generator::registerInvocationName(const std::string &function,
+                                       const std::string &qualifiedName) {
+    invocationNameByFunction[function] = qualifiedName;
+}
 
 void Generator::appendTestCaseToTestFile(const std::string &testCase) const {
     appendToFile(testPath, "\n\n" + testCase);
@@ -367,6 +378,40 @@ void Generator::setValuesToChange(std::map<std::string, std::string> &valuesToCh
     const std::string includePath =
         includeSourceInFixture ? sourcePath : headerFile.value();
     const bool compileSourceSeparately = includePath != sourcePath;
+    const auto flagsIt = compileFlagsBySourcePath.find(sourcePath);
+    const std::string extraCompileFlags =
+        (flagsIt != compileFlagsBySourcePath.end()) ? flagsIt->second : "";
+    const auto companionIt = companionSourcesBySourcePath.find(sourcePath);
+    const std::vector<std::string> companions =
+        (companionIt != companionSourcesBySourcePath.end()) ? companionIt->second
+                                                            : std::vector<std::string>{};
+
+    std::vector<std::string> objectFiles;
+    std::ostringstream sourceBuildRules;
+
+    if (compileSourceSeparately) {
+        objectFiles.push_back(targetName + ".o");
+        sourceBuildRules << targetName << ".o: " << sourcePath
+                         << "\n\t$(CXX) -c $< -o $@\n";
+    }
+
+    for (std::size_t i = 0; i < companions.size(); ++i) {
+        const std::string objectName = "dep_" + std::to_string(i) + ".o";
+        objectFiles.push_back(objectName);
+        sourceBuildRules << objectName << ": " << companions[i]
+                         << "\n\t$(CXX) -c $< -o $@\n";
+    }
+
+    objectFiles.push_back("tests.o");
+    objectFiles.push_back("main.o");
+
+    std::ostringstream objectFilesValue;
+    for (std::size_t i = 0; i < objectFiles.size(); ++i) {
+        if (i > 0) {
+            objectFilesValue << " ";
+        }
+        objectFilesValue << objectFiles[i];
+    }
 
     if (!missingFilesWarn) {
         std::string ext = fs::path(targetFilePath).extension().string();
@@ -396,14 +441,20 @@ void Generator::setValuesToChange(std::map<std::string, std::string> &valuesToCh
         {templateItems["tplitem"]["namespaces"], ""},
         {templateItems["tplitem"]["new_methods"], ""},
         {"{classMemberDecl}", ""},
-        {"{objectFiles}",
-         compileSourceSeparately ? (targetName + ".o tests.o main.o")
-                                 : "tests.o main.o"},
-        {"{sourceBuildRule}",
-         compileSourceSeparately
-             ? (targetName + ".o: " + sourcePath + "\n\t$(CXX) -c $< -o $@\n")
-             : ""},
+        {"{extraCompileFlags}", extraCompileFlags},
+        {"{objectFiles}", objectFilesValue.str()},
+        {"{sourceBuildRule}", sourceBuildRules.str()},
     };
+}
+
+void Generator::setCompileFlags(
+    const std::map<std::string, std::string> &flagsBySourcePath) {
+    compileFlagsBySourcePath = flagsBySourcePath;
+}
+
+void Generator::setCompanionSources(
+    const std::map<std::string, std::vector<std::string>> &companionsBySourcePath) {
+    companionSourcesBySourcePath = companionsBySourcePath;
 }
 
 void Generator::setSupportedTypes() {
@@ -526,7 +577,7 @@ void Generator::createRecordOverloadToFixture(const InfoType &type) const {
         }
     }
 
-    const bool needsStreamOperator = !hasExistingStreamOperator(type);
+    const bool needsStreamOperator = false;
     const bool needsEqualityOperator = !hasExistingEqualityOperator(type);
     if (!needsStreamOperator && !needsEqualityOperator) {
         return;
@@ -864,13 +915,15 @@ std::string Generator::buildExpectedType(const InfoType &returnType) const {
 std::string Generator::buildExpectedInvocation(
     const std::vector<InfoVariable> &parameters, const std::string &function,
     unsigned invocation, bool isStatic, const InfoType &returnType) const {
+    const std::string expectedType = buildExpectedType(returnType);
     const auto mirrorTokens =
         buildInvocationTokens(parameters, function, isStatic, returnType, kOraclePrefix);
     const std::string mirrorInvocation =
         mirrorTokens.first + "(" + mirrorTokens.second + ")";
 
     if (oracleMode == OracleMode::Property) {
-        return "([&]() { /* Property oracle: replay the SUT with isolated inputs. */ "
+        return "([&]() -> " + expectedType +
+               " { /* Property oracle: replay the SUT with isolated inputs. */ "
                "return " +
                mirrorInvocation + "; }())";
     }
@@ -886,7 +939,7 @@ std::string Generator::buildExpectedInvocation(
                            normalizeReadMethodType(returnType.getUnderlyingType()) +
                            "(\"" + expectedKey + "\")";
         }
-        return "([&]() { const std::string key = \"" + expectedKey +
+        return "([&]() -> " + expectedType + " { const std::string key = \"" + expectedKey +
                "\"; if (HasObject(key)) return " + readExpected + "; return " +
                mirrorInvocation + "; }())";
     }
@@ -895,6 +948,13 @@ std::string Generator::buildExpectedInvocation(
 }
 
 std::string Generator::normalizeReadMethodType(const InfoType &type) const {
+    if (type.isList()) {
+        std::string original = type.original;
+        replaceAll(original, "std::vector<", "vector<");
+        replaceAll(original, "std::list<", "list<");
+        return original;
+    }
+
     if (type.isMap()) {
         const std::string &formatted = type.formatted;
         size_t left = formatted.find('<');
@@ -948,12 +1008,18 @@ std::string Generator::normalizeReadMethodType(const InfoType &type) const {
 std::string Generator::buildInvocation(const std::string &function, bool isStatic,
                                        bool returnsPointer,
                                        const std::string &instancePrefix) const {
+    std::string invocationFunction = function;
+    const auto invocationIt = invocationNameByFunction.find(function);
+    if (invocationIt != invocationNameByFunction.end()) {
+        invocationFunction = invocationIt->second;
+    }
+
     std::string invocation = returnsPointer ? "*" : "";
     if (isStatic)
         invocation += targetQualifiedName + "::";
     else if (isFromClass)
         invocation += instancePrefix + generateTestObjectForTarget(targetName) + ".";
-    invocation += function;
+    invocation += invocationFunction;
     return invocation;
 }
 

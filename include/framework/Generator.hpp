@@ -57,6 +57,12 @@ public:
     bool setInstanceConstruction(const std::vector<InfoVariable> &constructorParams,
                                  bool useDefaultConstructor);
     static void setOracleMode(OracleMode mode);
+    static void
+    setCompileFlags(const std::map<std::string, std::string> &flagsBySourcePath);
+    static void setCompanionSources(
+        const std::map<std::string, std::vector<std::string>> &companionsBySourcePath);
+    void registerInvocationName(const std::string &function,
+                                const std::string &qualifiedName);
 
 protected:
     virtual void generateFullAssert(const std::string &function,
@@ -147,6 +153,8 @@ protected:
     static const nlohmann::json &config;
     static const nlohmann::json &templateItems;
     static OracleMode oracleMode;
+    static std::map<std::string, std::string> compileFlagsBySourcePath;
+    static std::map<std::string, std::vector<std::string>> companionSourcesBySourcePath;
 
 private:
     void setOutputFilesPath();
@@ -169,6 +177,7 @@ private:
 
     std::set<std::string> supportedTypes;
     std::map<std::string, unsigned> functionCounter;
+    std::map<std::string, std::string> invocationNameByFunction;
     bool missingFilesWarn = false;
     std::vector<InfoVariable> constructorParams_;
     bool useDefaultConstructor_ = true;

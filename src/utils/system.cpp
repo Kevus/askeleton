@@ -351,7 +351,49 @@ optional<string> getSourceFile(const string &filePath) {
 }
 
 optional<string> getHeaderFile(const string &filePath) {
-    return getFileWithExtensions(filePath, {".hpp", ".h", ".hh", ".hxx"});
+    static const vector<string> headerExtensions = {".hpp", ".h", ".hh", ".hxx"};
+
+    if (auto direct = getFileWithExtensions(filePath, headerExtensions)) {
+        return direct;
+    }
+
+    fs::path inputPath = fs::absolute(filePath);
+    const string stem = inputPath.stem().string();
+
+    fs::path current = inputPath.parent_path();
+    while (!current.empty()) {
+        fs::path includeDir = current / "include";
+        if (fs::exists(includeDir) && fs::is_directory(includeDir)) {
+            std::optional<std::string> best;
+            for (const auto &entry : fs::recursive_directory_iterator(includeDir)) {
+                if (!entry.is_regular_file()) {
+                    continue;
+                }
+                const fs::path candidate = entry.path();
+                if (candidate.stem() != stem) {
+                    continue;
+                }
+                if (std::find(headerExtensions.begin(), headerExtensions.end(),
+                              candidate.extension().string()) == headerExtensions.end()) {
+                    continue;
+                }
+                if (!best.has_value() ||
+                    candidate.string().size() < best->size()) {
+                    best = candidate.string();
+                }
+            }
+            if (best.has_value()) {
+                return best;
+            }
+        }
+
+        if (current == current.root_path()) {
+            break;
+        }
+        current = current.parent_path();
+    }
+
+    return nullopt;
 }
 
 json &getTemplateItems() {

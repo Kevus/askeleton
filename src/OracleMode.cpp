@@ -8,12 +8,6 @@
 
 namespace {
 
-bool isExplicitLeafType(const InfoType &type) {
-    return !type.isContainer() && !type.isRecord() && !type.isOptional() &&
-           !type.isPair() && !type.isTuple() && !type.isPointer() &&
-           !type.isReference();
-}
-
 bool supportsExplicitOracleImpl(const InfoType &type) {
     if (type.original == "void") {
         return false;
@@ -37,14 +31,11 @@ bool supportsExplicitOracleImpl(const InfoType &type) {
     }
 
     if (type.isList()) {
-        const auto args = type.getTemplateArguments();
-        return args.size() == 1 && isExplicitLeafType(args.front());
+        return false;
     }
 
     if (type.isMap()) {
-        const auto args = type.getTemplateArguments();
-        return args.size() == 2 && isExplicitLeafType(args.front()) &&
-               isExplicitLeafType(args.back());
+        return false;
     }
 
     if (type.isRecord()) {

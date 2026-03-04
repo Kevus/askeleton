@@ -27,6 +27,7 @@
 #include <optional>
 #include <set>
 #include <sstream>
+#include <unordered_set>
 #include <unordered_map>
 #include <vector>
 #include <unistd.h>
@@ -73,6 +74,7 @@ class NormalizedCompilationDatabase : public CompilationDatabase {
         commands_.reserve(cmds.size());
         allCommands_.reserve(cmds.size());
         allFiles_.reserve(cmds.size());
+        std::unordered_set<std::string> seenFiles;
 
         for (const auto &cmd : cmds) {
             fs::path dir = cmd.Directory;
@@ -85,9 +87,11 @@ class NormalizedCompilationDatabase : public CompilationDatabase {
             normalized.Directory = dirAbs.string();
             normalized.Filename = absFileStr;
 
-            commands_[absFileStr].push_back(normalized);
-            allCommands_.push_back(normalized);
-            allFiles_.push_back(absFileStr);
+            if (seenFiles.insert(absFileStr).second) {
+                commands_[absFileStr].push_back(normalized);
+                allCommands_.push_back(normalized);
+                allFiles_.push_back(absFileStr);
+            }
         }
     }
 
@@ -111,6 +115,107 @@ class NormalizedCompilationDatabase : public CompilationDatabase {
     std::vector<CompileCommand> allCommands_;
     std::vector<std::string> allFiles_;
 };
+
+static bool shouldKeepCompileArg(llvm::StringRef arg) {
+    if (arg.empty() || arg == "-c" || arg == "-o") {
+        return false;
+    }
+    return arg.starts_with("-I") || arg.starts_with("-isystem") || arg.starts_with("-D") ||
+           arg.starts_with("-stdlib=") || arg.starts_with("-fPIC") ||
+           arg.starts_with("-fvisibility") || arg.starts_with("-pthread") ||
+           arg == "-include";
+}
+
+static std::string shellEscapeArg(llvm::StringRef arg) {
+    std::string s = arg.str();
+    if (s.find_first_of(" \t\"'\\$`()") == std::string::npos) {
+        return s;
+    }
+    std::string escaped = "'";
+    for (char c : s) {
+        if (c == '\'') {
+            escaped += "'\\''";
+        } else {
+            escaped.push_back(c);
+        }
+    }
+    escaped.push_back('\'');
+    return escaped;
+}
+
+static std::map<std::string, std::string> collectCompileFlagsBySourcePath(
+    const CompilationDatabase &compdb, const std::vector<std::string> &sourcesForTool) {
+    std::map<std::string, std::string> result;
+
+    for (const auto &source : sourcesForTool) {
+        const auto commands = compdb.getCompileCommands(source);
+        if (commands.empty()) {
+            continue;
+        }
+
+        const auto &cmd = commands.front();
+        std::vector<std::string> kept;
+        for (std::size_t i = 1; i < cmd.CommandLine.size(); ++i) {
+            const std::string &arg = cmd.CommandLine[i];
+            if (!shouldKeepCompileArg(arg)) {
+                continue;
+            }
+
+            kept.push_back(shellEscapeArg(arg));
+            if ((arg == "-I" || arg == "-isystem" || arg == "-D" || arg == "-include") &&
+                i + 1 < cmd.CommandLine.size()) {
+                kept.push_back(shellEscapeArg(cmd.CommandLine[++i]));
+            }
+        }
+
+        std::ostringstream ss;
+        for (std::size_t i = 0; i < kept.size(); ++i) {
+            if (i > 0) {
+                ss << " ";
+            }
+            ss << kept[i];
+        }
+        result[source] = ss.str();
+    }
+
+    return result;
+}
+
+static std::map<std::string, std::vector<std::string>> collectCompanionSourcesBySourcePath(
+    const CompilationDatabase &compdb, const std::vector<std::string> &sourcesForTool) {
+    std::unordered_map<std::string, std::vector<std::string>> groups;
+    for (const auto &cmd : compdb.getAllCompileCommands()) {
+        std::string source = cmd.Filename;
+        std::string groupKey = source;
+        if (!cmd.Output.empty()) {
+            groupKey = fs::path(cmd.Output).parent_path().string();
+        }
+        groups[groupKey].push_back(source);
+    }
+
+    std::map<std::string, std::vector<std::string>> result;
+    for (const auto &source : sourcesForTool) {
+        const auto commands = compdb.getCompileCommands(source);
+        if (commands.empty()) {
+            continue;
+        }
+        const auto &cmd = commands.front();
+        std::string groupKey = source;
+        if (!cmd.Output.empty()) {
+            groupKey = fs::path(cmd.Output).parent_path().string();
+        }
+
+        std::vector<std::string> companions;
+        for (const auto &candidate : groups[groupKey]) {
+            if (candidate != source) {
+                companions.push_back(candidate);
+            }
+        }
+        result[source] = companions;
+    }
+
+    return result;
+}
 
 static std::optional<std::string> findBuildPathArg(int argc, const char **argv) {
     for (int i = 1; i < argc; ++i) {
@@ -791,7 +896,12 @@ int main(int argc, const char **argv) {
             return 2;
         }
     }
-    
+
+    Generator::setCompileFlags(
+        collectCompileFlagsBySourcePath(*toolCompdb, sourcesForTool));
+    Generator::setCompanionSources(
+        collectCompanionSourcesBySourcePath(*toolCompdb, sourcesForTool));
+
     ClangTool Tool(*toolCompdb, sourcesForTool);
     auto tool_start = std::chrono::steady_clock::now();
     int result = Tool.run(newFrontendActionFactory(&Finder).get());

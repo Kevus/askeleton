@@ -144,6 +144,9 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
 
             // In this case, we do not want class functions
             if (!isa<CXXMethodDecl>(UT) && !UT->isOverloadedOperator()) {
+                if (!UT->isExternallyVisible()) {
+                    return;
+                }
 
                 // Get the file name
                 const auto filePath =
@@ -1029,6 +1032,7 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     if (function_occurrences[functionName]++ > 1) {
         functionName += "_" + std::to_string(function_occurrences[functionName]);
     }
+    testGen.registerInvocationName(functionName, UT->getQualifiedNameAsString());
     if (coverageMode == CoverageMode::Strict && requiresMutableAliasHandling(parameters)) {
         throw ComplexTypeException(
             "coverage_policy_mutable_parameter",

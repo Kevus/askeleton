@@ -43,7 +43,11 @@ const CXXRecordDecl *getRecordDecl(const InfoType &type) {
     if (type.type.isNull()) {
         return nullptr;
     }
-    return type.type->getAsCXXRecordDecl();
+    const auto *record = type.type->getAsCXXRecordDecl();
+    if (!record) {
+        return nullptr;
+    }
+    return record->getDefinition();
 }
 
 bool hasPublicUsableDestructor(const CXXRecordDecl *record) {
@@ -157,6 +161,10 @@ void validateTypesMaterialization(const std::vector<InfoVariable> &variables,
 std::optional<ConstructorSelection>
 selectConstructorForInstantiation(const CXXRecordDecl *record,
                                   const std::string &functionName) {
+    if (!record) {
+        return std::nullopt;
+    }
+    record = record->getDefinition();
     if (!record) {
         return std::nullopt;
     }
