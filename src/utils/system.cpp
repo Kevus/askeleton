@@ -19,6 +19,19 @@ using json = nlohmann::json;
 
 namespace {
 
+fs::path detectExecutableHome() {
+    std::error_code ec;
+    fs::path executable = fs::read_symlink("/proc/self/exe", ec);
+    if (ec || executable.empty())
+        return {};
+
+    fs::path home = executable.parent_path();
+    if (!home.empty() && fs::exists(home / "data" / "configuration.json"))
+        return home;
+
+    return {};
+}
+
 bool readJsonFile(const fs::path &filePath, json &output, std::string &error) {
     if (!fileExists(filePath.string())) {
         error = "ERROR: File not found. Check " + filePath.string();
@@ -297,8 +310,11 @@ fs::path getAskeletonHome() {
     if (home.empty()) {
         if (checkAskeletonHome())
             home = fs::path(getenv("ASKELETON_HOME"));
-        else
-            home = fs::current_path();
+        else {
+            home = detectExecutableHome();
+            if (home.empty())
+                home = fs::current_path();
+        }
     }
 
     return home;

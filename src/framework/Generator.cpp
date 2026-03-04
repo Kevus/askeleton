@@ -39,6 +39,52 @@ bool usesPointerPresenceOracle(const InfoType &type) {
     return type.isPointer() && !isCStringLike(type) && type.getUnderlyingType().isRecord();
 }
 
+const clang::CXXRecordDecl *getRecordDecl(const InfoType &type);
+
+bool hasUsablePublicDefaultConstruction(const clang::CXXRecordDecl *record) {
+    if (!record)
+        return false;
+
+    bool declaredConstructor = false;
+    for (const auto *ctor : record->ctors()) {
+        declaredConstructor = true;
+        if (ctor->isDefaultConstructor() && !ctor->isCopyOrMoveConstructor()) {
+            return ctor->getAccess() == clang::AS_public && !ctor->isDeleted();
+        }
+    }
+
+    return !declaredConstructor && record->hasDefaultConstructor();
+}
+
+bool hasUsablePublicCopyOrMoveConstruction(const clang::CXXRecordDecl *record) {
+    if (!record)
+        return false;
+
+    bool declaredCopyOrMove = false;
+    for (const auto *ctor : record->ctors()) {
+        if (!ctor->isCopyOrMoveConstructor())
+            continue;
+
+        declaredCopyOrMove = true;
+        if (ctor->getAccess() == clang::AS_public && !ctor->isDeleted())
+            return true;
+    }
+
+    return !declaredCopyOrMove;
+}
+
+bool requiresDirectRecordInitialization(const InfoType &type) {
+    if (!type.isRecord())
+        return false;
+
+    const auto *record = getRecordDecl(type);
+    if (!record)
+        return false;
+
+    return !hasUsablePublicCopyOrMoveConstruction(record) &&
+           hasUsablePublicDefaultConstruction(record);
+}
+
 std::string buildStructuredReadSuffix(const InfoType &type) {
     std::string suffix = removeNamespaceQualifier(type.original);
     replaceAll(suffix, " ", "_");
@@ -743,6 +789,11 @@ void Generator::createTypeReadToFixture(const InfoType &type, unsigned level) {
         return;
 
     } else if (type.isRecord()) {
+        if (requiresDirectRecordInitialization(type)) {
+            createRecordOverloadToFixture(type);
+            markTypeAsSupported(type);
+            return;
+        }
         createRecordReadToFixture(type);
         createRecordOverloadToFixture(type);
     }
@@ -779,9 +830,16 @@ Generator::generateParameterInitialization(const std::vector<InfoVariable> &para
                                         keyPrefix + param.name;
             const bool isConstCString = containsSubstring(param.original, "const");
             ss << "\tstd::string " << storageName << " = Read_string(\"" << readKey
-               << "\");\n\t" << param.original << " " << variableName << " = "
-               << storageName
-               << (isConstCString ? ".c_str()" : ".data()");
+               << "\");\n";
+            if (!isConstCString) {
+                ss << "\tif (" << storageName << ".empty()) " << storageName
+                   << ".push_back('\\0');\n";
+            }
+            ss << "\t" << param.original << " " << variableName << " = ";
+            if (isConstCString)
+                ss << storageName << ".c_str()";
+            else
+                ss << "&" << storageName << "[0]";
         } else {
             ss << "\t" << generateParameterInitialization(param.getPointers().first, function,
                                                           invocation, variablePrefix,
@@ -806,11 +864,15 @@ std::string Generator::buildWritableParameterInitialization(
         ss << "\tstd::string " << variablePrefix << variable.name
            << "_storage(64, '\\0');\n";
         ss << "\t" << variable.original << " " << variableName << " = "
-           << variablePrefix << variable.name << "_storage.data()";
+           << "&" << variablePrefix << variable.name << "_storage[0]";
         return ss.str();
     }
 
     if (underlying.isContainer()) {
+        return "\t" + underlying.original + " " + variableName + "{}";
+    }
+
+    if (requiresDirectRecordInitialization(underlying)) {
         return "\t" + underlying.original + " " + variableName + "{}";
     }
 
@@ -831,6 +893,10 @@ std::string Generator::generateParameterInitialization(const InfoVariable &varia
     std::string typeForReadMethod = normalizeReadMethodType(underlying);
     const std::string variableName = variablePrefix + variable.name;
     const std::string readKeyName = keyPrefix + variable.name;
+
+    if (requiresDirectRecordInitialization(underlying)) {
+        return "\t" + underlying.original + " " + variableName + "{}";
+    }
 
     std::map<std::string, std::string> replacements = {
         {templateItems["tplitem"]["underlying"], underlying.original},

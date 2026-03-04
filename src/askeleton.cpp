@@ -434,11 +434,19 @@ void moveGeneratedFolderToLog() {
             }
         }
 
-        logFolder /= (config["route"]["generated"].get<string>() + "_" +
-                      getTodayString("%d%m%Y_%H%M%S"));
-        rename(utFolder, logFolder);
+        const fs::path generatedPath = config["route"]["generated"].get<string>();
+        const std::string baseName = generatedPath.filename().string();
+        fs::path archivePath =
+            logFolder / (baseName + "_" + getTodayString("%d%m%Y_%H%M%S"));
+        for (unsigned suffix = 1; fs::exists(archivePath); ++suffix) {
+            archivePath = logFolder /
+                          (baseName + "_" + getTodayString("%d%m%Y_%H%M%S") + "_" +
+                           std::to_string(suffix));
+        }
+        rename(utFolder, archivePath);
         if (Logger::instance().level() >= LogLevel::Normal)
-            llvm::outs() << "Previous generated folder moved to " << logFolder << "\n";
+            llvm::outs() << "Previous generated folder moved to " << archivePath
+                         << "\n";
     }
 }
 
