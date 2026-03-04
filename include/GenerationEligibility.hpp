@@ -17,8 +17,15 @@ enum class InstancePlanKind {
     OwnerFactory,
 };
 
+enum class InstanceSubjectKind {
+    Value,
+    Pointer,
+    Reference,
+};
+
 struct InstancePlan {
     InstancePlanKind kind = InstancePlanKind::DefaultConstructor;
+    InstanceSubjectKind subjectKind = InstanceSubjectKind::Value;
     std::vector<InfoVariable> setupParams;
     std::string callableExpr;
     std::string initExpr;
@@ -34,6 +41,9 @@ struct InstancePlan {
     bool usesCallable() const { return !callableExpr.empty(); }
     bool usesDirectExpression() const { return !initExpr.empty(); }
     bool usesOwner() const { return ownerPlan != nullptr; }
+    bool usesMemberAccessArrow() const {
+        return subjectKind == InstanceSubjectKind::Pointer;
+    }
 };
 
 bool requiresMutableAliasHandling(const std::vector<InfoVariable> &params);

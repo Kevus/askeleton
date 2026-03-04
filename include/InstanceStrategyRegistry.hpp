@@ -4,10 +4,16 @@
 #include <optional>
 #include <string>
 
+#include "GenerationEligibility.hpp"
 #include "VariableInfo.hpp"
 
 struct ConfiguredInstanceStrategy {
     std::string expr;
+    std::string ownerType;
+    std::string ownerExpr;
+    std::string ownerCallable;
+    InstanceSubjectKind subjectKind = InstanceSubjectKind::Value;
+    InstanceSubjectKind ownerSubjectKind = InstanceSubjectKind::Value;
 };
 
 class InstanceStrategyRegistry {

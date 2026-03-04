@@ -241,11 +241,17 @@ construction plan on its own:
 ```json
 {
   "types": {
-    "Widget": { "expr": "MakeWidget()" }
+    "Widget": { "expr": "MakeWidget()", "subject": "pointer" }
   },
   "functions": {
     "Widget::Run": {
-      "instance": { "expr": "BuildReadyWidget()" }
+      "instance": {
+        "owner_type": "WidgetFactory",
+        "owner_expr": "WidgetFactory{}",
+        "callable": "CreateReady()",
+        "owner_subject": "value",
+        "subject": "pointer"
+      }
     }
   }
 }
@@ -256,6 +262,12 @@ Notes:
   override exists.
 - `functions` applies to the exact method key and takes precedence over `types`.
 - `expr` is emitted as the direct initialization expression for the test object.
+- `subject` may be `value`, `pointer`, or `reference` and controls whether the
+  generated method call uses `.` or `->`.
+- `owner_type` + `owner_expr` + `callable` let you describe an explicit owner
+  factory chain without adding a new CLI mode.
+- `owner_subject` uses the same values and controls whether the owner itself is
+  treated as a value or pointer subject.
 - Owner factories are inferred only after direct strategies fail, so constructor
   and direct factory paths still win when they are available.
 

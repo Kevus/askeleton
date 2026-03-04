@@ -10,6 +10,21 @@
 using json = nlohmann::json;
 
 namespace {
+InstanceSubjectKind parseSubjectKind(const json &value) {
+    if (!value.is_string()) {
+        return InstanceSubjectKind::Value;
+    }
+
+    const std::string subject = toLower(value.get<std::string>());
+    if (subject == "pointer" || subject == "ptr") {
+        return InstanceSubjectKind::Pointer;
+    }
+    if (subject == "reference" || subject == "ref") {
+        return InstanceSubjectKind::Reference;
+    }
+    return InstanceSubjectKind::Value;
+}
+
 std::string normalizeKey(std::string key) {
     replaceAll(key, " ", "_");
     return key;
@@ -37,12 +52,30 @@ std::optional<ConfiguredInstanceStrategy> parseStrategyNode(const json &value) {
     ConfiguredInstanceStrategy strategy;
     if (value.is_string()) {
         strategy.expr = value.get<std::string>();
-    } else if (value.is_object() && value.contains("expr") &&
-               value["expr"].is_string()) {
-        strategy.expr = value["expr"].get<std::string>();
+    } else if (value.is_object()) {
+        if (value.contains("expr") && value["expr"].is_string()) {
+            strategy.expr = value["expr"].get<std::string>();
+        }
+        if (value.contains("subject")) {
+            strategy.subjectKind = parseSubjectKind(value["subject"]);
+        }
+        if (value.contains("owner_type") && value["owner_type"].is_string()) {
+            strategy.ownerType = value["owner_type"].get<std::string>();
+        }
+        if (value.contains("owner_expr") && value["owner_expr"].is_string()) {
+            strategy.ownerExpr = value["owner_expr"].get<std::string>();
+        }
+        if (value.contains("callable") && value["callable"].is_string()) {
+            strategy.ownerCallable = value["callable"].get<std::string>();
+        }
+        if (value.contains("owner_subject")) {
+            strategy.ownerSubjectKind = parseSubjectKind(value["owner_subject"]);
+        }
     }
 
-    if (strategy.expr.empty()) {
+    const bool directExpr = !strategy.expr.empty();
+    const bool ownerExpr = !strategy.ownerType.empty() && !strategy.ownerCallable.empty();
+    if (!directExpr && !ownerExpr) {
         return std::nullopt;
     }
     return strategy;

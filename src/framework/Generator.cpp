@@ -59,6 +59,31 @@ std::string buildInstanceCallableInvocation(const InstancePlan &plan,
     return ss.str();
 }
 
+std::string buildOwnerCallableInvocation(const std::string &ownerName,
+                                         const InstancePlan &plan,
+                                         const std::string &variablePrefix) {
+    const char *access = (plan.ownerPlan && plan.ownerPlan->usesMemberAccessArrow()) ? "->"
+                                                                                      : ".";
+    if (plan.setupParams.empty() && plan.callableExpr.find('(') != std::string::npos) {
+        return ownerName + access + plan.callableExpr;
+    }
+    return ownerName + access + buildInstanceCallableInvocation(plan, variablePrefix);
+}
+
+std::string buildPlanDeclaration(const std::string &declType, const InstancePlan &plan) {
+    const bool inferredExpression =
+        plan.usesDirectExpression() || plan.usesCallable() || plan.usesOwner();
+    if (!inferredExpression) {
+        return declType;
+    }
+
+    if (plan.subjectKind == InstanceSubjectKind::Reference) {
+        return "auto &";
+    }
+
+    return "auto";
+}
+
 std::string buildFactoryReadMethod(const InfoType &type, const std::string &expr) {
     std::ostringstream ss;
     ss << "    " << type.original << " Read_" << type.formatted
@@ -1031,8 +1056,12 @@ std::string Generator::buildInvocation(const std::string &function, bool isStati
     std::string invocation = returnsPointer ? "*" : "";
     if (isStatic)
         invocation += targetQualifiedName + "::";
-    else if (isFromClass)
-        invocation += instancePrefix + generateTestObjectForTarget(targetName) + ".";
+    else if (isFromClass) {
+        const bool pointerSubject =
+            instancePlan_.has_value() && instancePlan_->usesMemberAccessArrow();
+        invocation += instancePrefix + generateTestObjectForTarget(targetName) +
+                      (pointerSubject ? "->" : ".");
+    }
     invocation += invocationFunction;
     return invocation;
 }
@@ -1099,11 +1128,12 @@ std::string Generator::buildPlanInitialization(const std::string &declType,
     }
 
     std::ostringstream line;
-    line << "\t" << declType << " " << objectName;
+    line << "\t" << buildPlanDeclaration(declType, plan) << " " << objectName;
 
     if (plan.usesOwner()) {
-        line << " = " << objectName << "_owner." << plan.callableExpr << "("
-             << generateParameterInvocation(plan.setupParams, variablePrefix) << ");";
+        line << " = "
+             << buildOwnerCallableInvocation(objectName + "_owner", plan, variablePrefix)
+             << ";";
     } else if (plan.usesDirectExpression()) {
         line << " = " << plan.initExpr << ";";
     } else if (plan.usesCallable()) {

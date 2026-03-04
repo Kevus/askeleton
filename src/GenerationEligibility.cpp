@@ -95,37 +95,71 @@ bool usesExplicitFactory(const InfoType &type, const std::string &functionName) 
     throw ComplexTypeException(reason, detail + ": " + typeName);
 }
 
-bool isSameCanonicalRecord(const CXXRecordDecl *record, QualType type) {
-    if (!record || type.isNull()) {
-        return false;
+const CXXRecordDecl *canonicalRecord(const CXXRecordDecl *record) {
+    if (!record) {
+        return nullptr;
+    }
+
+    if (const auto *definition = record->getDefinition()) {
+        record = definition;
+    }
+    return record->getCanonicalDecl();
+}
+
+const CXXRecordDecl *recordFromQualType(QualType type) {
+    if (type.isNull()) {
+        return nullptr;
     }
 
     type = type.getNonReferenceType().getCanonicalType().getUnqualifiedType();
-    const auto *returned = type->getAsCXXRecordDecl();
-    if (!returned) {
-        return false;
+    const auto *record = type->getAsCXXRecordDecl();
+    if (!record) {
+        return nullptr;
     }
 
-    const auto *lhs = record->getCanonicalDecl();
-    const auto *rhs = returned->getDefinition();
-    if (!rhs) {
-        rhs = returned;
-    }
-    return lhs == rhs->getCanonicalDecl();
+    return canonicalRecord(record);
 }
 
-bool returnsTargetByValue(const CXXRecordDecl *record, const FunctionDecl *function) {
-    if (!record || !function) {
+bool isSameOrDerivedRecord(const CXXRecordDecl *target, QualType candidateType) {
+    const auto *targetRecord = canonicalRecord(target);
+    const auto *candidateRecord = recordFromQualType(candidateType);
+    if (!targetRecord || !candidateRecord) {
         return false;
+    }
+
+    if (targetRecord == candidateRecord) {
+        return true;
+    }
+
+    return candidateRecord->isDerivedFrom(targetRecord);
+}
+
+std::optional<InstanceSubjectKind>
+compatibleReturnSubject(const CXXRecordDecl *target, const FunctionDecl *function) {
+    if (!target || !function) {
+        return std::nullopt;
     }
 
     QualType returnType = function->getReturnType();
-    if (returnType.isNull() || returnType->isPointerType() ||
-        returnType->isReferenceType()) {
-        return false;
+    if (returnType.isNull()) {
+        return std::nullopt;
     }
 
-    return isSameCanonicalRecord(record, returnType);
+    InstanceSubjectKind subjectKind = InstanceSubjectKind::Value;
+    QualType objectType = returnType;
+    if (returnType->isPointerType()) {
+        subjectKind = InstanceSubjectKind::Pointer;
+        objectType = returnType->getPointeeType();
+    } else if (returnType->isReferenceType()) {
+        subjectKind = InstanceSubjectKind::Reference;
+        objectType = returnType.getNonReferenceType();
+    }
+
+    if (!isSameOrDerivedRecord(target, objectType)) {
+        return std::nullopt;
+    }
+
+    return subjectKind;
 }
 
 std::vector<InfoVariable> buildRequiredParams(const FunctionDecl *function) {
@@ -208,7 +242,19 @@ std::optional<InstancePlan> tryConfiguredInstancePlan(const CXXRecordDecl *recor
 
     InstancePlan plan;
     plan.kind = InstancePlanKind::Configured;
-    plan.initExpr = strategy->expr;
+    plan.subjectKind = strategy->subjectKind;
+    if (!strategy->ownerType.empty() && !strategy->ownerCallable.empty()) {
+        plan.kind = InstancePlanKind::OwnerFactory;
+        plan.ownerTypeName = strategy->ownerType;
+        plan.callableExpr = strategy->ownerCallable;
+        plan.ownerPlan = std::make_shared<InstancePlan>();
+        plan.ownerPlan->kind = strategy->ownerExpr.empty() ? InstancePlanKind::DefaultConstructor
+                                                           : InstancePlanKind::Configured;
+        plan.ownerPlan->initExpr = strategy->ownerExpr;
+        plan.ownerPlan->subjectKind = strategy->ownerSubjectKind;
+    } else {
+        plan.initExpr = strategy->expr;
+    }
     return plan;
 }
 
@@ -221,12 +267,14 @@ std::optional<InstancePlan> tryStaticFactoryPlan(const CXXRecordDecl *record,
             method->getAccess() != AS_public) {
             continue;
         }
-        if (!returnsTargetByValue(record, method)) {
+        const auto subjectKind = compatibleReturnSubject(record, method);
+        if (!subjectKind.has_value()) {
             continue;
         }
 
         InstancePlan candidate;
         candidate.kind = InstancePlanKind::StaticFactory;
+        candidate.subjectKind = *subjectKind;
         candidate.callableExpr =
             record->getQualifiedNameAsString() + "::" + method->getNameAsString();
         candidate.totalParameters = method->getNumParams();
@@ -262,12 +310,14 @@ void considerFreeFactoryInContext(const CXXRecordDecl *record,
         if (!function->isExternallyVisible()) {
             continue;
         }
-        if (!returnsTargetByValue(record, function)) {
+        const auto subjectKind = compatibleReturnSubject(record, function);
+        if (!subjectKind.has_value()) {
             continue;
         }
 
         InstancePlan candidate;
         candidate.kind = InstancePlanKind::FreeFactory;
+        candidate.subjectKind = *subjectKind;
         candidate.callableExpr = function->getQualifiedNameAsString();
         candidate.totalParameters = function->getNumParams();
         candidate.setupParams = buildRequiredParams(function);
@@ -345,12 +395,14 @@ void considerOwnerFactoriesInContext(const CXXRecordDecl *targetRecord,
                 method->getAccess() != AS_public) {
                 continue;
             }
-            if (!returnsTargetByValue(targetRecord, method)) {
+            const auto subjectKind = compatibleReturnSubject(targetRecord, method);
+            if (!subjectKind.has_value()) {
                 continue;
             }
 
             InstancePlan candidate;
             candidate.kind = InstancePlanKind::OwnerFactory;
+            candidate.subjectKind = *subjectKind;
             candidate.callableExpr = method->getNameAsString();
             candidate.ownerTypeName = ownerRecord->getQualifiedNameAsString();
             candidate.ownerPlan = std::make_shared<InstancePlan>(*ownerPlan);
