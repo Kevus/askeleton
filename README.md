@@ -321,10 +321,16 @@ Common `reason` values include:
 - `compile_commands.json` not found: pass `-p <build-path>` to its directory.
 - `compile_commands.json` uses relative paths: supported. ASkeleTon normalizes
   entries internally so relative entries still match absolute source paths.
+- C projects with `.c` dependencies: generated Makefiles now compile those
+  source dependencies with `CC` (C compiler) and normalize include paths to
+  absolute paths from the compilation database.
 - Headers not found in fixture: add the include manually in `*_fixture.hpp`.
 - Empty containers in `boundary` profile: use `random` or `safe`.
 - `llvm-config-18 not found`: install `llvm-18` and `llvm-18-tools`.
 - Link errors mentioning `APINotesManager`: install `libclang-18-dev`.
+- Link errors for external symbols (e.g. OpenSSL internals): the generated test
+  may need extra project libraries during link; this is project-specific and
+  must be provided in the generated Makefile/link flags.
 
 **Docs**
 Architecture overview: `doc/Architecture.md`  

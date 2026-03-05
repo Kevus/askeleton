@@ -1,4 +1,5 @@
 CXX=clang++ --std=c++17 {extraCompileFlags}
+CC=clang {extraCompileFlags}
 DEPFLAGS = -MMD -MP
 LIBS = -lgtest -lgtest_main -pthread
 OBJS = {objectFiles}

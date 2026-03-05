@@ -116,6 +116,10 @@ bool hasUnresolvedTemplatePlaceholder(const InfoType &type) {
     return type.original.find("type-parameter-") != std::string::npos;
 }
 
+bool isVoidType(const InfoType &type) {
+    return type.original == "void";
+}
+
 [[noreturn]] void throwUnsupportedType(const std::string &reason,
                                        const std::string &typeName,
                                        const std::string &detail) {
@@ -505,6 +509,29 @@ void validateTypeMaterialization(const InfoType &type,
                              "nested pointer/reference materialization is not supported");
     }
 
+    if (!materialized.type.isNull() && materialized.type->isIncompleteType()) {
+        throwUnsupportedType("incomplete_type", materialized.original,
+                             "incomplete type cannot be materialized");
+    }
+
+    if (type.isPointer()) {
+        const bool isCStringPointer =
+            !materialized.original.empty() && materialized.original == "char";
+        const bool isBuiltinMaterialized =
+            !materialized.type.isNull() && materialized.type->isBuiltinType();
+        const bool isEnumMaterialized = materialized.isEnum();
+        const bool isSupportedRecordPointee =
+            materialized.isRecord() && getRecordDecl(materialized) != nullptr;
+        if (!isCStringPointer &&
+            (isVoidType(materialized) ||
+             (!isBuiltinMaterialized && !isEnumMaterialized &&
+              !isSupportedRecordPointee))) {
+            throwUnsupportedType(
+                "unsupported_pointer_pointee", type.original,
+                "pointer pointee requires custom factory/stub strategy");
+        }
+    }
+
     if (hasUnresolvedTemplatePlaceholder(materialized)) {
         throwUnsupportedType("unsupported_template_parameter", materialized.original,
                              "dependent template parameter cannot be materialized");
@@ -516,7 +543,8 @@ void validateTypeMaterialization(const InfoType &type,
 
     const auto *record = getRecordDecl(materialized);
     if (!record) {
-        return;
+        throwUnsupportedType("incomplete_record", materialized.original,
+                             "record declaration has no visible definition");
     }
 
     if (record->isAbstract()) {

@@ -36,7 +36,30 @@ bool isCStringLike(const InfoType &type) {
 }
 
 bool usesPointerPresenceOracle(const InfoType &type) {
-    return type.isPointer() && !isCStringLike(type) && type.getUnderlyingType().isRecord();
+    return type.isPointer() && !isCStringLike(type);
+}
+
+bool isCSourceFile(const std::string &path) {
+    std::string ext = fs::path(path).extension().string();
+    std::transform(ext.begin(), ext.end(), ext.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+    return ext == ".c";
+}
+
+bool isVoidType(const InfoType &type) {
+    std::string value = type.original;
+    removeAll(value, {"const", "volatile"});
+    ltrim(value);
+    rtrim(value);
+    return value == "void";
+}
+
+std::string buildVoidPointerStorageInitialization(const std::string &declType,
+                                                  const std::string &name) {
+    std::ostringstream ss;
+    ss << "\tunsigned char " << name << "_storage[64]{};\n";
+    ss << "\t" << declType << " " << name << " = " << name << "_storage";
+    return ss.str();
 }
 
 const clang::CXXRecordDecl *getRecordDecl(const InfoType &type);
@@ -463,32 +486,31 @@ void Generator::setValuesToChange(std::map<std::string, std::string> &valuesToCh
     auto sourceFile = getSourceFile(targetFilePath);
     auto headerFile = getHeaderFile(targetFilePath);
     const std::string sourcePath = sourceFile.value_or(targetFilePath);
-    const bool includeSourceInFixture = !isFromClass || !headerFile.has_value();
+    const bool includeSourceInFixture = !headerFile.has_value();
     const std::string includePath =
         includeSourceInFixture ? sourcePath : headerFile.value();
     const bool compileSourceSeparately = includePath != sourcePath;
     const auto flagsIt = compileFlagsBySourcePath.find(sourcePath);
     const std::string extraCompileFlags =
         (flagsIt != compileFlagsBySourcePath.end()) ? flagsIt->second : "";
-    const auto companionIt = companionSourcesBySourcePath.find(sourcePath);
-    const std::vector<std::string> companions =
-        (companionIt != companionSourcesBySourcePath.end()) ? companionIt->second
-                                                            : std::vector<std::string>{};
+    const std::vector<std::string> companions;
 
     std::vector<std::string> objectFiles;
     std::ostringstream sourceBuildRules;
 
     if (compileSourceSeparately) {
         objectFiles.push_back(targetName + ".o");
+        const char *compiler = isCSourceFile(sourcePath) ? "$(CC)" : "$(CXX)";
         sourceBuildRules << targetName << ".o: " << sourcePath
-                         << "\n\t$(CXX) -c $< -o $@\n";
+                         << "\n\t" << compiler << " -c $< -o $@\n";
     }
 
     for (std::size_t i = 0; i < companions.size(); ++i) {
         const std::string objectName = "dep_" + std::to_string(i) + ".o";
         objectFiles.push_back(objectName);
+        const char *compiler = isCSourceFile(companions[i]) ? "$(CC)" : "$(CXX)";
         sourceBuildRules << objectName << ": " << companions[i]
-                         << "\n\t$(CXX) -c $< -o $@\n";
+                         << "\n\t" << compiler << " -c $< -o $@\n";
     }
 
     objectFiles.push_back("tests.o");
@@ -841,10 +863,15 @@ Generator::generateParameterInitialization(const std::vector<InfoVariable> &para
             else
                 ss << "&" << storageName << "[0]";
         } else {
+            if (param.isPointer() && isVoidType(param.getUnderlyingType())) {
+                ss << buildVoidPointerStorageInitialization(param.original,
+                                                            variablePrefix + param.name);
+            } else {
             ss << "\t" << generateParameterInitialization(param.getPointers().first, function,
                                                           invocation, variablePrefix,
                                                           keyPrefix)
                ;
+            }
         }
         ss << ";";
         if (&param != &parameters.back())
@@ -858,6 +885,10 @@ std::string Generator::buildWritableParameterInitialization(
     const InfoVariable &variable, const std::string &variablePrefix) const {
     const InfoType underlying = variable.getUnderlyingType();
     const std::string variableName = variablePrefix + variable.name;
+
+    if (variable.isPointer() && isVoidType(underlying)) {
+        return buildVoidPointerStorageInitialization(variable.original, variableName);
+    }
 
     if (isCStringLike(variable)) {
         std::ostringstream ss;

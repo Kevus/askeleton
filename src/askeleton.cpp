@@ -121,9 +121,25 @@ static bool shouldKeepCompileArg(llvm::StringRef arg) {
         return false;
     }
     return arg.starts_with("-I") || arg.starts_with("-isystem") || arg.starts_with("-D") ||
-           arg.starts_with("-stdlib=") || arg.starts_with("-fPIC") ||
+           arg.starts_with("-iquote") || arg.starts_with("-stdlib=") ||
+           arg.starts_with("-fPIC") ||
            arg.starts_with("-fvisibility") || arg.starts_with("-pthread") ||
            arg == "-include";
+}
+
+static std::string absolutizePathIfRelative(llvm::StringRef value,
+                                            const fs::path &baseDir) {
+    fs::path p(value.str());
+    if (p.empty() || p.is_absolute()) {
+        return value.str();
+    }
+    return fs::absolute(baseDir / p).string();
+}
+
+static std::string normalizePathFlagValue(llvm::StringRef option,
+                                          llvm::StringRef value,
+                                          const fs::path &baseDir) {
+    return option.str() + absolutizePathIfRelative(value, baseDir);
 }
 
 static std::string shellEscapeArg(llvm::StringRef arg) {
@@ -154,6 +170,10 @@ static std::map<std::string, std::string> collectCompileFlagsBySourcePath(
         }
 
         const auto &cmd = commands.front();
+        fs::path cmdDir = cmd.Directory;
+        if (cmdDir.is_relative()) {
+            cmdDir = fs::absolute(cmdDir);
+        }
         std::vector<std::string> kept;
         for (std::size_t i = 1; i < cmd.CommandLine.size(); ++i) {
             const std::string &arg = cmd.CommandLine[i];
@@ -161,11 +181,41 @@ static std::map<std::string, std::string> collectCompileFlagsBySourcePath(
                 continue;
             }
 
-            kept.push_back(shellEscapeArg(arg));
-            if ((arg == "-I" || arg == "-isystem" || arg == "-D" || arg == "-include") &&
-                i + 1 < cmd.CommandLine.size()) {
-                kept.push_back(shellEscapeArg(cmd.CommandLine[++i]));
+            if (arg == "-I" || arg == "-isystem" || arg == "-iquote" || arg == "-include") {
+                if (i + 1 < cmd.CommandLine.size()) {
+                    kept.push_back(shellEscapeArg(arg));
+                    const std::string value =
+                        absolutizePathIfRelative(cmd.CommandLine[++i], cmdDir);
+                    kept.push_back(shellEscapeArg(value));
+                }
+                continue;
             }
+
+            if (arg.rfind("-I", 0) == 0 && arg.size() > 2) {
+                kept.push_back(shellEscapeArg(
+                    normalizePathFlagValue("-I", llvm::StringRef(arg).substr(2), cmdDir)));
+                continue;
+            }
+
+            if (arg.rfind("-isystem", 0) == 0 && arg.size() > 8) {
+                kept.push_back(shellEscapeArg(normalizePathFlagValue(
+                    "-isystem", llvm::StringRef(arg).substr(8), cmdDir)));
+                continue;
+            }
+
+            if (arg.rfind("-iquote", 0) == 0 && arg.size() > 7) {
+                kept.push_back(shellEscapeArg(
+                    normalizePathFlagValue("-iquote", llvm::StringRef(arg).substr(7), cmdDir)));
+                continue;
+            }
+
+            if (arg.rfind("-include", 0) == 0 && arg.size() > 8) {
+                kept.push_back(shellEscapeArg(normalizePathFlagValue(
+                    "-include", llvm::StringRef(arg).substr(8), cmdDir)));
+                continue;
+            }
+
+            kept.push_back(shellEscapeArg(arg));
         }
 
         std::ostringstream ss;

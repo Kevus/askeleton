@@ -7,6 +7,7 @@
 #include <iostream>
 #include <optional>
 #include <sstream>
+#include <unordered_map>
 
 #include "color.h"
 #include "framework/BoostGen.hpp"
@@ -119,6 +120,17 @@ std::optional<std::string> resolveAbsoluteSourcePath(ASTContext *context,
     return fs::absolute(rawFilePath).string();
 }
 
+bool headerLikelyDeclaresFunction(const std::string &headerPath,
+                                  const std::string &functionName) {
+    static std::unordered_map<std::string, std::string> headerCache;
+    auto it = headerCache.find(headerPath);
+    if (it == headerCache.end()) {
+        it = headerCache.emplace(headerPath, readFromFile(headerPath)).first;
+    }
+    const std::string needle = functionName + "(";
+    return it->second.find(needle) != std::string::npos;
+}
+
 std::string getFunctionKey(const clang::FunctionDecl *function) {
     return function->getNameInfo().getAsString();
 }
@@ -148,6 +160,9 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
                 if (!UT->isExternallyVisible()) {
                     return;
                 }
+                if (!UT->hasBody()) {
+                    return;
+                }
 
                 // Get the file name
                 const auto filePath =
@@ -156,6 +171,14 @@ void ASKGen::apply_FD1(const MatchFinder::MatchResult &Result) {
                 if (!filePath.has_value()) {
                     return;
                 }
+
+                if (const auto headerPath = getHeaderFile(*filePath);
+                    headerPath.has_value() &&
+                    !headerLikelyDeclaresFunction(*headerPath,
+                                                  UT->getNameInfo().getAsString())) {
+                    return;
+                }
+
                 string fileName = extractFileName(*filePath);
                 string target = fileName;
 
