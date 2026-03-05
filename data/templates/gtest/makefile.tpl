@@ -12,6 +12,7 @@ DEPS = $(OBJS:.o=.d)
 TARGET = {target}_test
 
 all: $(TARGET)
+test: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS) $(EXTRA_LIBS)
@@ -26,5 +27,7 @@ main.o: main.cpp
 
 clean:
 	rm -rf $(TARGET) $(OBJS) $(DEPS) *~
+
+compilation: tests.o
 
 -include $(DEPS)
