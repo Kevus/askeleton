@@ -322,15 +322,22 @@ Use `--report` or `--report-json` to generate a machine-readable summary with:
 - Coverage metrics (`generation_rate`, `skip_rate`) plus top skip reasons and
   targets with the most skips.
 
-Common `reason` values include:
-- `abstract_record`
-- `coverage_policy_instance_construction`
-- `coverage_policy_mutable_parameter`
-- `missing_fixture_strategy`
-- `missing_instance_strategy`
-- `non_public_lifecycle`
-- `unsupported_framework_feature`
-- `unsupported_indirection`
+Common `reason` values (human-readable summary):
+- `abstract_record`: type is abstract and cannot be instantiated for fixture setup.
+- `non_public_lifecycle`: destructor/lifecycle is not publicly usable.
+- `missing_fixture_strategy`: record cannot be constructed and no factory is configured.
+- `missing_instance_strategy`: no valid instance plan for method invocation.
+- `coverage_policy_mutable_parameter`: skipped by strict coverage policy.
+- `coverage_policy_instance_construction`: strict mode rejected non-default construction.
+- `unsupported_indirection`: pointer/reference depth is too complex.
+- `unsupported_pointer_pointee`: pointee type is not auto-materializable.
+- `unsupported_array_shape`: array form unsupported by current materializer.
+- `unsupported_template_parameter`: dependent template parameter unresolved.
+- `unsupported_type_shape`: type shape unsupported.
+- `incomplete_type` / `incomplete_record`: full type definition is unavailable.
+
+Full guide with didactic examples and fixes:
+- `doc/SkipReasons.md`
 
 **Troubleshooting**
 - `compile_commands.json` not found: pass `-p <build-path>` to its directory.
@@ -355,6 +362,7 @@ Architecture overview: `doc/Architecture.md`
 Rule catalog: `doc/DataRules.md`  
 Release checklist: `doc/ReleaseChecklist.md`  
 Known issues: `doc/KnownIssues.md`  
+Skip reasons guide: `doc/SkipReasons.md`  
 Dependencies: `doc/Dependencies.md`  
 Examples: `examples/README.md`
 
