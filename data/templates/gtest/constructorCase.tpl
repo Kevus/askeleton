@@ -1,11 +1,12 @@
-BOOST_FIXTURE_TEST_CASE({target}_{function}_{number}, Fixture) {
+TEST_F(Fixture, {target}_{function}_{number}) {
     Date("Start");
 
 {initializations}
 
-    BOOST_CHECK(
-        {class}({parameters})
-    );
+    EXPECT_NO_THROW({
+        {class} generated_instance({parameters});
+        (void)generated_instance;
+    });
 
     {pointers}
 

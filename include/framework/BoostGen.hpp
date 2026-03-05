@@ -24,6 +24,7 @@ public:
                               const std::vector<InfoVariable> &parameters,
                               const InfoType &returnType, bool isStatic = false) override;
     void generateConstructorAssert(const std::vector<InfoVariable> &parameters) override;
+    bool supportsConstructorTests() const override;
 
 private:
     std::string generatePointersAsserts(const std::vector<InfoVariable> &parameters,

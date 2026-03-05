@@ -71,8 +71,35 @@ void GTestGenerator::generateMethodAssert(const std::string &method,
 
 void GTestGenerator::generateConstructorAssert(
     const std::vector<InfoVariable> &parameters) {
-    // Constructor test case generation is not supported in Google Test
+    const static fs::path tplCtorPath =
+        templateFrameworkPath / config["file"]["template"]["case"]["constructor"];
+    const unsigned number = getFunctionCounter(targetName) + 1;
+    const std::string ctorKey = targetName;
+    const std::string initializations =
+        buildInitializations(parameters, ctorKey, number, true);
+    const std::string parametersInvocation = generateParameterInvocation(parameters);
+
+    std::string pointers = generatePointersAsserts(parameters, ctorKey);
+    if (!pointers.empty())
+        pointers = pointers + "\n";
+
+    map<string, string> tokensToReplace = {
+        {templateItems["tplitem"]["gtest"]["target"], targetName},
+        {templateItems["tplitem"]["gtest"]["function"], ctorKey},
+        {templateItems["tplitem"]["gtest"]["number"], to_string(number)},
+        {templateItems["tplitem"]["gtest"]["initializations"], initializations},
+        {templateItems["tplitem"]["gtest"]["class"], targetQualifiedName},
+        {templateItems["tplitem"]["gtest"]["parameters"], parametersInvocation},
+        {templateItems["tplitem"]["gtest"]["pointers"], pointers},
+    };
+
+    string testContent = replaceTokensInFile(tplCtorPath, tokensToReplace);
+    appendTestCaseToTestFile(testContent);
+    generateConfigFileTestCase(ctorKey, parameters, number);
+    incrementFunctionCounter(ctorKey);
 }
+
+bool GTestGenerator::supportsConstructorTests() const { return true; }
 
 std::string
 GTestGenerator::generatePointersAsserts(const std::vector<InfoVariable> &parameters,

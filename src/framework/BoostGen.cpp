@@ -73,7 +73,36 @@ void BoostGen::generateFunctionAssert(const std::string &function,
     generateFullAssert(function, parameters, returnType, false);
 }
 
-void BoostGen::generateConstructorAssert(const std::vector<InfoVariable> &parameters) {}
+void BoostGen::generateConstructorAssert(const std::vector<InfoVariable> &parameters) {
+    const static fs::path tplCtorPath =
+        templateFrameworkPath / config["file"]["template"]["case"]["constructor"];
+    const unsigned number = getFunctionCounter(targetName) + 1;
+    const std::string ctorKey = targetName;
+    const std::string initializations =
+        buildInitializations(parameters, ctorKey, number, true);
+    const std::string parametersInvocation = generateParameterInvocation(parameters);
+
+    std::string pointers = generatePointersAsserts(parameters, ctorKey);
+    if (!pointers.empty())
+        pointers = pointers + "\n";
+
+    map<string, string> tokensToReplace = {
+        {templateItems["tplitem"]["boost"]["target"], targetName},
+        {templateItems["tplitem"]["boost"]["function"], ctorKey},
+        {templateItems["tplitem"]["boost"]["number"], to_string(number)},
+        {templateItems["tplitem"]["boost"]["initializations"], initializations},
+        {templateItems["tplitem"]["boost"]["class"], targetQualifiedName},
+        {templateItems["tplitem"]["boost"]["parameters"], parametersInvocation},
+        {templateItems["tplitem"]["boost"]["pointers"], pointers},
+    };
+
+    string testContent = replaceTokensInFile(tplCtorPath, tokensToReplace);
+    appendTestCaseToTestFile(testContent);
+    generateConfigFileTestCase(ctorKey, parameters, number);
+    incrementFunctionCounter(ctorKey);
+}
+
+bool BoostGen::supportsConstructorTests() const { return true; }
 
 std::string BoostGen::generatePointersAsserts(const std::vector<InfoVariable> &parameters,
                                               const std::string &function) const {

@@ -2,9 +2,10 @@ TEST_CASE_METHOD(Fixture, "Testing constructor {function} from class {target} #{
     Date("Start");
 
 {initializations}
-    REQUIRE(
-        {class}({parameters})
-    );
+    REQUIRE_NOTHROW({
+        {class} generated_instance({parameters});
+        (void)generated_instance;
+    });
 {pointers}
     Date("End");
 }

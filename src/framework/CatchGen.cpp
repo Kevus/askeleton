@@ -71,8 +71,35 @@ void CatchGenerator::generateFunctionAssert(const string &function,
 }
 
 void CatchGenerator::generateConstructorAssert(const vector<InfoVariable> &parameters) {
-    // Constructor test case generation is not supported in Catch2
+    const static fs::path tplCtorPath =
+        templateFrameworkPath / config["file"]["template"]["case"]["constructor"];
+    const unsigned number = getFunctionCounter(targetName) + 1;
+    const std::string ctorKey = targetName;
+    const std::string initializations =
+        buildInitializations(parameters, ctorKey, number, true);
+    const std::string parametersInvocation = generateParameterInvocation(parameters);
+
+    std::string pointers = generatePointersAsserts(parameters, ctorKey);
+    if (!pointers.empty())
+        pointers = pointers + "\n";
+
+    map<string, string> tokensToReplace = {
+        {templateItems["tplitem"]["catch"]["target"], targetName},
+        {templateItems["tplitem"]["catch"]["function"], ctorKey},
+        {templateItems["tplitem"]["catch"]["number"], to_string(number)},
+        {templateItems["tplitem"]["catch"]["initializations"], initializations},
+        {templateItems["tplitem"]["catch"]["class"], targetQualifiedName},
+        {templateItems["tplitem"]["catch"]["parameters"], parametersInvocation},
+        {templateItems["tplitem"]["catch"]["pointers"], pointers},
+    };
+
+    string testContent = replaceTokensInFile(tplCtorPath, tokensToReplace);
+    appendTestCaseToTestFile(testContent);
+    generateConfigFileTestCase(ctorKey, parameters, number);
+    incrementFunctionCounter(ctorKey);
 }
+
+bool CatchGenerator::supportsConstructorTests() const { return true; }
 
 string CatchGenerator::generatePointersAsserts(const vector<InfoVariable> &parameters,
                                                const string &function) const {

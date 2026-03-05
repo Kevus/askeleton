@@ -89,6 +89,19 @@ By default you get a concise progress view plus a final summary. Use:
 To collect a machine-readable execution log (inputs, counts, warnings, timings),
 use `--log-json=<path>`.
 
+**Generated Makefiles**
+Generated Makefiles now use a consistent model across frameworks:
+- C/C++ split compilation: `.c` dependencies use `CC`, test translation units use `CXX`.
+- Dependency object rules are emitted from compile database context (`{sourceBuildRule}`).
+- Extra flags/libraries are overridable without editing templates:
+  - `EXTRA_CPPFLAGS`, `EXTRA_CFLAGS`, `EXTRA_CXXFLAGS`
+  - `EXTRA_LDFLAGS`, `EXTRA_LIBS`
+
+Example:
+```bash
+make EXTRA_LIBS="-lcrypto" EXTRA_LDFLAGS="-L/path/to/lib"
+```
+
 **Data Generation**
 Rule-based values are enabled by default:
 ```bash
@@ -331,6 +344,9 @@ Common `reason` values include:
 - Link errors for external symbols (e.g. OpenSSL internals): the generated test
   may need extra project libraries during link; this is project-specific and
   must be provided in the generated Makefile/link flags.
+- Constructor tests are now emitted for `gtest`, `boost`, and `catch`; if a
+  constructor still gets skipped, check the report reason (`abstract_record`,
+  `non_public_lifecycle`, `unsupported_pointer_pointee`, etc.).
 
 **Docs**
 Architecture overview: `doc/Architecture.md`  

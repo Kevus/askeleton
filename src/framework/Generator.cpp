@@ -496,21 +496,29 @@ void Generator::setValuesToChange(std::map<std::string, std::string> &valuesToCh
     const std::vector<std::string> companions;
 
     std::vector<std::string> objectFiles;
+    std::vector<std::string> sourceObjectFiles;
     std::ostringstream sourceBuildRules;
 
     if (compileSourceSeparately) {
-        objectFiles.push_back(targetName + ".o");
+        const std::string objectName = targetName + ".o";
+        objectFiles.push_back(objectName);
+        sourceObjectFiles.push_back(objectName);
         const char *compiler = isCSourceFile(sourcePath) ? "$(CC)" : "$(CXX)";
-        sourceBuildRules << targetName << ".o: " << sourcePath
-                         << "\n\t" << compiler << " -c $< -o $@\n";
+        const char *flags =
+            isCSourceFile(sourcePath) ? "$(CPPFLAGS) $(CFLAGS)" : "$(CPPFLAGS) $(CXXFLAGS)";
+        sourceBuildRules << objectName << ": " << sourcePath
+                         << "\n\t" << compiler << " " << flags << " -c $< -o $@\n";
     }
 
     for (std::size_t i = 0; i < companions.size(); ++i) {
         const std::string objectName = "dep_" + std::to_string(i) + ".o";
         objectFiles.push_back(objectName);
+        sourceObjectFiles.push_back(objectName);
         const char *compiler = isCSourceFile(companions[i]) ? "$(CC)" : "$(CXX)";
+        const char *flags = isCSourceFile(companions[i]) ? "$(CPPFLAGS) $(CFLAGS)"
+                                                         : "$(CPPFLAGS) $(CXXFLAGS)";
         sourceBuildRules << objectName << ": " << companions[i]
-                         << "\n\t" << compiler << " -c $< -o $@\n";
+                         << "\n\t" << compiler << " " << flags << " -c $< -o $@\n";
     }
 
     objectFiles.push_back("tests.o");
@@ -522,6 +530,13 @@ void Generator::setValuesToChange(std::map<std::string, std::string> &valuesToCh
             objectFilesValue << " ";
         }
         objectFilesValue << objectFiles[i];
+    }
+    std::ostringstream sourceObjectFilesValue;
+    for (std::size_t i = 0; i < sourceObjectFiles.size(); ++i) {
+        if (i > 0) {
+            sourceObjectFilesValue << " ";
+        }
+        sourceObjectFilesValue << sourceObjectFiles[i];
     }
 
     if (!missingFilesWarn) {
@@ -554,6 +569,7 @@ void Generator::setValuesToChange(std::map<std::string, std::string> &valuesToCh
         {"{classMemberDecl}", ""},
         {"{extraCompileFlags}", extraCompileFlags},
         {"{objectFiles}", objectFilesValue.str()},
+        {"{sourceObjectFiles}", sourceObjectFilesValue.str()},
         {"{sourceBuildRule}", sourceBuildRules.str()},
     };
 }

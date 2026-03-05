@@ -1,22 +1,31 @@
-CXX=clang++ --std=c++17 {extraCompileFlags}
+CXX ?= clang++
+CC ?= clang
+CPPFLAGS += {extraCompileFlags} $(EXTRA_CPPFLAGS)
+CXXFLAGS += --std=c++17 $(EXTRA_CXXFLAGS)
+CFLAGS += $(EXTRA_CFLAGS)
 DEPFLAGS = -MMD -MP
 CATCH2_LIBS = $(shell if ldconfig -p 2>/dev/null | grep -q 'libCatch2Main'; then printf '%s' '-lCatch2Main -lCatch2 -pthread'; elif [ -e /usr/lib/libCatch2Main.a ] || [ -e /usr/lib/x86_64-linux-gnu/libCatch2Main.a ] || [ -e /usr/local/lib/libCatch2Main.a ] || [ -e /usr/local/lib/libCatch2Main.so ] || [ -e /usr/lib/x86_64-linux-gnu/libCatch2Main.so ]; then printf '%s' '-lCatch2Main -lCatch2 -pthread'; fi)
-OBJS = tests.o $(if $(CATCH2_LIBS),,main.o) # Please add your own .o files here
+LDFLAGS += $(EXTRA_LDFLAGS)
+EXTRA_LIBS ?=
+OBJS = {sourceObjectFiles} tests.o $(if $(CATCH2_LIBS),,main.o)
 DEPS = $(OBJS:.o=.d)
 TARGET = {target}_test
 
+all: $(TARGET)
 test: $(TARGET)
 $(TARGET): $(OBJS)
-	$(CXX) -o $@ $^ $(CATCH2_LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(CATCH2_LIBS) $(EXTRA_LIBS)
+
+{sourceBuildRule}
 
 clean:
-	rm -rf $(TARGET) $(OBJS) *~
+	rm -rf $(TARGET) $(OBJS) $(DEPS) *~
 
 tests.o: $(TARGET).cpp
-	$(CXX) $(DEPFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEPFLAGS) -c $< -o $@
 
 main.o: main.cpp
-	$(CXX) $(DEPFLAGS) -c $< -o $@
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEPFLAGS) -c $< -o $@
 
 compilation: tests.o
 
