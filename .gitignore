@@ -5,3 +5,16 @@
 .vscode/
 Generated*/
 askeleton
+*.bak
+*.bak.*
+*.tmp
+data/system_files.json
+
+# Local external examples/datasets (not distributed)
+examples/*.zip
+examples/*.tar.gz
+examples/openssl-*/
+examples/sqlite-src-*/
+examples/tinyxml2-master/
+examples/matclpro/
+examples/tests/

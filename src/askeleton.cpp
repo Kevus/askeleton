@@ -727,7 +727,8 @@ int main(int argc, const char **argv) {
     std::optional<long long> refresh_ms;
     if (!NoSystemFilesRefresh.getValue()) {
         auto t0 = std::chrono::steady_clock::now();
-        refreshSystemFiles(true);
+        // Regenerate only when missing to avoid machine-local churn on every run.
+        refreshSystemFiles(false);
         auto t1 = std::chrono::steady_clock::now();
         refresh_ms =
             std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();

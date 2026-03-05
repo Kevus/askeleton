@@ -50,8 +50,8 @@ Package names vary by distro; look for equivalents of:
 ```bash
 make
 ```
-`system_files.json` is refreshed automatically by the binary on each run. Use
-`--no-system-files-refresh` to disable it.
+`system_files.json` is created automatically if missing. Use
+`--no-system-files-refresh` to skip this check.
 
 **Usage**
 ```
@@ -72,7 +72,7 @@ Key options:
 - `--report=<path>`: write a JSON report of generated/skipped tests.
 - `--report-json`: write a JSON report to `<out-dir>/askeleton_report.json`.
 - `--log-json=<path>`: write an execution log with summary/warnings.
-- `--no-system-files-refresh`: do not regenerate `data/system_files.json`.
+- `--no-system-files-refresh`: do not auto-create `data/system_files.json` if missing.
 - `--quiet`, `--verbose`, `--debug`: control console verbosity.
 - `-extra-arg`, `-extra-arg-before`: pass extra compiler args to Clang tooling.
 
@@ -187,7 +187,7 @@ outputs across machines, keep these inputs identical:
 - LLVM/Clang major version (e.g., 18).
 - The exact `compile_commands.json`.
 - `data/type_factories.json` and `data/default_values.json`.
-- `data/system_files.json` (or disable refresh with `--no-system-files-refresh`).
+- `data/system_files.json` (or disable auto-create with `--no-system-files-refresh`).
 
 **Type Factories and Stubs**
 Configure `data/type_factories.json` to control how complex types are initialized.
