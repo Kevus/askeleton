@@ -89,6 +89,33 @@ bool usesExplicitFactory(const InfoType &type, const std::string &functionName) 
            !factory->expr.empty();
 }
 
+bool hasUnresolvedTemplatePlaceholder(const InfoType &type) {
+    if (type.type.isNull()) {
+        return type.original.find("type-parameter-") != std::string::npos ||
+               type.original.find("auto") != std::string::npos;
+    }
+
+    QualType current = type.type;
+    while (!current.isNull() &&
+           (current->isPointerType() || current->isReferenceType())) {
+        current = current->getPointeeType();
+    }
+    if (current.isNull()) {
+        return true;
+    }
+
+    const Type *inner = current.getTypePtrOrNull();
+    if (!inner) {
+        return true;
+    }
+
+    if (inner->isDependentType() || inner->isUndeducedType()) {
+        return true;
+    }
+
+    return type.original.find("type-parameter-") != std::string::npos;
+}
+
 [[noreturn]] void throwUnsupportedType(const std::string &reason,
                                        const std::string &typeName,
                                        const std::string &detail) {
@@ -460,6 +487,11 @@ unsigned minimumCoverageInvocations(const std::vector<InfoVariable> &params) {
 
 void validateTypeMaterialization(const InfoType &type,
                                  const std::string &functionName) {
+    if (hasUnresolvedTemplatePlaceholder(type)) {
+        throwUnsupportedType("unsupported_template_parameter", type.original,
+                             "dependent template parameter cannot be materialized");
+    }
+
     if (countIndirections(type) > 1) {
         throwUnsupportedType("unsupported_indirection", type.original,
                              "more than one pointer/reference indirection is not supported");
@@ -471,6 +503,11 @@ void validateTypeMaterialization(const InfoType &type,
     if (materialized.isPointer() || materialized.isReference()) {
         throwUnsupportedType("unsupported_indirection", type.original,
                              "nested pointer/reference materialization is not supported");
+    }
+
+    if (hasUnresolvedTemplatePlaceholder(materialized)) {
+        throwUnsupportedType("unsupported_template_parameter", materialized.original,
+                             "dependent template parameter cannot be materialized");
     }
 
     if (!materialized.isRecord()) {
