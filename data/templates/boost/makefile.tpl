@@ -5,6 +5,7 @@ CXXFLAGS += --std=c++17 $(EXTRA_CXXFLAGS)
 CFLAGS += $(EXTRA_CFLAGS)
 DEPFLAGS = -MMD -MP
 LDFLAGS += $(EXTRA_LDFLAGS)
+LIBS ?=
 EXTRA_LIBS ?=
 OBJS = {sourceObjectFiles} tests.o
 DEPS = $(OBJS:.o=.d)
@@ -14,7 +15,7 @@ all: $(TARGET)
 test: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CXX) $(LDFLAGS) -o $@ $^ $(EXTRA_LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS) $(EXTRA_LIBS)
 
 {sourceBuildRule}
 

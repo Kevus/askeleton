@@ -96,6 +96,7 @@ Generated Makefiles now use a consistent model across frameworks:
 - Extra flags/libraries are overridable without editing templates:
   - `EXTRA_CPPFLAGS`, `EXTRA_CFLAGS`, `EXTRA_CXXFLAGS`
   - `EXTRA_LDFLAGS`, `EXTRA_LIBS`
+- Base link libraries are exposed as `LIBS` in all framework Makefiles.
 - Standard targets are available in all frameworks: `all`, `test`, `clean`, `compilation`.
 
 Example:
