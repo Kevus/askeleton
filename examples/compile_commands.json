@@ -3,5 +3,10 @@
     "directory": "/home/kevus/astutmatcher/examples",
     "command": "clang++ -std=c++20 -I. -c /home/kevus/astutmatcher/examples/sut.cpp",
     "file": "/home/kevus/astutmatcher/examples/sut.cpp"
+  },
+  {
+    "directory": "/home/kevus/astutmatcher/examples",
+    "command": "clang++ -std=c++20 -I. -c /home/kevus/astutmatcher/examples/sut_showcase.cpp",
+    "file": "/home/kevus/astutmatcher/examples/sut_showcase.cpp"
   }
 ]
