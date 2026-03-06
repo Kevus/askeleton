@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="doc/logo/ASkeleTon-logo-horizontal-dark.svg">
+    <img src="doc/logo/ASkeleTon-logo-horizontal.svg" alt="ASkeleTon" width="560">
+  </picture>
+</p>
+
 **ASkeleTon**
 Generate C/C++ unit test scaffolding from `compile_commands.json` with GoogleTest, Boost.Test, or Catch2.  
 Outputs fixtures, tests, Makefiles, and `.cfg` data files with deterministic or rule-based values.

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">ASkeleTon CLI icon</title>
+  <desc id="desc">Icono de ASkeleTon para CLI: símbolo dentro de una placa terminal sobria.</desc>
+  <rect x="16" y="16" width="224" height="224" rx="36" fill="#0B1220"/>
+  <rect x="28" y="28" width="200" height="200" rx="28" fill="none" stroke="#1E293B" stroke-width="4"/>
+  <circle cx="52" cy="52" r="5" fill="#334155"/>
+  <circle cx="70" cy="52" r="5" fill="#334155"/>
+  <circle cx="88" cy="52" r="5" fill="#334155"/>
+  <g transform="translate(28 34)">
+    <line x1="100" y1="26" x2="44" y2="120" stroke="#60A5FA" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="100" y1="26" x2="156" y2="120" stroke="#60A5FA" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="44" y1="120" x2="156" y2="120" stroke="#60A5FA" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="44" y1="120" x2="100" y2="164" stroke="#60A5FA" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="156" y1="120" x2="100" y2="164" stroke="#60A5FA" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="100" cy="26" r="10" fill="#60A5FA"/>
+    <circle cx="44" cy="120" r="10" fill="#60A5FA"/>
+    <circle cx="156" cy="120" r="10" fill="#60A5FA"/>
+    <circle cx="100" cy="164" r="10" fill="#60A5FA"/>
+  </g>
+</svg>

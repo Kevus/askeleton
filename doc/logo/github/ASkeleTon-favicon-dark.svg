@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">ASkeleTon favicon dark</title>
+  <desc id="desc">Favicon simplificado de ASkeleTon para fondo oscuro.</desc>
+  <rect width="64" height="64" rx="12" fill="#0B1220"/>
+  <defs>
+    <style>
+      .line { stroke: #60A5FA; stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; fill: none; vector-effect: non-scaling-stroke; }
+      .node { fill: #60A5FA; }
+    </style>
+  </defs>
+  <line class="line" x1="32" y1="8" x2="14" y2="34"/>
+  <line class="line" x1="32" y1="8" x2="50" y2="34"/>
+  <line class="line" x1="14" y1="34" x2="50" y2="34"/>
+  <line class="line" x1="14" y1="34" x2="32" y2="52"/>
+  <line class="line" x1="50" y1="34" x2="32" y2="52"/>
+  <circle class="node" cx="32" cy="8" r="4.5"/>
+  <circle class="node" cx="14" cy="34" r="4.5"/>
+  <circle class="node" cx="50" cy="34" r="4.5"/>
+  <circle class="node" cx="32" cy="52" r="4.5"/>
+</svg>

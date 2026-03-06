@@ -1,5 +1,12 @@
 # Examples
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="../doc/logo/ASkeleTon-symbol.svg">
+    <img src="../doc/logo/ASkeleTon-symbol.svg" alt="ASkeleTon symbol" width="96">
+  </picture>
+</p>
+
 This folder contains small, self-contained inputs to demonstrate ASKELETON.
 External projects used for evaluation (e.g., third-party libraries) are not
 distributed as part of ASkeleTon. If they exist in your local tree, they are

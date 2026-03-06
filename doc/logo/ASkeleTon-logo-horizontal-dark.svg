@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-labelledby="title desc">
+  <title id="title">ASkeleTon logo horizontal dark</title>
+  <desc id="desc">Logo vectorial de ASkeleTon para fondo oscuro con símbolo tipo monograma A construido con nodos y conexiones, acompañado del logotipo.</desc>
+
+  <rect width="1200" height="320" fill="#0B1220"/>
+
+  <defs>
+    <style>
+      .symbol-line { stroke: #60A5FA; stroke-width: 14; stroke-linecap: round; stroke-linejoin: round; fill: none; vector-effect: non-scaling-stroke; }
+      .symbol-node { fill: #60A5FA; }
+      .wordmark { fill: #F1F5F9; font-family: "IBM Plex Sans", "Inter", "Segoe UI", Arial, sans-serif; font-size: 118px; dominant-baseline: middle; }
+      .wordmark-strong { font-weight: 600; }
+      .wordmark-regular { font-weight: 400; }
+    </style>
+  </defs>
+
+  <g transform="translate(40 40)">
+    <g transform="translate(0 20)">
+      <line class="symbol-line" x1="100" y1="20" x2="34" y2="130" />
+      <line class="symbol-line" x1="100" y1="20" x2="166" y2="130" />
+      <line class="symbol-line" x1="34" y1="130" x2="166" y2="130" />
+      <line class="symbol-line" x1="34" y1="130" x2="100" y2="180" />
+      <line class="symbol-line" x1="166" y1="130" x2="100" y2="180" />
+
+      <circle class="symbol-node" cx="100" cy="20" r="12" />
+      <circle class="symbol-node" cx="34" cy="130" r="12" />
+      <circle class="symbol-node" cx="166" cy="130" r="12" />
+      <circle class="symbol-node" cx="100" cy="180" r="12" />
+    </g>
+
+    <g transform="translate(265 140)">
+      <text class="wordmark" x="0" y="0" letter-spacing="-1.1">
+        <tspan class="wordmark-strong">AS</tspan><tspan class="wordmark-regular">keleTon</tspan>
+      </text>
+    </g>
+  </g>
+</svg>
