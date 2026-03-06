@@ -505,6 +505,95 @@ static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 static cl::extrahelp
     MoreHelp("\nIf you are working with C++ headers use the option -xc++ at "
              "the end.\nAuthor: Kevin J. Valle-Gomez (kevin.valle@uca.es)\n");
+static cl::extrahelp DetailedHelp(R"(
+
+CLI GUIDE (DETAILED)
+====================
+
+Quick examples:
+  askeleton -p build src/foo.cpp
+  askeleton -p build --framework=boost src/foo.cpp
+  askeleton -p build --coverage-mode=strict --report=out/report.json src/foo.cpp
+  askeleton -p build --oracle-mode=property --seed=123 src/foo.cpp
+  askeleton -p build --rule-data --rule-max-cases=5 src/foo.cpp
+  askeleton --bootstrap-compdb -p . ./sut.cpp
+
+Option details:
+
+  -p <build-path>
+    Path to compile_commands.json directory. Required unless discoverable.
+
+  --framework=<gtest|boost|catch>  (default: gtest)
+    Selects the generated test framework templates and assertions.
+
+  --profile=<random|boundary|safe|stress>  (default: random)
+    Controls data generation style:
+      random   -> broad random sampling
+      boundary -> emphasizes edge-like values
+      safe     -> conservative values
+      stress   -> larger/more extreme values
+
+  --coverage-mode=<balanced|strict|aggressive>  (default: balanced)
+    Controls generation policy:
+      balanced   -> default practical generation
+      strict     -> conservative skips for risky/mutable construction paths
+      aggressive -> forward-compatible permissive mode (currently close to balanced)
+
+  --oracle-mode=<explicit|mirror|property>  (default: explicit)
+    Controls expected-value strategy:
+      explicit -> read expected from cfg if present, otherwise mirror replay
+      mirror   -> derive expected from isolated replay
+      property -> repeatability-oriented replay oracle
+
+  --rule-data / --no-rule-data  (default: enabled)
+    Enable/disable AST-guided rule-based candidate values from comparisons.
+
+  --rule-max-cases=<N>  (default: 3)
+    Maximum rule-based generated cases per function when rule-data is active.
+
+  --seed=<N>
+    Enables deterministic generation when N >= 0.
+
+  --out-dir=<path>
+    Overrides default output folder for generated tests.
+
+  --report=<path>
+    Writes generation report JSON to the given path.
+
+  --report-json
+    Writes generation report JSON to: <out-dir>/askeleton_report.json
+
+  --log-json=<path>
+    Writes execution log JSON (counts/warnings/timings) to the given path.
+
+  --quiet | --verbose | --debug
+    Console verbosity controls (errors only / extra progress / detailed debug).
+
+  --deep-level=<level>  (default: 1)
+    Sets maximum generation depth used by internal generators.
+
+  --extra-arg=<arg>
+    Appends one extra compile flag for Clang tooling.
+    Example: --extra-arg=-Wno-unused-parameter
+
+  --extra-arg-before=<arg>
+    Prepends one extra compile flag for Clang tooling.
+    Example: --extra-arg-before=-DUSE_DEMO=1
+
+  --include-impl-under-include
+    Allows .c/.cc/.cpp under include/ to be processed (normally filtered out).
+
+  --no-system-files-refresh
+    Skips automatic system_files.json refresh/check update step.
+
+  --bootstrap-compdb
+    If an input source has no compile_commands entry, append a minimal one and
+    continue. Useful for single-file demos/quick starts.
+
+Notes:
+  - For full CLI/manual documentation with examples, see doc/CLI.md.
+  - For skip reason semantics and fixes, see doc/SkipReasons.md.
+)");
 static llvm::cl::OptionCategory OptC("ASkeleTon - Unit Test Generator for C/C++");
 
 cl::opt<std::string> FrameworkOption(

@@ -59,6 +59,7 @@ askeleton [options] <source0> [... <sourceN>]
 ```
 Key options:
 - `-p <build-path>`: path to `compile_commands.json`.
+- `--bootstrap-compdb`: auto-create/append minimal compile commands for missing source entries.
 - `--framework=<gtest|boost|catch>`: select test framework.
 - `--profile=<random|boundary|safe|stress>`: data generation profile.
 - `--coverage-mode=<strict|balanced|aggressive>`: generation coverage policy.
@@ -74,7 +75,10 @@ Key options:
 - `--log-json=<path>`: write an execution log with summary/warnings.
 - `--no-system-files-refresh`: do not auto-create `data/system_files.json` if missing.
 - `--quiet`, `--verbose`, `--debug`: control console verbosity.
-- `-extra-arg`, `-extra-arg-before`: pass extra compiler args to Clang tooling.
+- `--extra-arg`, `--extra-arg-before`: pass extra compiler args to Clang tooling.
+
+For exhaustive option semantics and examples, see:
+- `doc/CLI.md`
 
 **Default Output**
 By default, ASkeleTon writes output under `tests/generated` relative to the first
@@ -358,6 +362,7 @@ Full guide with didactic examples and fixes:
   `non_public_lifecycle`, `unsupported_pointer_pointee`, etc.).
 
 **Docs**
+CLI reference: `doc/CLI.md`  
 Architecture overview: `doc/Architecture.md`  
 Rule catalog: `doc/DataRules.md`  
 Release checklist: `doc/ReleaseChecklist.md`  
