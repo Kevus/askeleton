@@ -130,8 +130,11 @@ void createFileFromTemplate(const fs::path &templateFilePath,
 }
 
 string generateTestObjectForTarget(const string &target) {
+    if (target.empty()) {
+        return "target_test";
+    }
     string objectTest = target;
-    objectTest[0] = tolower(objectTest[0]);
+    objectTest[0] = static_cast<char>(tolower(static_cast<unsigned char>(objectTest[0])));
     return objectTest + "_test";
 }
 

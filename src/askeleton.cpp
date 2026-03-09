@@ -358,6 +358,35 @@ static std::vector<std::string> minimalCompileArgumentsForFile(
     return {"clang++", "-std=c++20", "-I.", "-c", absFile.string()};
 }
 
+static std::optional<std::string> parseProfileName(std::string_view value) {
+    std::string normalized(value);
+    normalized = toLower(normalized);
+
+    if (normalized == "random" || normalized == "boundary" ||
+        normalized == "safe" || normalized == "stress") {
+        return normalized;
+    }
+    return std::nullopt;
+}
+
+static std::optional<fs::path>
+findNearestCompilationDatabasePath(const std::vector<std::string> &sourcesForTool) {
+    for (const auto &src : sourcesForTool) {
+        fs::path current = fs::absolute(src).parent_path();
+        while (!current.empty()) {
+            fs::path candidate = current / "compile_commands.json";
+            if (fs::exists(candidate)) {
+                return candidate;
+            }
+            if (current == current.root_path()) {
+                break;
+            }
+            current = current.parent_path();
+        }
+    }
+    return std::nullopt;
+}
+
 static bool loadCompilationDatabaseJson(const fs::path &compdbPath, json &db) {
     db = json::array();
     // Load existing compile_commands.json if present and valid.
@@ -665,11 +694,13 @@ cl::opt<bool> BootstrapCompdbOption(
 
 static ReportMetadata buildReportMetadata(Framework framework,
                                           CoverageMode coverageMode,
-                                          OracleMode oracleMode, bool ruleDataEnabled,
+                                          OracleMode oracleMode,
+                                          const std::string &profileName,
+                                          bool ruleDataEnabled,
                                           const std::vector<std::string> &sources) {
     ReportMetadata meta;
     meta.generated_at = getTodayString("%Y-%m-%d %H:%M:%S");
-    meta.profile = ProfileOption.getValue();
+    meta.profile = profileName;
     meta.coverage_mode = coverageModeName(coverageMode);
     meta.oracle_mode = oracleModeName(oracleMode);
     if (SeedOption.getValue() >= 0) {
@@ -737,6 +768,7 @@ static std::string resolveReportPath() {
 
 static void printRunSummary(const RunStats &stats, const std::string &reportPath,
                             CoverageMode coverageMode, OracleMode oracleMode,
+                            const std::string &profileName,
                             const std::chrono::steady_clock::time_point &tool_start,
                             const std::chrono::steady_clock::time_point &tool_end,
                             const std::optional<long long> &refresh_ms) {
@@ -760,6 +792,7 @@ static void printRunSummary(const RunStats &stats, const std::string &reportPath
     }
     llvm::outs() << "  Coverage mode: " << coverageModeName(coverageMode) << "\n";
     llvm::outs() << "  Oracle mode: " << oracleModeName(oracleMode) << "\n";
+    llvm::outs() << "  Profile: " << profileName << "\n";
     llvm::outs() << "  Output: " << config["route"]["ut"].get<std::string>() << "\n";
     if (!reportPath.empty()) {
         llvm::outs() << "  Report: " << reportPath << "\n";
@@ -859,6 +892,11 @@ int main(int argc, const char **argv) {
         exitWithError("ERROR: Invalid oracle mode. Please use one of the "
                       "following: mirror, explicit, property\n");
     }
+    std::optional<std::string> profileName = parseProfileName(ProfileOption.getValue());
+    if (!profileName.has_value()) {
+        exitWithError("ERROR: Invalid profile. Please use one of the "
+                      "following: random, boundary, safe, stress\n");
+    }
     const bool ruleDataEnabled = RuleDataOption.getValue() && !NoRuleDataOption.getValue();
     const OracleMode resolvedOracleMode =
         effectiveOracleMode(selectedOracleMode.value());
@@ -882,7 +920,7 @@ int main(int argc, const char **argv) {
         llvm::outs() << ANSI_GREEN << "Files checked successfully\n" << ANSI_RESET;
 
     Generator::MAX_DEPTH = DeepLevel.getValue();
-    ConfigGenerator::setProfile(ProfileOption.getValue());
+    ConfigGenerator::setProfile(profileName.value());
     ConfigGenerator::setOracleMode(selectedOracleMode.value());
     Generator::setOracleMode(selectedOracleMode.value());
     if (SeedOption.getValue() >= 0) {
@@ -890,13 +928,13 @@ int main(int argc, const char **argv) {
     }
     if (Logger::instance().level() >= LogLevel::Normal) {
         if (SeedOption.getValue() >= 0) {
-            llvm::outs() << "Data generation: profile=" << ProfileOption.getValue()
+            llvm::outs() << "Data generation: profile=" << profileName.value()
                          << " seed=" << SeedOption.getValue()
                          << " coverage=" << coverageModeName(coverageMode.value())
                          << " oracle=" << oracleModeName(resolvedOracleMode)
                          << "\n";
         } else {
-            llvm::outs() << "Data generation: profile=" << ProfileOption.getValue()
+            llvm::outs() << "Data generation: profile=" << profileName.value()
                          << " coverage=" << coverageModeName(coverageMode.value())
                          << " oracle=" << oracleModeName(resolvedOracleMode)
                          << "\n";
@@ -926,7 +964,8 @@ int main(int argc, const char **argv) {
     if (!reportPath.empty()) {
         report.setMetadata(
             buildReportMetadata(selectedFramework.value(), coverageMode.value(),
-                                resolvedOracleMode, ruleDataEnabled,
+                                resolvedOracleMode, profileName.value(),
+                                ruleDataEnabled,
                                 options->getSourcePathList()));
     }
 
@@ -956,7 +995,8 @@ int main(int argc, const char **argv) {
         if (!reportPath.empty()) {
             report.setMetadata(
                 buildReportMetadata(selectedFramework.value(), coverageMode.value(),
-                                    resolvedOracleMode, ruleDataEnabled, sources));
+                                    resolvedOracleMode, profileName.value(),
+                                    ruleDataEnabled, sources));
         }
     }
 
@@ -991,7 +1031,14 @@ int main(int argc, const char **argv) {
     std::unique_ptr<NormalizedCompilationDatabase> reloadedNormalizedCompdb;
 
     if (!missing.empty()) {
-        fs::path compdbPath = compdbFilePathFromArgsOrCwd(argc, argv);
+        fs::path compdbPath;
+        if (auto bp = findBuildPathArg(argc, argv)) {
+            compdbPath = fs::path(*bp) / "compile_commands.json";
+        } else if (auto discovered = findNearestCompilationDatabasePath(sourcesForTool)) {
+            compdbPath = *discovered;
+        } else {
+            compdbPath = compdbFilePathFromArgsOrCwd(argc, argv);
+        }
 
         if (BootstrapCompdbOption.getValue()) {
             std::vector<fs::path> missingPaths;
@@ -1068,6 +1115,7 @@ int main(int argc, const char **argv) {
     Logger::instance().printWarningsSummary();
 
     printRunSummary(stats, reportPath, coverageMode.value(), resolvedOracleMode,
+                    profileName.value(),
                     tool_start, tool_end,
                     refresh_ms);
     writeExecutionLogJson(stats, time_start, tool_start, tool_end, refresh_ms);

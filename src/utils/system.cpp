@@ -351,12 +351,14 @@ std::vector<std::string> getSystemFilesToCheck(Framework framework) {
 
 optional<string> getFileWithExtensions(const string &filePath,
                                        const vector<string> &extensions) {
-    string basePath = filePath.substr(0, filePath.find_last_of("."));
+    fs::path path(filePath);
+    fs::path basePath = path.has_extension() ? (path.parent_path() / path.stem()) : path;
 
     for (const auto &ext : extensions) {
-        string fullPath = basePath + ext;
+        fs::path fullPath = basePath;
+        fullPath += ext;
         if (fileExists(fullPath)) {
-            return fullPath;
+            return fullPath.string();
         }
     }
     return nullopt;
