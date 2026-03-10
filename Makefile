@@ -1,14 +1,28 @@
-CXX ?= clang++
+DEFAULT_CLANGXX := $(shell if command -v clang++ >/dev/null 2>&1; then printf '%s' clang++; elif command -v clang++-18 >/dev/null 2>&1; then printf '%s' clang++-18; else printf '%s' clang++; fi)
+DEFAULT_LLVM_CONFIG := $(shell if command -v llvm-config >/dev/null 2>&1; then printf '%s' llvm-config; elif command -v llvm-config-18 >/dev/null 2>&1; then printf '%s' llvm-config-18; else printf '%s' llvm-config; fi)
+
+ifeq ($(origin CXX), default)
+CXX := $(DEFAULT_CLANGXX)
+endif
+ifeq ($(origin CXX), undefined)
+CXX := $(DEFAULT_CLANGXX)
+endif
 LLVM_SUFFIX := $(patsubst clang++%,%,$(notdir $(CXX)))
 ifneq ($(LLVM_SUFFIX),)
 LLVM_CONFIG_CANDIDATE := llvm-config$(LLVM_SUFFIX)
 ifneq ($(shell command -v $(LLVM_CONFIG_CANDIDATE) 2>/dev/null),)
-LLVM_CONFIG ?= $(LLVM_CONFIG_CANDIDATE)
-else
-LLVM_CONFIG ?= llvm-config
+ifeq ($(origin LLVM_CONFIG), undefined)
+LLVM_CONFIG := $(LLVM_CONFIG_CANDIDATE)
 endif
 else
-LLVM_CONFIG ?= llvm-config
+ifeq ($(origin LLVM_CONFIG), undefined)
+LLVM_CONFIG := $(DEFAULT_LLVM_CONFIG)
+endif
+endif
+else
+ifeq ($(origin LLVM_CONFIG), undefined)
+LLVM_CONFIG := $(DEFAULT_LLVM_CONFIG)
+endif
 endif
 INCLUDES = -Iinclude/ -I$(shell $(LLVM_CONFIG) --includedir)
 CXXFLAGS = -std=c++20 -Wall -Wextra -Wcast-qual -Wwrite-strings -Wno-unused-parameter \
