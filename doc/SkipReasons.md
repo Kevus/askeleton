@@ -76,11 +76,14 @@ Meaning: The selected framework does not support a required generation feature
 for this entity.
 
 Example:
-- Constructor test requested in a framework version/config that does not emit it.
+- Legacy/custom framework path requested a feature that is not emitted for that
+  generator.
 
 Typical fixes:
-- Switch framework or update configuration.
-- Regenerate after framework support changes.
+- For the built-in `gtest`, `boost`, and `catch` generators, constructor tests
+  are supported in the current codebase, so this reason should be uncommon.
+- If it appears, verify that you are running the current generator build and
+  not an older binary or downstream/custom framework variant.
 
 ## `coverage_policy_mutable_parameter`
 Meaning: Under `--coverage-mode=strict`, mutable pointer/reference params are

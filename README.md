@@ -161,9 +161,11 @@ generate a test for a callable. This is separate from the data-generation
   compatibility mode for more permissive generation in future iterations.
 
 Current framework note:
-- Constructors are still discovered and reported, but the current `gtest`,
-  `boost`, and `catch` generators do not emit constructor test cases. They are
-  reported as `unsupported_framework_feature`.
+- Constructor tests are emitted for the current `gtest`, `boost`, and `catch`
+  generators when constructor parameters can be materialized.
+- If a constructor is still skipped, check the reported reason instead
+  (`abstract_record`, `non_public_lifecycle`,
+  `unsupported_pointer_pointee`, `missing_fixture_strategy`, etc.).
 
 **Expected Value Strategy**
 ASkeleTon currently exposes three oracle modes:
