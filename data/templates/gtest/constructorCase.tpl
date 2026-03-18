@@ -3,10 +3,11 @@ TEST_F(Fixture, {target}_{function}_{number}) {
 
 {initializations}
 
-    EXPECT_NO_THROW({
-        {class} generated_instance({parameters});
+    auto construct_generated_instance = [&]() {
+        {class} generated_instance{{parameters}};
         (void)generated_instance;
-    });
+    };
+    EXPECT_NO_THROW(construct_generated_instance());
 
     {pointers}
 

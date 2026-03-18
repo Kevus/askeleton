@@ -35,6 +35,16 @@ void insertNormalized(std::map<std::string, ConfiguredInstanceStrategy> &target,
                       const ConfiguredInstanceStrategy &strategy) {
     target[key] = strategy;
     target[normalizeKey(key)] = strategy;
+    std::string unqualified = key;
+    removeTypeQualifiers(unqualified);
+    target[unqualified] = strategy;
+    target[normalizeKey(unqualified)] = strategy;
+    const std::string shortKey = removeNamespaceQualifier(key);
+    target[shortKey] = strategy;
+    target[normalizeKey(shortKey)] = strategy;
+    const std::string shortUnqualified = removeNamespaceQualifier(unqualified);
+    target[shortUnqualified] = strategy;
+    target[normalizeKey(shortUnqualified)] = strategy;
 }
 
 std::vector<std::string> makeTypeLookupKeys(const InfoType &type) {

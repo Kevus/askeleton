@@ -1,4 +1,14 @@
 {
-    "types": {},
+    "types": {
+        "tinyxml2::XMLNode *": "([]() -> tinyxml2::XMLNode* { static tinyxml2::XMLDocument doc{}; return doc.NewElement(\"generated_node_param\"); })()",
+        "const tinyxml2::XMLNode *": "([]() -> const tinyxml2::XMLNode* { static tinyxml2::XMLDocument doc{}; return doc.NewElement(\"generated_node_param\"); })()",
+        "const tinyxml2::XMLElement &": "(*([]() -> tinyxml2::XMLElement* { static tinyxml2::XMLDocument doc{}; return doc.NewElement(\"generated_element_param\"); })())",
+        "const tinyxml2::XMLText &": "(*([]() -> tinyxml2::XMLText* { static tinyxml2::XMLDocument doc{}; return doc.NewText(\"generated_text_param\"); })())",
+        "const tinyxml2::XMLComment &": "(*([]() -> tinyxml2::XMLComment* { static tinyxml2::XMLDocument doc{}; return doc.NewComment(\"generated_comment_param\"); })())",
+        "const tinyxml2::XMLDeclaration &": "(*([]() -> tinyxml2::XMLDeclaration* { static tinyxml2::XMLDocument doc{}; return doc.NewDeclaration(); })())",
+        "const tinyxml2::XMLUnknown &": "(*([]() -> tinyxml2::XMLUnknown* { static tinyxml2::XMLDocument doc{}; return doc.NewUnknown(\"generated_unknown_param\"); })())",
+        "const tinyxml2::XMLAttribute *": "([]() -> const tinyxml2::XMLAttribute* { static tinyxml2::XMLDocument doc{}; tinyxml2::XMLElement* element = doc.NewElement(\"generated_attribute_owner\"); element->SetAttribute(\"generated_key\", \"generated_value\"); return element->FindAttribute(\"generated_key\"); })()",
+        "FILE *": "nullptr"
+    },
     "functions": {}
 }

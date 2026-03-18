@@ -1106,8 +1106,56 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
     bool isStatic = UT->isStatic();
     if (!isStatic) {
-        auto instancePlan =
-            resolveInstancePlan(UT->getParent(), UT->getNameInfo().getAsString());
+        const auto *record = UT->getParent() ? UT->getParent()->getDefinition() : nullptr;
+        if (!record) {
+            throw ComplexTypeException(
+                "incomplete_record",
+                "record declaration has no visible definition: " +
+                    UT->getParent()->getQualifiedNameAsString());
+        }
+        std::optional<InstancePlan> instancePlan;
+        try {
+            instancePlan =
+                resolveInstancePlan(UT->getParent(), UT->getNameInfo().getAsString());
+        } catch (const ComplexTypeException &) {
+            instancePlan.reset();
+        }
+
+        if (!instancePlan.has_value()) {
+            if (record->isAbstract()) {
+                throw ComplexTypeException(
+                    "abstract_record",
+                    "abstract record cannot be instantiated for fixtures: " +
+                        UT->getParent()->getQualifiedNameAsString());
+            }
+            if (!hasPublicUsableDestructor(record)) {
+                throw ComplexTypeException(
+                    "non_public_lifecycle",
+                    "record does not have a public usable destructor: " +
+                        UT->getParent()->getQualifiedNameAsString());
+            }
+            throw ComplexTypeException(
+                "missing_instance_strategy",
+                "no usable public constructor or factory for test instance: " +
+                    UT->getParent()->getQualifiedNameAsString());
+        }
+
+        const bool externalizedLifetime =
+            instancePlan->usesOwner() || instancePlan->usesCallable() ||
+            instancePlan->usesDirectExpression() ||
+            instancePlan->subjectKind != InstanceSubjectKind::Value;
+        if (record->isAbstract() && !externalizedLifetime) {
+            throw ComplexTypeException(
+                "abstract_record",
+                "abstract record cannot be instantiated for fixtures: " +
+                    UT->getParent()->getQualifiedNameAsString());
+        }
+        if (!hasPublicUsableDestructor(record) && !externalizedLifetime) {
+            throw ComplexTypeException(
+                "non_public_lifecycle",
+                "record does not have a public usable destructor: " +
+                    UT->getParent()->getQualifiedNameAsString());
+        }
         if (coverageMode == CoverageMode::Strict && instancePlan.has_value() &&
             !instancePlan->usesDefaultConstructor()) {
             throw ComplexTypeException(
@@ -1160,6 +1208,33 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
                               const CXXConstructorDecl *UT) {
     std::vector<InfoVariable> parameters(getParameters(UT->parameters()));
     std::string constructorName = UT->getParent()->getName().str();
+
+    if (!isUsablePublicConstructor(UT)) {
+        throw ComplexTypeException(
+            "unusable_constructor",
+            "constructor is not publicly invocable: " +
+                UT->getQualifiedNameAsString());
+    }
+
+    const auto *record = UT->getParent() ? UT->getParent()->getDefinition() : nullptr;
+    if (!record) {
+        throw ComplexTypeException(
+            "incomplete_record",
+            "record declaration has no visible definition: " +
+                UT->getParent()->getQualifiedNameAsString());
+    }
+    if (record->isAbstract()) {
+        throw ComplexTypeException(
+            "abstract_record",
+            "abstract record cannot be instantiated for fixtures: " +
+                UT->getParent()->getQualifiedNameAsString());
+    }
+    if (!hasPublicUsableDestructor(record)) {
+        throw ComplexTypeException(
+            "non_public_lifecycle",
+            "record does not have a public usable destructor: " +
+                UT->getParent()->getQualifiedNameAsString());
+    }
 
     if (!testGen.supportsConstructorTests()) {
         throw ComplexTypeException(

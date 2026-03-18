@@ -936,6 +936,14 @@ std::string Generator::generateParameterInitialization(const InfoVariable &varia
 
     std::string readInstructionContent =
         templateItems["templating"]["assign_instruction"];
+    if (const auto fullFactory =
+            TypeFactoryRegistry::get().find(variable, function);
+        fullFactory.has_value() &&
+        fullFactory->strategy == TypeInitStrategy::Factory &&
+        !fullFactory->expr.empty()) {
+        return "\t" + variable.original + " " + variablePrefix + variable.name + " = " +
+               fullFactory->expr;
+    }
     InfoType underlying = variable.getUnderlyingType();
     std::string typeForReadMethod = normalizeReadMethodType(underlying);
     const std::string variableName = variablePrefix + variable.name;

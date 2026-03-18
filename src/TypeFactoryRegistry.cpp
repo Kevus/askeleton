@@ -31,6 +31,22 @@ void insertNormalizedFactory(std::map<std::string, TypeFactory> &target,
                              const TypeFactory &factory) {
     target[key] = factory;
     target[normalizeKey(key)] = factory;
+    std::string unqualified = key;
+    removeTypeQualifiers(unqualified);
+    target[unqualified] = factory;
+    target[normalizeKey(unqualified)] = factory;
+    const std::string shortKey = removeNamespaceQualifier(key);
+    target[shortKey] = factory;
+    target[normalizeKey(shortKey)] = factory;
+    const std::string shortUnqualified = removeNamespaceQualifier(unqualified);
+    target[shortUnqualified] = factory;
+    target[normalizeKey(shortUnqualified)] = factory;
+    const std::string templateFree = removeTemplateArguments(key);
+    target[templateFree] = factory;
+    target[normalizeKey(templateFree)] = factory;
+    const std::string shortTemplateFree = removeNamespaceQualifier(templateFree);
+    target[shortTemplateFree] = factory;
+    target[normalizeKey(shortTemplateFree)] = factory;
 }
 
 std::vector<std::string> makeTypeLookupKeys(const InfoType &type) {

@@ -49,6 +49,10 @@ struct InstancePlan {
 bool requiresMutableAliasHandling(const std::vector<InfoVariable> &params);
 unsigned minimumCoverageInvocations(const std::vector<InfoVariable> &params);
 
+bool hasPublicUsableDestructor(const clang::CXXRecordDecl *record);
+bool canDefaultConstructForFixture(const clang::CXXRecordDecl *record);
+bool isUsablePublicConstructor(const clang::CXXConstructorDecl *ctor);
+
 void validateTypeMaterialization(const InfoType &type,
                                  const std::string &functionName = "");
 void validateReturnTypeMaterialization(const InfoType &type,

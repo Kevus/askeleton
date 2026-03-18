@@ -1,4 +1,39 @@
 {
-  "types": {},
+  "types": {
+    "tinyxml2::XMLElement": {
+      "owner_type": "tinyxml2::XMLDocument",
+      "callable": "NewElement(\"generated_element\")",
+      "subject": "pointer"
+    },
+    "tinyxml2::XMLText": {
+      "owner_type": "tinyxml2::XMLDocument",
+      "callable": "NewText(\"generated_text\")",
+      "subject": "pointer"
+    },
+    "tinyxml2::XMLComment": {
+      "owner_type": "tinyxml2::XMLDocument",
+      "callable": "NewComment(\"generated_comment\")",
+      "subject": "pointer"
+    },
+    "tinyxml2::XMLDeclaration": {
+      "owner_type": "tinyxml2::XMLDocument",
+      "callable": "NewDeclaration()",
+      "subject": "pointer"
+    },
+    "tinyxml2::XMLUnknown": {
+      "owner_type": "tinyxml2::XMLDocument",
+      "callable": "NewUnknown(\"generated_unknown\")",
+      "subject": "pointer"
+    },
+    "tinyxml2::XMLAttribute": {
+      "expr": "([]() -> const tinyxml2::XMLAttribute* { static tinyxml2::XMLDocument doc{}; tinyxml2::XMLElement* element = doc.NewElement(\"generated_attribute_owner\"); element->SetAttribute(\"generated_key\", \"generated_value\"); return element->FindAttribute(\"generated_key\"); })()",
+      "subject": "pointer"
+    },
+    "tinyxml2::XMLNode": {
+      "owner_type": "tinyxml2::XMLDocument",
+      "callable": "NewElement(\"generated_node\")",
+      "subject": "pointer"
+    }
+  },
   "functions": {}
 }

@@ -85,6 +85,23 @@ Typical fixes:
 - If it appears, verify that you are running the current generator build and
   not an older binary or downstream/custom framework variant.
 
+## `unusable_constructor`
+Meaning: The constructor itself is not callable as a generated test target
+because it is deleted, non-public, implicit-only, or copy/move-only.
+
+Example:
+```cpp
+class Service {
+public:
+    Service() = delete;
+};
+```
+
+Typical fixes:
+- Expose a public usable constructor to test directly.
+- Prefer method-level generation with an explicit instance strategy when the
+  constructor should not be exercised directly.
+
 ## `coverage_policy_mutable_parameter`
 Meaning: Under `--coverage-mode=strict`, mutable pointer/reference params are
 skipped to keep scaffolding conservative.

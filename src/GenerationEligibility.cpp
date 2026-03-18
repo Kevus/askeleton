@@ -52,7 +52,7 @@ const CXXRecordDecl *getRecordDecl(const InfoType &type) {
     return record->getDefinition();
 }
 
-bool hasPublicUsableDestructor(const CXXRecordDecl *record) {
+bool hasPublicUsableDestructorImpl(const CXXRecordDecl *record) {
     if (!record) {
         return true;
     }
@@ -65,7 +65,7 @@ bool hasPublicUsableDestructor(const CXXRecordDecl *record) {
     return !dtor->isDeleted() && dtor->getAccess() == AS_public;
 }
 
-bool canDefaultConstructForFixture(const CXXRecordDecl *record) {
+bool canDefaultConstructForFixtureImpl(const CXXRecordDecl *record) {
     if (!record) {
         return true;
     }
@@ -81,6 +81,15 @@ bool canDefaultConstructForFixture(const CXXRecordDecl *record) {
     }
 
     return true;
+}
+
+bool isUsablePublicConstructorImpl(const CXXConstructorDecl *ctor) {
+    if (!ctor || ctor->isImplicit() || ctor->isDeleted() ||
+        ctor->isCopyOrMoveConstructor()) {
+        return false;
+    }
+
+    return ctor->getAccess() == AS_public;
 }
 
 bool usesExplicitFactory(const InfoType &type, const std::string &functionName) {
@@ -212,15 +221,20 @@ std::vector<InfoVariable> buildRequiredParams(const FunctionDecl *function) {
     return params;
 }
 
+std::optional<std::vector<InfoVariable>>
+tryBuildRequiredParams(const FunctionDecl *function) {
+    try {
+        return buildRequiredParams(function);
+    } catch (const ComplexTypeException &) {
+        return std::nullopt;
+    }
+}
+
 std::optional<InstancePlan> tryConstructorPlan(const CXXRecordDecl *record,
                                                const std::string &functionName) {
     std::optional<InstancePlan> best;
     for (const auto *ctor : record->ctors()) {
-        if (!ctor || ctor->isImplicit() || ctor->isDeleted() ||
-            ctor->isCopyOrMoveConstructor()) {
-            continue;
-        }
-        if (ctor->getAccess() != AS_public) {
+        if (!isUsablePublicConstructorImpl(ctor)) {
             continue;
         }
 
@@ -229,7 +243,11 @@ std::optional<InstancePlan> tryConstructorPlan(const CXXRecordDecl *record,
                              ? InstancePlanKind::DefaultConstructor
                              : InstancePlanKind::Constructor;
         candidate.totalParameters = ctor->getNumParams();
-        candidate.setupParams = buildRequiredParams(ctor);
+        auto params = tryBuildRequiredParams(ctor);
+        if (!params.has_value()) {
+            continue;
+        }
+        candidate.setupParams.swap(*params);
 
         if (candidate.usesDefaultConstructor()) {
             return candidate;
@@ -251,7 +269,7 @@ std::optional<InstancePlan> tryConstructorPlan(const CXXRecordDecl *record,
         return best;
     }
 
-    if (record->hasDefaultConstructor()) {
+    if (record->hasDefaultConstructor() && canDefaultConstructForFixtureImpl(record)) {
         return InstancePlan{};
     }
 
@@ -309,7 +327,11 @@ std::optional<InstancePlan> tryStaticFactoryPlan(const CXXRecordDecl *record,
         candidate.callableExpr =
             record->getQualifiedNameAsString() + "::" + method->getNameAsString();
         candidate.totalParameters = method->getNumParams();
-        candidate.setupParams = buildRequiredParams(method);
+        auto params = tryBuildRequiredParams(method);
+        if (!params.has_value()) {
+            continue;
+        }
+        candidate.setupParams.swap(*params);
         if (!canMaterializeConstructorParams(candidate.setupParams, functionName)) {
             continue;
         }
@@ -351,7 +373,11 @@ void considerFreeFactoryInContext(const CXXRecordDecl *record,
         candidate.subjectKind = *subjectKind;
         candidate.callableExpr = function->getQualifiedNameAsString();
         candidate.totalParameters = function->getNumParams();
-        candidate.setupParams = buildRequiredParams(function);
+        auto params = tryBuildRequiredParams(function);
+        if (!params.has_value()) {
+            continue;
+        }
+        candidate.setupParams.swap(*params);
         if (!canMaterializeConstructorParams(candidate.setupParams, functionName)) {
             continue;
         }
@@ -412,7 +438,7 @@ void considerOwnerFactoriesInContext(const CXXRecordDecl *targetRecord,
         if (!ownerRecord || ownerRecord->isImplicit()) {
             continue;
         }
-        if (!hasPublicUsableDestructor(ownerRecord)) {
+        if (!hasPublicUsableDestructorImpl(ownerRecord)) {
             continue;
         }
 
@@ -439,7 +465,11 @@ void considerOwnerFactoriesInContext(const CXXRecordDecl *targetRecord,
             candidate.ownerPlan = std::make_shared<InstancePlan>(*ownerPlan);
             candidate.totalParameters =
                 candidate.ownerPlan->totalParameters + method->getNumParams();
-            candidate.setupParams = buildRequiredParams(method);
+            auto params = tryBuildRequiredParams(method);
+            if (!params.has_value()) {
+                continue;
+            }
+            candidate.setupParams.swap(*params);
             if (!canMaterializeConstructorParams(candidate.setupParams, functionName)) {
                 continue;
             }
@@ -474,6 +504,18 @@ std::optional<InstancePlan> tryOwnerFactoryPlan(const CXXRecordDecl *record,
 }
 
 } // namespace
+
+bool hasPublicUsableDestructor(const CXXRecordDecl *record) {
+    return hasPublicUsableDestructorImpl(record);
+}
+
+bool canDefaultConstructForFixture(const CXXRecordDecl *record) {
+    return canDefaultConstructForFixtureImpl(record);
+}
+
+bool isUsablePublicConstructor(const CXXConstructorDecl *ctor) {
+    return isUsablePublicConstructorImpl(ctor);
+}
 
 bool requiresMutableAliasHandling(const std::vector<InfoVariable> &params) {
     return std::any_of(params.begin(), params.end(), [](const InfoVariable &param) {
@@ -514,6 +556,11 @@ void validateTypeMaterialization(const InfoType &type,
                              "incomplete type cannot be materialized");
     }
 
+    if ((type.isPointer() || type.isReference()) &&
+        usesExplicitFactory(type, functionName)) {
+        return;
+    }
+
     if (type.isPointer()) {
         const bool isCStringPointer =
             !materialized.original.empty() && materialized.original == "char";
@@ -552,13 +599,13 @@ void validateTypeMaterialization(const InfoType &type,
                              "abstract record cannot be instantiated for fixtures");
     }
 
-    if (!hasPublicUsableDestructor(record)) {
+    if (!hasPublicUsableDestructorImpl(record)) {
         throwUnsupportedType("non_public_lifecycle", materialized.original,
                              "record does not have a public usable destructor");
     }
 
     if (!usesExplicitFactory(materialized, functionName) &&
-        !canDefaultConstructForFixture(record)) {
+        !canDefaultConstructForFixtureImpl(record)) {
         throwUnsupportedType("missing_fixture_strategy", materialized.original,
                              "record requires a default constructor or explicit "
                              "factory for fixture setup");

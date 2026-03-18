@@ -3,7 +3,7 @@ TEST_CASE_METHOD(Fixture, "Testing constructor {function} from class {target} #{
 
 {initializations}
     REQUIRE_NOTHROW({
-        {class} generated_instance({parameters});
+        {class} generated_instance{{parameters}};
         (void)generated_instance;
     });
 {pointers}

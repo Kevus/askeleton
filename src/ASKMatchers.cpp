@@ -23,6 +23,7 @@ DeclarationMatcher FD1 =
 
 DeclarationMatcher MD1 =
     cxxMethodDecl(unless(isImplicit()), isPublic(), unless(returns(voidType())),
+                  unless(isPure()),
                   isExpansionInMainFile(), unless(hasName("main")))
         .bind("MD1");
 
