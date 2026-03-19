@@ -12,7 +12,7 @@ Outputs fixtures, tests, Makefiles, and `.cfg` data files with deterministic or 
 **Highlights**
 - AST-driven discovery of functions, methods, and constructors.
 - Profiles for data generation: `random`, `boundary`, `safe`, `stress`.
-- Coverage policies: `strict`, `balanced`, `aggressive`.
+- Coverage policies: `strict`, `balanced`.
 - Rule-based values extracted from comparisons.
 - Structured skip reasons in reports (`abstract_record`, `missing_instance_strategy`, etc.).
 - Structured input support for `std::optional`, `std::pair`, and `std::tuple`.
@@ -25,33 +25,42 @@ Outputs fixtures, tests, Makefiles, and `.cfg` data files with deterministic or 
 ASKELETON_HOME=$(pwd) ./askeleton -p examples examples/sut.cpp
 ```
 
-**Install (Ubuntu 24.04)**
+By default, ASkeleTon generates GoogleTest scaffolding and writes output under
+`tests/generated` relative to the first source file passed on the command line.
+
+**Install (Ubuntu)**
+ASkeleTon requires LLVM/Clang 18, libclang development headers, and a C/C++
+build toolchain.
+
+On Ubuntu 24.04, these packages are available directly from the default
+repositories. On Ubuntu 22.04, install LLVM/Clang 18 from the official LLVM
+APT repository first:
+[https://apt.llvm.org/](https://apt.llvm.org/)
+
+Then install:
 ```bash
 sudo apt update
 sudo apt install -y clang-18 llvm-18 llvm-18-dev llvm-18-tools libclang-18-dev build-essential
 ```
-Optional frameworks:
+
+For the default setup, install GoogleTest:
+```bash
+sudo apt install -y libgtest-dev
+```
+
+If you want to generate tests for Boost.Test or Catch2, install the
+corresponding libraries:
+```bash
+sudo apt install -y libboost-dev catch2
+```
+
+To install support for all available frameworks:
 ```bash
 sudo apt install -y libboost-dev libgtest-dev catch2
 ```
-Verify:
-```bash
-clang++-18 --version
-llvm-config-18 --version
-```
-
-**Install (Ubuntu 22.04)**
-Ubuntu 22.04 ships older LLVM by default. Install LLVM/Clang 18 using the
-official LLVM APT repo, then run the same package list as above:
-```bash
-sudo apt update
-sudo apt install -y clang-18 llvm-18 llvm-18-dev llvm-18-tools libclang-18-dev build-essential
-```
 
 **Other distros**
-Install LLVM/Clang 18 plus libclang development headers and a C++ toolchain.
-Package names vary by distro; look for equivalents of:
-`clang-18`, `llvm-18`, `llvm-18-dev`, `libclang-18-dev`, `build-essential`.
+Install equivalents of LLVM/Clang 18, libclang development headers, and a C/C++ build toolchain.
 
 **Build**
 ```bash
@@ -61,15 +70,18 @@ make
 `--no-system-files-refresh` to skip this check.
 
 **Usage**
-```
+```text
 askeleton [options] <source0> [... <sourceN>]
 ```
+
+Use `--out-dir` to override the default output location.
+
 Key options:
 - `-p <build-path>`: path to `compile_commands.json`.
 - `--bootstrap-compdb`: auto-create/append minimal compile commands for missing source entries.
 - `--framework=<gtest|boost|catch>`: select test framework.
 - `--profile=<random|boundary|safe|stress>`: data generation profile.
-- `--coverage-mode=<strict|balanced|aggressive>`: generation coverage policy.
+- `--coverage-mode=<strict|balanced>`: generation coverage policy.
 - `--oracle-mode=<mirror|explicit|property>`: expected-value strategy.
 - `--seed=<N>`: deterministic data generation.
 - `--rule-data`: explicitly enable the default AST-guided rule-based values.
@@ -85,11 +97,7 @@ Key options:
 - `--extra-arg`, `--extra-arg-before`: pass extra compiler args to Clang tooling.
 
 For exhaustive option semantics and examples, see:
-- `doc/CLI.md`
-
-**Default Output**
-By default, ASkeleTon writes output under `tests/generated` relative to the first
-source file passed on the command line. Use `--out-dir` to override this.
+- [`doc/CLI.md`](doc/CLI.md)
 
 **Console Output**
 By default you get a concise progress view plus a final summary. Use:
@@ -97,13 +105,12 @@ By default you get a concise progress view plus a final summary. Use:
 - `--verbose` to include per-entity progress.
 - `--debug` to include detailed parameter/return signatures.
 
-To collect a machine-readable execution log (inputs, counts, warnings, timings),
+To collect a JSON execution log with inputs, counts, warnings, and timings,
 use `--log-json=<path>`.
 
 **Generated Makefiles**
-Generated Makefiles now use a consistent model across frameworks:
+Generated Makefiles follow a consistent structure across frameworks:
 - C/C++ split compilation: `.c` dependencies use `CC`, test translation units use `CXX`.
-- Dependency object rules are emitted from compile database context (`{sourceBuildRule}`).
 - Extra flags/libraries are overridable without editing templates:
   - `EXTRA_CPPFLAGS`, `EXTRA_CFLAGS`, `EXTRA_CXXFLAGS`
   - `EXTRA_LDFLAGS`, `EXTRA_LIBS`
@@ -116,191 +123,74 @@ make EXTRA_LIBS="-lcrypto" EXTRA_LDFLAGS="-L/path/to/lib"
 ```
 
 **Data Generation**
-Rule-based values are enabled by default:
+These examples cover the most common ways to adjust generation behavior:
+
+Default generation:
 ```bash
 ASKELETON_HOME=$(pwd) ./askeleton -p examples examples/sut.cpp
 ```
-Disable them explicitly:
-```bash
-ASKELETON_HOME=$(pwd) ./askeleton --no-rule-data -p examples examples/sut.cpp
-```
-Explicit parity check:
-```bash
-ASKELETON_HOME=$(pwd) ./askeleton --rule-data --rule-max-cases=3 -p examples examples/sut.cpp
-```
-Deterministic run:
+
+Deterministic generation:
 ```bash
 ASKELETON_HOME=$(pwd) ./askeleton --seed=123 -p examples examples/sut.cpp
 ```
-Profiled data:
+
+Boundary-focused inputs:
 ```bash
 ASKELETON_HOME=$(pwd) ./askeleton --profile=boundary -p examples examples/sut.cpp
 ```
-Strict coverage mode:
+
+Conservative generation policy:
 ```bash
 ASKELETON_HOME=$(pwd) ./askeleton --coverage-mode=strict -p examples examples/sut.cpp
 ```
-Explicit oracle mode:
-```bash
-ASKELETON_HOME=$(pwd) ./askeleton --oracle-mode=explicit -p examples examples/sut.cpp
-```
+
+For more option combinations, see [`doc/CLI.md`](doc/CLI.md).
 
 **Coverage Modes**
-Coverage mode controls how aggressive ASkeleTon is when deciding whether to
+Coverage mode controls how selective ASkeleTon is when deciding whether to
 generate a test for a callable. This is separate from the data-generation
 `--profile`.
 
-- `balanced`: default behavior. Uses the current materialization heuristics and
-  generates tests for mutable pointer/reference parameters when supported.
-- `strict`: favors conservative, easy-to-review scaffolding. It skips:
-  - functions and methods that require mutable pointer/reference parameter
-    handling
-  - instance methods that require constructing the object with a non-default
-    constructor
-- `aggressive`: currently behaves like `balanced`, but is exposed as the forward
-  compatibility mode for more permissive generation in future iterations.
+- `balanced`: default behavior and the recommended starting point.
+- `strict`: favors conservative, easy-to-review scaffolding and skips callables
+  that require mutable pointer/reference handling or non-default instance
+  construction.
 
-Current framework note:
-- Constructor tests are emitted for the current `gtest`, `boost`, and `catch`
-  generators when constructor parameters can be materialized.
-- If a constructor is still skipped, check the reported reason instead
-  (`abstract_record`, `non_public_lifecycle`,
-  `unsupported_pointer_pointee`, `missing_fixture_strategy`, etc.).
+If a callable is skipped, check the report for the recorded reason.
 
 **Expected Value Strategy**
-ASkeleTon currently exposes three oracle modes:
+ASkeleTon supports three oracle modes:
 
-- `mirror`: generated tests derive `expected` through a second isolated
-  execution of the same function or method using the same case data.
-- `explicit`: default behavior. Generated tests first look for `expected` in
-  the `.cfg`; if the key is missing, they fall back to `mirror`. This keeps
-  freshly generated tests passing while allowing users to override specific
-  cases with independent expectations.
-- `property`: first-pass repeatability oracle. Generated tests replay the same
-  callable with a second isolated copy of the inputs and assert that the
-  observable result matches across both executions.
+- `explicit`: default behavior. Generated tests first look for `expected` in the
+  `.cfg`; if no override is present, they fall back to a mirrored execution.
+- `mirror`: generated tests derive `expected` from a second isolated execution
+  of the same callable with the same case data.
+- `property`: generated tests replay the same callable with isolated inputs and
+  compare the observable result across both executions.
 
-What this means in practice:
-- The `.cfg` file stores the source case data that users are expected to edit.
-- In `explicit`, users may add `expected` (or structured keys such as
-  `expected.x`) to override the mirrored value.
-- Generated test code creates internal `oracle_*` variables by re-reading that same
-  data into a second set of local variables.
-- If no explicit override exists, `expected` is computed from that isolated
-  mirror execution, not from a separate specification or golden value.
-- This also lets the generated test compare side effects on pointer/reference
-  parameters against the mirrored execution.
-- Parameters inferred as pure `out` values are no longer persisted as editable
-  `.cfg` inputs; they are initialized internally in generated test code.
-- In `property`, the generated oracle always comes from that isolated replay and
-  never reads an `expected` override from the `.cfg`.
-
-What this strategy is good for:
-- Stable, reproducible scaffold tests.
-- Detecting accidental mutations or aliasing differences in generated checks.
-- Keeping generated `.cfg` files simpler because users do not maintain a separate
-  `return_*` field.
-
-What this strategy is not:
-- It is not an independent semantic oracle.
-- It does not prove the SUT is correct if the same deterministic bug appears in
-  both executions.
-
-This is still a conservative first phase. Future phases may extend `property`
-with stronger domain-specific or metamorphic checks beyond simple repeatability.
-
-**Reproducible Runs**
-Use `--seed` to make data generation deterministic. For fully reproducible
-outputs across machines, keep these inputs identical:
-- LLVM/Clang major version (e.g., 18).
-- The exact `compile_commands.json`.
-- `data/type_factories.json` and `data/default_values.json`.
-- `data/system_files.json` (or disable auto-create with `--no-system-files-refresh`).
+In practice, the `.cfg` file stores the editable case data, and `explicit`
+lets users override expected values when needed. These modes help keep
+generated scaffolding stable and reproducible, but they are not an independent
+semantic oracle for the SUT.
 
 **Type Factories and Stubs**
-Configure `data/type_factories.json` to control how complex types are initialized.
-```json
-{
-  "types": {},
-  "functions": {}
-}
-```
-Quick example:
-```json
-{
-  "types": {
-    "User": { "strategy": "factory", "expr": "MakeUser(\"guest\")" },
-    "Session": { "strategy": "zeroed" },
-    "Address": { "strategy": "dummy" }
-  },
-  "functions": {
-    "BuildAdminSession": {
-      "types": {
-        "User": { "strategy": "factory", "expr": "MakeAdminUser()" }
-      }
-    }
-  }
-}
-```
-Notes:
-- `factory`: uses the expression in the generated `Read_<Type>()` fixture method.
-- `zeroed`: returns `{}` for record types.
-- `dummy`: uses in-class defaults, then `data/default_values.json`, then zero.
-- `functions`: lets you override the factory for a type only when generating a
-  specific function or method. Function-scoped factories currently support only
-  explicit `factory` expressions.
+Use `data/type_factories.json` to customize how complex types are initialized
+in generated fixtures and tests.
 
-**Instance Resolution Cascade**
-For non-static methods, ASkeleTon now resolves the test instance using a fixed
-cascade. This is part of the default behavior; it is not a separate CLI mode.
+For the configuration format, supported strategies, and examples, see
+[`doc/TypeFactories.md`](doc/TypeFactories.md).
 
-Resolution order:
-1. `data/instance_strategies.json` override for the exact method, if present
-2. `data/instance_strategies.json` override for the target type, if present
-3. Public usable constructor on the class
-4. Public `static` factory on the class returning the same type by value
-5. Externally visible free factory in the same scope returning the same type by value
-6. Public instance method on a resolvable owner type returning the same type by value
+**Instance Resolution**
+For non-static methods, ASkeleTon tries to resolve a usable instance
+automatically. When the AST cannot infer a safe construction path, configure
+`data/instance_strategies.json`.
 
-The first usable strategy wins.
-
-Use `data/instance_strategies.json` when the AST cannot infer a safe instance
-construction plan on its own:
-```json
-{
-  "types": {
-    "Widget": { "expr": "MakeWidget()", "subject": "pointer" }
-  },
-  "functions": {
-    "Widget::Run": {
-      "instance": {
-        "owner_type": "WidgetFactory",
-        "owner_expr": "WidgetFactory{}",
-        "callable": "CreateReady()",
-        "owner_subject": "value",
-        "subject": "pointer"
-      }
-    }
-  }
-}
-```
-
-Notes:
-- `types` applies to all instance methods of that class unless a function-level
-  override exists.
-- `functions` applies to the exact method key and takes precedence over `types`.
-- `expr` is emitted as the direct initialization expression for the test object.
-- `subject` may be `value`, `pointer`, or `reference` and controls whether the
-  generated method call uses `.` or `->`.
-- `owner_type` + `owner_expr` + `callable` let you describe an explicit owner
-  factory chain without adding a new CLI mode.
-- `owner_subject` uses the same values and controls whether the owner itself is
-  treated as a value or pointer subject.
-- Owner factories are inferred only after direct strategies fail, so constructor
-  and direct factory paths still win when they are available.
+For the full resolution order, configuration format, and examples, see
+[`doc/InstanceStrategies.md`](doc/InstanceStrategies.md).
 
 **Supported Structured Inputs**
-ASkeleTon now has first-class input support for some common C++ standard library
+ASkeleTon supports structured input for some common C++ standard library
 shapes in generated `.cfg` files and fixtures:
 - `std::optional<T>`
 - `std::pair<T, U>`
@@ -320,45 +210,42 @@ tupleValue.1=5;#short
 tupleValue.2=6;#long long
 ```
 
-When a callable has an `std::optional<T>` parameter, ASkeleTon now generates at
-least two cases when possible so the generated data covers both:
+When a callable has an `std::optional<T>` parameter, ASkeleTon tries to
+generate at least two cases when possible so the generated data covers both:
 - a present value (`has_value=true`)
 - an empty optional (`has_value=false`)
 
+**Reproducible Runs**
+Use `--seed` to make data generation deterministic. For fully reproducible
+outputs across machines, keep these inputs identical:
+- LLVM/Clang major version (e.g., 18).
+- The exact `compile_commands.json`.
+- `data/type_factories.json` and `data/default_values.json`.
+- `data/system_files.json` (or disable auto-create with `--no-system-files-refresh`).
+
 **Report JSON**
-Use `--report` or `--report-json` to generate a machine-readable summary with:
+Use `--report` or `--report-json` to generate a JSON summary of the run with:
 - Per-entity status: `generated` or `skipped`.
-- Failure reason and type details when skipped.
+- Skip reasons and related type details when generation is not possible.
 - The selected `coverage_mode`.
 - The selected `oracle_mode`.
-- `summary` section with counts by status, kind, target, reason, and file.
-- Coverage metrics (`generation_rate`, `skip_rate`) plus top skip reasons and
-  targets with the most skips.
+- Aggregate counts and coverage metrics.
 
-Common `reason` values (human-readable summary):
+Common `reason` values:
 - `abstract_record`: type is abstract and cannot be instantiated for fixture setup.
 - `non_public_lifecycle`: destructor/lifecycle is not publicly usable.
 - `missing_fixture_strategy`: record cannot be constructed and no factory is configured.
 - `missing_instance_strategy`: no valid instance plan for method invocation.
 - `coverage_policy_mutable_parameter`: skipped by strict coverage policy.
-- `coverage_policy_instance_construction`: strict mode rejected non-default construction.
-- `unsupported_indirection`: pointer/reference depth is too complex.
 - `unsupported_pointer_pointee`: pointee type is not auto-materializable.
-- `unsupported_array_shape`: array form unsupported by current materializer.
-- `unsupported_template_parameter`: dependent template parameter unresolved.
-- `unsupported_type_shape`: type shape unsupported.
-- `incomplete_type` / `incomplete_record`: full type definition is unavailable.
 
 Full guide with didactic examples and fixes:
-- `doc/SkipReasons.md`
+- [`doc/SkipReasons.md`](doc/SkipReasons.md)
 
 **Troubleshooting**
 - `compile_commands.json` not found: pass `-p <build-path>` to its directory.
 - `compile_commands.json` uses relative paths: supported. ASkeleTon normalizes
   entries internally so relative entries still match absolute source paths.
-- C projects with `.c` dependencies: generated Makefiles now compile those
-  source dependencies with `CC` (C compiler) and normalize include paths to
-  absolute paths from the compilation database.
 - Headers not found in fixture: add the include manually in `*_fixture.hpp`.
 - Empty containers in `boundary` profile: use `random` or `safe`.
 - `llvm-config-18 not found`: install `llvm-18` and `llvm-18-tools`.
@@ -366,21 +253,22 @@ Full guide with didactic examples and fixes:
 - Link errors for external symbols (e.g. OpenSSL internals): the generated test
   may need extra project libraries during link; this is project-specific and
   must be provided in the generated Makefile/link flags.
-- Constructor tests are now emitted for `gtest`, `boost`, and `catch`; if a
-  constructor still gets skipped, check the report reason (`abstract_record`,
-  `non_public_lifecycle`, `unsupported_pointer_pointee`, etc.).
+- If a constructor or method is skipped, check the report reason and the
+  guidance in [`doc/SkipReasons.md`](doc/SkipReasons.md).
 
 **Docs**
-CLI reference: `doc/CLI.md`  
-Architecture overview: `doc/Architecture.md`  
-Rule catalog: `doc/DataRules.md`  
-Release checklist: `doc/ReleaseChecklist.md`  
-Known issues: `doc/KnownIssues.md`  
-Skip reasons guide: `doc/SkipReasons.md`  
-Dependencies: `doc/Dependencies.md`  
-Examples: `examples/README.md`
+- CLI reference: [`doc/CLI.md`](doc/CLI.md)
+- Architecture overview: [`doc/Architecture.md`](doc/Architecture.md)
+- Rule catalog: [`doc/DataRules.md`](doc/DataRules.md)
+- Release checklist: [`doc/ReleaseChecklist.md`](doc/ReleaseChecklist.md)
+- Known issues: [`doc/KnownIssues.md`](doc/KnownIssues.md)
+- Skip reasons guide: [`doc/SkipReasons.md`](doc/SkipReasons.md)
+- Instance strategies: [`doc/InstanceStrategies.md`](doc/InstanceStrategies.md)
+- Type factories: [`doc/TypeFactories.md`](doc/TypeFactories.md)
+- Dependencies: [`doc/Dependencies.md`](doc/Dependencies.md)
+- Examples: [`examples/README.md`](examples/README.md)
 
-If you are working with C++ headers use the option `-xc++` at the end.
+If you are working with C++ headers, use the option `-xc++`.
 
 Author: Kevin J. Valle-Gomez (kevin.valle@uca.es)  
 Acknowledgements: José Manuel Heredia Bravo for his constant maintenance, support and help.

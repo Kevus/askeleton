@@ -1,21 +1,37 @@
-ASkeleTon - Architecture Overview
+# Architecture Overview
 
-General flow
-1. Clang Tooling analyzes the AST using `compile_commands.json`.
-2. `ASKGen` discovers functions, methods, and constructors.
-3. `Generator` (Boost/Catch/GTest) creates test and fixture files.
-4. `ConfigGenerator` writes the `.cfg` input data.
-5. `RandomValuesGenerator` fills data using random values or a selected profile.
-6. `--rule-data` rules inject values derived from AST patterns when applicable.
+This document gives a high-level view of how ASkeleTon turns a
+`compile_commands.json` entry into generated tests, fixtures, and `.cfg` data.
 
-Main components
-- `src/askeleton.cpp`: CLI and global orchestration.
-- `src/ASKGen.cpp`: callable discovery plus AST-derived rules.
-- `src/framework/*Gen.cpp`: framework-specific test generators.
-- `src/ConfigGenerator.cpp`: `.cfg` generation.
-- `src/RandomValuesGenerator.cpp`: data generation (`random`, `boundary`, `safe`, `stress`).
+## End-to-End Flow
 
-Extension points
-- New AST rules: `ASKGen::collectRuleValuesFromFunction`.
-- New data profiles: `RandomValuesGenerator::setProfile`.
-- New output formats: framework classes under `src/framework/`.
+1. Clang Tooling analyzes the translation unit using `compile_commands.json`.
+2. `ASKGen` discovers functions, methods, constructors, and AST-derived rule data.
+3. A framework generator (`gtest`, `boost`, or `catch`) emits tests and fixtures.
+4. `ConfigGenerator` writes the `.cfg` input data consumed by generated tests.
+5. `RandomValuesGenerator` fills inputs using the selected profile.
+6. Optional rule-based data augments generated cases with values inferred from
+   comparisons, ranges, literals, and similar AST patterns.
+
+## Main Components
+
+- `src/askeleton.cpp`: CLI entry point, option parsing, and high-level orchestration.
+- `src/ASKGen.cpp`: callable discovery, skip decisions, and AST-derived rule extraction.
+- `src/framework/*Gen.cpp`: framework-specific test and fixture generation.
+- `src/ConfigGenerator.cpp`: `.cfg` generation and output layout.
+- `src/RandomValuesGenerator.cpp`: profile-based value generation (`random`,
+  `boundary`, `safe`, `stress`).
+
+## Extension Points
+
+- New AST rules: `ASKGen::collectRuleValuesFromFunction`
+- New data profiles: `RandomValuesGenerator::setProfile`
+- New framework emitters: classes under `src/framework/`
+
+## Related Guides
+
+- CLI options: [`CLI.md`](CLI.md)
+- Rule-based generation details: [`DataRules.md`](DataRules.md)
+- Skip reasons: [`SkipReasons.md`](SkipReasons.md)
+- Type customization: [`TypeFactories.md`](TypeFactories.md)
+- Method instance setup: [`InstanceStrategies.md`](InstanceStrategies.md)
