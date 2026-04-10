@@ -34,7 +34,7 @@ explain_reason() {
     unsupported_indirection)
       echo "  - $reason: punteros/referencias con niveles de indirección no soportados."
       ;;
-    unsupported_type_shape)
+    unsupported_type)
       echo "  - $reason: forma de tipo compleja fuera del materializador actual."
       ;;
     unsupported_pointer_pointee)

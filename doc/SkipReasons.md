@@ -219,7 +219,7 @@ Typical fixes:
 - Instantiate and test concrete wrappers such as `int` or `std::string`.
 - Skip generic entry points and test the instantiated API surface instead.
 
-## `unsupported_type_shape`
+## `unsupported_type`
 
 Meaning: the type shape is not supported by the current model.
 

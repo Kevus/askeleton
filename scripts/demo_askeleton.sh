@@ -225,7 +225,7 @@ run_quick_showcase() {
     "Casos límite del SUT que se reportan explícitamente como no soportados." \
     "show_near '$SUT_FILE' 'int apply_processor' 3 8; echo; show_near '$SUT_FILE' 'int count_c_strings' 2 12; echo; show_near '$SUT_FILE' 'int sum_matrix_2x2' 2 8" \
     "ASKELETON_HOME='$ASKELETON_HOME' '$ASKELETON_BIN' -p '$BUILD_PATH' --coverage-mode=balanced --report='$OUT_DIR/06_balanced_report.json' --out-dir '$OUT_DIR/06_balanced' '$SUT_FILE'" \
-    "echo '[Resumen balanced]'; rg -n '\"reason\"|abstract_record|unsupported_indirection|unsupported_type_shape|\"by_reason\"|\"skipped\"' '$OUT_DIR/06_balanced_report.json' || true"
+    "echo '[Resumen balanced]'; rg -n '\"reason\"|abstract_record|unsupported_indirection|unsupported_type|\"by_reason\"|\"skipped\"' '$OUT_DIR/06_balanced_report.json' || true"
 
   run_guided_step \
     "07" \
@@ -313,7 +313,7 @@ Modos/opciones de ASkeleTon que verás en la demo:
 Razones de skip (las más comunes en este showcase):
 - `abstract_record`: tipo abstracto (no se puede instanciar para el fixture).
 - `unsupported_indirection`: demasiada indireccion en punteros/referencias.
-- `unsupported_type_shape`: forma de tipo no soportada por el materializador.
+- `unsupported_type`: forma de tipo no soportada por el materializador.
 - `coverage_policy_mutable_parameter`: en `strict`, se omiten params mutables.
 - `coverage_policy_instance_construction`: en `strict`, se omite instanciación no default.
 

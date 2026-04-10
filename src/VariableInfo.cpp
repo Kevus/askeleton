@@ -93,7 +93,7 @@ std::optional<std::string> getEquivalentWrappedType(clang::QualType type) {
 } // namespace
 
 ComplexTypeException::ComplexTypeException(const string &complexType)
-    : ComplexTypeException("unsupported_type_shape", complexType) {}
+    : ComplexTypeException("unsupported_type", complexType) {}
 
 ComplexTypeException::ComplexTypeException(const string &reasonCode,
                                            const string &complexType)

@@ -51,7 +51,7 @@
  * Demo Block 4: Intentional edge/unsupported shapes
  * - Includes signatures designed to produce skips in reports.
  * - Typical skip reasons seen with this file:
- *   abstract_record, unsupported_indirection, unsupported_type_shape.
+ *   abstract_record, unsupported_indirection, unsupported_type.
  *
  * Demo Block 5: Mutable side effects
  * - Mutable refs/pointers to highlight strict coverage policy behavior.
