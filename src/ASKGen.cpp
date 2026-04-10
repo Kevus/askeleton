@@ -15,6 +15,7 @@
 #include "framework/GTestGen.hpp"
 #include "Logging.hpp"
 #include "OracleMode.hpp"
+#include "SkipReasonCodes.hpp"
 #include "utils/ast_values.hpp"
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
@@ -1059,7 +1060,7 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     testGen.registerInvocationName(functionName, UT->getQualifiedNameAsString());
     if (coverageMode == CoverageMode::Strict && requiresMutableAliasHandling(parameters)) {
         throw ComplexTypeException(
-            "coverage_policy_mutable_parameter",
+            skip_reason::coverage_policy_mutable_parameter,
             "strict coverage mode skips mutable pointer/reference parameters: " +
                 UT->getQualifiedNameAsString());
     }
@@ -1109,7 +1110,7 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
         const auto *record = UT->getParent() ? UT->getParent()->getDefinition() : nullptr;
         if (!record) {
             throw ComplexTypeException(
-                "incomplete_record",
+                skip_reason::incomplete_record,
                 "record declaration has no visible definition: " +
                     UT->getParent()->getQualifiedNameAsString());
         }
@@ -1124,18 +1125,18 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
         if (!instancePlan.has_value()) {
             if (record->isAbstract()) {
                 throw ComplexTypeException(
-                    "abstract_record",
+                    skip_reason::abstract_record,
                     "abstract record cannot be instantiated for fixtures: " +
                         UT->getParent()->getQualifiedNameAsString());
             }
             if (!hasPublicUsableDestructor(record)) {
                 throw ComplexTypeException(
-                    "non_public_lifecycle",
+                    skip_reason::non_public_lifecycle,
                     "record does not have a public usable destructor: " +
                         UT->getParent()->getQualifiedNameAsString());
             }
             throw ComplexTypeException(
-                "missing_instance_strategy",
+                skip_reason::missing_instance_strategy,
                 "no usable public constructor or factory for test instance: " +
                     UT->getParent()->getQualifiedNameAsString());
         }
@@ -1146,26 +1147,26 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
             instancePlan->subjectKind != InstanceSubjectKind::Value;
         if (record->isAbstract() && !externalizedLifetime) {
             throw ComplexTypeException(
-                "abstract_record",
+                skip_reason::abstract_record,
                 "abstract record cannot be instantiated for fixtures: " +
                     UT->getParent()->getQualifiedNameAsString());
         }
         if (!hasPublicUsableDestructor(record) && !externalizedLifetime) {
             throw ComplexTypeException(
-                "non_public_lifecycle",
+                skip_reason::non_public_lifecycle,
                 "record does not have a public usable destructor: " +
                     UT->getParent()->getQualifiedNameAsString());
         }
         if (coverageMode == CoverageMode::Strict && instancePlan.has_value() &&
             !instancePlan->usesDefaultConstructor()) {
             throw ComplexTypeException(
-                "coverage_policy_instance_construction",
+                skip_reason::coverage_policy_instance_construction,
                 "strict coverage mode skips non-default instance construction: " +
                     UT->getParent()->getQualifiedNameAsString());
         }
         if (!instancePlan.has_value() || !testGen.setInstancePlan(instancePlan)) {
             throw ComplexTypeException(
-                "missing_instance_strategy",
+                skip_reason::missing_instance_strategy,
                 "no usable public constructor for test instance: " +
                     UT->getParent()->getQualifiedNameAsString());
         }
@@ -1180,7 +1181,7 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     testGen.registerInvocationName(functionName, UT->getNameInfo().getAsString());
     if (coverageMode == CoverageMode::Strict && requiresMutableAliasHandling(parameters)) {
         throw ComplexTypeException(
-            "coverage_policy_mutable_parameter",
+            skip_reason::coverage_policy_mutable_parameter,
             "strict coverage mode skips mutable pointer/reference parameters: " +
                 UT->getQualifiedNameAsString());
     }
@@ -1211,7 +1212,7 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
 
     if (!isUsablePublicConstructor(UT)) {
         throw ComplexTypeException(
-            "unusable_constructor",
+            skip_reason::unusable_constructor,
             "constructor is not publicly invocable: " +
                 UT->getQualifiedNameAsString());
     }
@@ -1219,26 +1220,26 @@ unsigned ASKGen::generateTest(Generator &testGen, ConfigGenerator &configGenerat
     const auto *record = UT->getParent() ? UT->getParent()->getDefinition() : nullptr;
     if (!record) {
         throw ComplexTypeException(
-            "incomplete_record",
+            skip_reason::incomplete_record,
             "record declaration has no visible definition: " +
                 UT->getParent()->getQualifiedNameAsString());
     }
     if (record->isAbstract()) {
         throw ComplexTypeException(
-            "abstract_record",
+            skip_reason::abstract_record,
             "abstract record cannot be instantiated for fixtures: " +
                 UT->getParent()->getQualifiedNameAsString());
     }
     if (!hasPublicUsableDestructor(record)) {
         throw ComplexTypeException(
-            "non_public_lifecycle",
+            skip_reason::non_public_lifecycle,
             "record does not have a public usable destructor: " +
                 UT->getParent()->getQualifiedNameAsString());
     }
 
     if (!testGen.supportsConstructorTests()) {
         throw ComplexTypeException(
-            "unsupported_framework_feature",
+            skip_reason::unsupported_framework_feature,
             "selected framework does not emit constructor tests: " +
                 constructorName);
     }

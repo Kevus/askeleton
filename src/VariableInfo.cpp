@@ -1,4 +1,5 @@
 #include "VariableInfo.hpp"
+#include "SkipReasonCodes.hpp"
 
 #include "utils/strings.hpp"
 #include "utils/system.hpp"
@@ -93,7 +94,7 @@ std::optional<std::string> getEquivalentWrappedType(clang::QualType type) {
 } // namespace
 
 ComplexTypeException::ComplexTypeException(const string &complexType)
-    : ComplexTypeException("unsupported_type", complexType) {}
+    : ComplexTypeException(skip_reason::unsupported_type, complexType) {}
 
 ComplexTypeException::ComplexTypeException(const string &reasonCode,
                                            const string &complexType)
@@ -127,7 +128,7 @@ InfoType::InfoType(const clang::QualType &type)
                 throw ComplexTypeException(original);
             }
         } else {
-            throw ComplexTypeException("unsupported_array_shape", original);
+            throw ComplexTypeException(skip_reason::unsupported_array_shape, original);
         }
     } else if (const CXXRecordDecl *record = type->getAsCXXRecordDecl()) {
         isRecord_ = true;

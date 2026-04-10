@@ -1,4 +1,5 @@
 #include "GenerationEligibility.hpp"
+#include "SkipReasonCodes.hpp"
 
 #include <algorithm>
 
@@ -534,12 +535,12 @@ unsigned minimumCoverageInvocations(const std::vector<InfoVariable> &params) {
 void validateTypeMaterialization(const InfoType &type,
                                  const std::string &functionName) {
     if (hasUnresolvedTemplatePlaceholder(type)) {
-        throwUnsupportedType("unsupported_template_parameter", type.original,
+        throwUnsupportedType(skip_reason::unsupported_template_parameter, type.original,
                              "dependent template parameter cannot be materialized");
     }
 
     if (countIndirections(type) > 1) {
-        throwUnsupportedType("unsupported_indirection", type.original,
+        throwUnsupportedType(skip_reason::unsupported_indirection, type.original,
                              "more than one pointer/reference indirection is not supported");
     }
 
@@ -547,12 +548,12 @@ void validateTypeMaterialization(const InfoType &type,
         (type.isPointer() || type.isReference()) ? type.getUnderlyingType() : type;
 
     if (materialized.isPointer() || materialized.isReference()) {
-        throwUnsupportedType("unsupported_indirection", type.original,
+        throwUnsupportedType(skip_reason::unsupported_indirection, type.original,
                              "nested pointer/reference materialization is not supported");
     }
 
     if (!materialized.type.isNull() && materialized.type->isIncompleteType()) {
-        throwUnsupportedType("incomplete_type", materialized.original,
+        throwUnsupportedType(skip_reason::incomplete_type, materialized.original,
                              "incomplete type cannot be materialized");
     }
 
@@ -574,13 +575,13 @@ void validateTypeMaterialization(const InfoType &type,
              (!isBuiltinMaterialized && !isEnumMaterialized &&
               !isSupportedRecordPointee))) {
             throwUnsupportedType(
-                "unsupported_pointer_pointee", type.original,
+                skip_reason::unsupported_pointer_pointee, type.original,
                 "pointer pointee requires custom factory/stub strategy");
         }
     }
 
     if (hasUnresolvedTemplatePlaceholder(materialized)) {
-        throwUnsupportedType("unsupported_template_parameter", materialized.original,
+        throwUnsupportedType(skip_reason::unsupported_template_parameter, materialized.original,
                              "dependent template parameter cannot be materialized");
     }
 
@@ -590,23 +591,23 @@ void validateTypeMaterialization(const InfoType &type,
 
     const auto *record = getRecordDecl(materialized);
     if (!record) {
-        throwUnsupportedType("incomplete_record", materialized.original,
+        throwUnsupportedType(skip_reason::incomplete_record, materialized.original,
                              "record declaration has no visible definition");
     }
 
     if (record->isAbstract()) {
-        throwUnsupportedType("abstract_record", materialized.original,
+        throwUnsupportedType(skip_reason::abstract_record, materialized.original,
                              "abstract record cannot be instantiated for fixtures");
     }
 
     if (!hasPublicUsableDestructorImpl(record)) {
-        throwUnsupportedType("non_public_lifecycle", materialized.original,
+        throwUnsupportedType(skip_reason::non_public_lifecycle, materialized.original,
                              "record does not have a public usable destructor");
     }
 
     if (!usesExplicitFactory(materialized, functionName) &&
         !canDefaultConstructForFixtureImpl(record)) {
-        throwUnsupportedType("missing_fixture_strategy", materialized.original,
+        throwUnsupportedType(skip_reason::missing_fixture_strategy, materialized.original,
                              "record requires a default constructor or explicit "
                              "factory for fixture setup");
     }
@@ -616,13 +617,13 @@ void validateReturnTypeMaterialization(const InfoType &type,
                                        const std::string &functionName) {
     if (type.isPointer()) {
         if (countIndirections(type) > 1) {
-            throwUnsupportedType("unsupported_indirection", type.original,
+            throwUnsupportedType(skip_reason::unsupported_indirection, type.original,
                                  "more than one pointer/reference indirection is not supported");
         }
 
         const InfoType materialized = type.getUnderlyingType();
         if (materialized.isPointer() || materialized.isReference()) {
-            throwUnsupportedType("unsupported_indirection", type.original,
+            throwUnsupportedType(skip_reason::unsupported_indirection, type.original,
                                  "nested pointer/reference materialization is not supported");
         }
 
