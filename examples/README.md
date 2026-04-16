@@ -14,22 +14,22 @@ for internal testing only.
 
 Quick run:
 ```bash
-ASKELETON_HOME=$(pwd) ./askeleton -p examples examples/sut.cpp
+ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p examples examples/sut.cpp
 ```
 
 Showcase run (broader feature surface + intentional skips in report):
 ```bash
-ASKELETON_HOME=$(pwd) ./askeleton -p examples --report=/tmp/sut_showcase_report.json examples/sut_showcase.cpp
+ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p examples --report=/tmp/sut_showcase_report.json examples/sut_showcase.cpp
 ```
 
 Rule-based data:
 ```bash
-ASKELETON_HOME=$(pwd) ./askeleton --rule-data --rule-max-cases=3 -p examples examples/sut.cpp
+ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb --rule-data --rule-max-cases=3 -p examples examples/sut.cpp
 ```
 
 Profiles:
 ```bash
-ASKELETON_HOME=$(pwd) ./askeleton --profile=boundary -p examples examples/sut.cpp
+ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb --profile=boundary -p examples examples/sut.cpp
 ```
 
 Output is written to:

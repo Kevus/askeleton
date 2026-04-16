@@ -7,28 +7,28 @@ This checklist is meant for release verification and regression smoke tests.
 ### Basic Run
 
 ```bash
-ASKELETON_HOME=$(pwd) ./askeleton -p examples examples/sut.cpp
+ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p examples examples/sut.cpp
 ```
 
 ### Rule-Based Data
 
 ```bash
-ASKELETON_HOME=$(pwd) ./askeleton --rule-data --rule-max-cases=3 -p examples examples/sut.cpp
+ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb --rule-data --rule-max-cases=3 -p examples examples/sut.cpp
 ```
 
 ### Profiles
 
 ```bash
-ASKELETON_HOME=$(pwd) ./askeleton --profile=random -p examples examples/sut.cpp
-ASKELETON_HOME=$(pwd) ./askeleton --profile=boundary -p examples examples/sut.cpp
-ASKELETON_HOME=$(pwd) ./askeleton --profile=safe -p examples examples/sut.cpp
-ASKELETON_HOME=$(pwd) ./askeleton --profile=stress -p examples examples/sut.cpp
+ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb --profile=random -p examples examples/sut.cpp
+ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb --profile=boundary -p examples examples/sut.cpp
+ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb --profile=safe -p examples examples/sut.cpp
+ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb --profile=stress -p examples examples/sut.cpp
 ```
 
 ### Determinism
 
 ```bash
-ASKELETON_HOME=$(pwd) ./askeleton --seed=123 -p examples examples/sut.cpp
+ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb --seed=123 -p examples examples/sut.cpp
 ```
 
 ### Automated Checks
@@ -50,3 +50,4 @@ ASKELETON_HOME=$(pwd) ./askeleton --seed=123 -p examples examples/sut.cpp
 
 - CLI reference: [`CLI.md`](CLI.md)
 - Rule-based generation: [`DataRules.md`](DataRules.md)
+- Reproducibility: [`../REPRODUCIBILITY.md`](../REPRODUCIBILITY.md)

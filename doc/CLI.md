@@ -211,13 +211,14 @@ ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p . ./sut.cpp
 Default run:
 
 ```bash
-ASKELETON_HOME=$(pwd) ./askeleton -p examples examples/sut_showcase.cpp
+ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p examples examples/sut_showcase.cpp
 ```
 
 Deterministic strict run with report and log:
 
 ```bash
 ASKELETON_HOME=$(pwd) ./askeleton \
+  --bootstrap-compdb \
   -p examples \
   --seed=123 \
   --coverage-mode=strict \
@@ -231,6 +232,7 @@ Boost framework with boundary profile:
 
 ```bash
 ASKELETON_HOME=$(pwd) ./askeleton \
+  --bootstrap-compdb \
   -p examples \
   --framework=boost \
   --profile=boundary \

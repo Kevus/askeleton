@@ -22,7 +22,7 @@ Outputs fixtures, tests, Makefiles, and `.cfg` data files with deterministic or 
 
 **Quick Start**
 ```bash
-ASKELETON_HOME=$(pwd) ./askeleton -p examples examples/sut.cpp
+ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p examples examples/sut.cpp
 ```
 
 By default, ASkeleTon generates GoogleTest scaffolding and writes output under
@@ -127,22 +127,22 @@ These examples cover the most common ways to adjust generation behavior:
 
 Default generation:
 ```bash
-ASKELETON_HOME=$(pwd) ./askeleton -p examples examples/sut.cpp
+ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p examples examples/sut.cpp
 ```
 
 Deterministic generation:
 ```bash
-ASKELETON_HOME=$(pwd) ./askeleton --seed=123 -p examples examples/sut.cpp
+ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb --seed=123 -p examples examples/sut.cpp
 ```
 
 Boundary-focused inputs:
 ```bash
-ASKELETON_HOME=$(pwd) ./askeleton --profile=boundary -p examples examples/sut.cpp
+ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb --profile=boundary -p examples examples/sut.cpp
 ```
 
 Conservative generation policy:
 ```bash
-ASKELETON_HOME=$(pwd) ./askeleton --coverage-mode=strict -p examples examples/sut.cpp
+ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb --coverage-mode=strict -p examples examples/sut.cpp
 ```
 
 For more option combinations, see [`doc/CLI.md`](doc/CLI.md).
@@ -267,8 +267,21 @@ Full guide with didactic examples and fixes:
 - Type factories: [`doc/TypeFactories.md`](doc/TypeFactories.md)
 - Dependencies: [`doc/Dependencies.md`](doc/Dependencies.md)
 - Examples: [`examples/README.md`](examples/README.md)
+- Reproducibility: [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md)
+
+**License**
+ASkeleTon is released under the Apache License 2.0. See
+[`LICENSE.txt`](LICENSE.txt).
+
+Bundled third-party code retains its own license notices. In particular,
+the vendored `nlohmann/json` headers under `include/nlohmann/` retain their
+upstream SPDX notices.
 
 If you are working with C++ headers, use the option `-xc++`.
 
-Author: Kevin J. Valle-Gomez (kevin.valle@uca.es)  
+**Authors**
+- Kevin J. Valle-Gómez (kevin.valle@uca.es)
+- Pedro Delgado-Pérez (pedro.delgado@uca.es)
+- Inmaculada Medina-Bulo (inmaculada.medina@uca.es)
+
 Acknowledgements: José Manuel Heredia Bravo for his constant maintenance, support and help.

@@ -67,8 +67,8 @@ private:
     std::map<std::string, std::map<std::string, std::vector<long long>>> ruleValues;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> ruleStringValues;
 
-    static const nlohmann::json &config;
-    static const nlohmann::json &tplItems;
+    static const nlohmann::json &config();
+    static const nlohmann::json &tplItems();
     static RandomValuesGenerator rvg;
     static std::string dataProfile;
     static std::optional<uint32_t> seedValue;

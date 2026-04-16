@@ -8,13 +8,23 @@ askeleton
 *.bak
 *.bak.*
 *.tmp
+__pycache__/
 data/system_files.json
 
 # Local external examples/datasets (not distributed)
+.campaign/
+.campaign_probe/
+analysis/
+artifacts/
 examples/*.zip
 examples/*.tar.gz
+examples/compile_commands.json
+examples/openssl/
 examples/openssl-*/
+examples/sqlite/
 examples/sqlite-src-*/
+examples/tinyxml2/
 examples/tinyxml2-master/
+examples/yaml-cpp/
 examples/matclpro/
 examples/tests/

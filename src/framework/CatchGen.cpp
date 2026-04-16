@@ -10,7 +10,7 @@ CatchGenerator::CatchGenerator(const string &targetName,
                                const string &targetQualifiedName,
                                const string &filePath, bool isFromClass)
     : Generator(targetName, targetQualifiedName, filePath, isFromClass) {
-    setFrameworkTemplatePath(getAskeletonHome() / config["route"]["catch_templates"]);
+    setFrameworkTemplatePath(getAskeletonHome() / config()["route"]["catch_templates"]);
 
     map<string, string> tokensToReplace;
     setValuesToChange(tokensToReplace);
@@ -22,7 +22,7 @@ void CatchGenerator::generateFullAssert(const string &function,
                                         const vector<InfoVariable> &parameters,
                                         const InfoType &returnType, bool isStatic) {
     const static fs::path tplFunctionPath =
-        templateFrameworkPath / config["file"]["template"]["case"]["function"];
+        templateFrameworkPath / config()["file"]["template"]["case"]["function"];
     const unsigned number = getFunctionCounter(function) + 1;
     const auto invocationTokens =
         buildInvocationTokens(parameters, function, isStatic, returnType);
@@ -41,15 +41,15 @@ void CatchGenerator::generateFullAssert(const string &function,
         buildInitializations(parameters, function, number, isStatic);
 
     map<string, string> tokensToReplace = {
-        {templateItems["tplitem"]["catch"]["target"], targetName},
-        {templateItems["tplitem"]["catch"]["function"], function},
-        {templateItems["tplitem"]["catch"]["number"], to_string(number)},
-        {templateItems["tplitem"]["catch"]["initializations"], initializations},
-        {templateItems["tplitem"]["catch"]["return_type"], returnTypeOriginal},
-        {templateItems["tplitem"]["catch"]["return_read_method"], returnReadMethod},
-        {templateItems["tplitem"]["catch"]["invocation"], invocation},
-        {templateItems["tplitem"]["catch"]["parameters"], parametersInvocation},
-        {templateItems["tplitem"]["catch"]["pointers"], pointers}};
+        {templateItems()["tplitem"]["catch"]["target"], targetName},
+        {templateItems()["tplitem"]["catch"]["function"], function},
+        {templateItems()["tplitem"]["catch"]["number"], to_string(number)},
+        {templateItems()["tplitem"]["catch"]["initializations"], initializations},
+        {templateItems()["tplitem"]["catch"]["return_type"], returnTypeOriginal},
+        {templateItems()["tplitem"]["catch"]["return_read_method"], returnReadMethod},
+        {templateItems()["tplitem"]["catch"]["invocation"], invocation},
+        {templateItems()["tplitem"]["catch"]["parameters"], parametersInvocation},
+        {templateItems()["tplitem"]["catch"]["pointers"], pointers}};
 
     string testContent = replaceTokensInFile(tplFunctionPath, tokensToReplace);
 
@@ -72,7 +72,7 @@ void CatchGenerator::generateFunctionAssert(const string &function,
 
 void CatchGenerator::generateConstructorAssert(const vector<InfoVariable> &parameters) {
     const static fs::path tplCtorPath =
-        templateFrameworkPath / config["file"]["template"]["case"]["constructor"];
+        templateFrameworkPath / config()["file"]["template"]["case"]["constructor"];
     const unsigned number = getFunctionCounter(targetName) + 1;
     const std::string ctorKey = targetName;
     const std::string initializations =
@@ -84,13 +84,13 @@ void CatchGenerator::generateConstructorAssert(const vector<InfoVariable> &param
         pointers = pointers + "\n";
 
     map<string, string> tokensToReplace = {
-        {templateItems["tplitem"]["catch"]["target"], targetName},
-        {templateItems["tplitem"]["catch"]["function"], ctorKey},
-        {templateItems["tplitem"]["catch"]["number"], to_string(number)},
-        {templateItems["tplitem"]["catch"]["initializations"], initializations},
-        {templateItems["tplitem"]["catch"]["class"], targetQualifiedName},
-        {templateItems["tplitem"]["catch"]["parameters"], parametersInvocation},
-        {templateItems["tplitem"]["catch"]["pointers"], pointers},
+        {templateItems()["tplitem"]["catch"]["target"], targetName},
+        {templateItems()["tplitem"]["catch"]["function"], ctorKey},
+        {templateItems()["tplitem"]["catch"]["number"], to_string(number)},
+        {templateItems()["tplitem"]["catch"]["initializations"], initializations},
+        {templateItems()["tplitem"]["catch"]["class"], targetQualifiedName},
+        {templateItems()["tplitem"]["catch"]["parameters"], parametersInvocation},
+        {templateItems()["tplitem"]["catch"]["pointers"], pointers},
     };
 
     string testContent = replaceTokensInFile(tplCtorPath, tokensToReplace);
@@ -104,11 +104,11 @@ bool CatchGenerator::supportsConstructorTests() const { return true; }
 string CatchGenerator::generatePointersAsserts(const vector<InfoVariable> &parameters,
                                                const string &function) const {
     const static string TPLITEM_CATCH_PARAMETER =
-                            templateItems["tplitem"]["catch"]["parameter"].get<string>(),
+                            templateItems()["tplitem"]["catch"]["parameter"].get<string>(),
                         TPLITEM_CATCH_EXPECTED =
-                            templateItems["tplitem"]["catch"]["expected"].get<string>(),
+                            templateItems()["tplitem"]["catch"]["expected"].get<string>(),
                         TPLITEM_CATCH_POINTER =
-                            templateItems["templating"]["catch"]["assert_pointer"]
+                            templateItems()["templating"]["catch"]["assert_pointer"]
                                 .get<string>();
 
     return generatePointersAssertsWithTemplate(
@@ -117,7 +117,7 @@ string CatchGenerator::generatePointersAsserts(const vector<InfoVariable> &param
 }
 
 void CatchGenerator::copyMainFile() const {
-    fs::path tplMain = templateFrameworkPath / config["file"]["template"]["main"],
+    fs::path tplMain = templateFrameworkPath / config()["file"]["template"]["main"],
              outputMain = utPath / "main.cpp";
     fs::copy_file(tplMain, outputMain, fs::copy_options::overwrite_existing);
 }

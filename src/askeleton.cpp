@@ -1,6 +1,7 @@
 #include "ASKGen.hpp"
 #include "ASKMatchers.hpp"
 #include "color.h"
+#include "constants.hpp"
 #include "CoverageMode.hpp"
 #include "ConfigGenerator.hpp"
 #include "Logging.hpp"
@@ -471,7 +472,9 @@ static bool ensureCompileCommandEntries(const fs::path &compdbPath,
 
 } // namespace
 
-json &config = getConfig();
+static json &runtimeConfig() {
+    return getConfig();
+}
 
 void exitIfFilesDoNotExist() {
     for (const auto &fileString : getSystemFilesToCheck(getFramework())) {
@@ -502,6 +505,7 @@ void exitIfFolderDoesNotExist(fs::path folder) {
 }
 
 void moveGeneratedFolderToLog() {
+    json &config = runtimeConfig();
     fs::path utFolder = getAskeletonHome() / config["route"]["generated"];
     if (fs::exists(utFolder)) {
         fs::path logFolder = getAskeletonHome() / config["route"]["log"];
@@ -533,7 +537,8 @@ static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
 
 static cl::extrahelp
     MoreHelp("\nIf you are working with C++ headers use the option -xc++ at "
-             "the end.\nAuthor: Kevin J. Valle-Gomez (kevin.valle@uca.es)\n");
+             "the end.\nAuthors: Kevin J. Valle-Gomez, Pedro Delgado-Perez, "
+             "Inmaculada Medina-Bulo\n");
 static cl::extrahelp DetailedHelp(R"(
 
 CLI GUIDE (DETAILED)
@@ -624,6 +629,11 @@ Notes:
   - For skip reason semantics and fixes, see doc/SkipReasons.md.
 )");
 static llvm::cl::OptionCategory OptC("ASkeleTon - Unit Test Generator for C/C++");
+
+static void printVersion(llvm::raw_ostream &out) {
+    out << "ASkeleTon " << askeleton::ASKELETON_VERSION << "\n";
+    out << "Built with LLVM " << LLVM_VERSION_STRING << "\n";
+}
 
 cl::opt<std::string> FrameworkOption(
     "framework", cl::desc("Choose the testing framework (options: gtest, boost, catch)"),
@@ -725,6 +735,7 @@ static void configureLoggingFromOptions() {
 }
 
 static std::string resolveOutputDirectory(const CommonOptionsParser &options) {
+    json &config = runtimeConfig();
     if (!OutDirOption.empty()) {
         return OutDirOption;
     }
@@ -742,6 +753,7 @@ static std::string resolveOutputDirectory(const CommonOptionsParser &options) {
 }
 
 static void applyOutputDirectoryOverride(const std::string &outDir) {
+    json &config = runtimeConfig();
     if (outDir.empty()) {
         return;
     }
@@ -756,6 +768,7 @@ static void applyOutputDirectoryOverride(const std::string &outDir) {
 }
 
 static std::string resolveReportPath() {
+    json &config = runtimeConfig();
     if (!ReportPathOption.empty()) {
         return ReportPathOption;
     }
@@ -776,6 +789,7 @@ static void printRunSummary(const RunStats &stats, const std::string &reportPath
         return;
     }
 
+    json &config = runtimeConfig();
     llvm::outs() << "\nSummary:\n";
     llvm::outs() << "  Found: " << stats.found << "\n";
     llvm::outs() << "  Generated: " << stats.generated << "\n";
@@ -857,6 +871,8 @@ static void writeExecutionLogJson(
 int main(int argc, const char **argv) {
     system("");
 
+    llvm::cl::SetVersionPrinter(printVersion);
+
     if (argc == 1) {
         llvm::outs() << "No arguments provided. Use --help for more information\n";
         return 1;
@@ -913,6 +929,7 @@ int main(int argc, const char **argv) {
 
     applyOutputDirectoryOverride(resolveOutputDirectory(*options));
 
+    json &config = runtimeConfig();
     exitIfFolderDoesNotExist(getAskeletonHome() / config["route"]["templates"]);
     Logger::instance().info("Checking ASkeleTon files...");
     exitIfFilesDoNotExist();
