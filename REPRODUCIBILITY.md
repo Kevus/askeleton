@@ -146,10 +146,6 @@ workflow:
 - `scripts/reproduce_eval.sh`
 - `scripts/build_eval_viewer.py`
 
-In addition, `figures/askeleton-workflow.svg` and
-`figures/askeleton-workflow.drawio` are kept as source assets for the workflow
-diagram used to explain the tool usage in repository and release materials.
-
 Run the complete campaign:
 
 ```bash
