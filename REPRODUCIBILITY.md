@@ -95,8 +95,8 @@ See `.github/workflows/ci.yml`.
 
 ## Applicability Evaluation Workflow
 
-The script `scripts/run_eval.py` reproduces the applicability evaluation used
-for the companion manuscript.
+The script `scripts/run_eval.py` reproduces the applicability evaluation
+workflow for this release.
 
 The complete campaign contains 156 ASkeleTon executions:
 
