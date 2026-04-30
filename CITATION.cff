@@ -5,8 +5,7 @@ version: "1.0.0"
 date-released: "2026-04-16"
 type: software
 license: "Apache-2.0"
-repository-code: "https://github.com/OWNER/askeleton"
-doi: "10.5281/zenodo.PLACEHOLDER"
+repository-code: "https://github.com/Kevus/askeleton"
 authors:
   - family-names: "Valle-Gómez"
     given-names: "Kevin J."

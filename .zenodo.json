@@ -30,7 +30,7 @@
   ],
   "related_identifiers": [
     {
-      "identifier": "https://github.com/OWNER/askeleton",
+      "identifier": "https://github.com/Kevus/askeleton",
       "relation": "isSupplementTo",
       "resource_type": "software"
     }

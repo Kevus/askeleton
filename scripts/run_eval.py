@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reproduce the publication Chapter 4 applicability evaluation for ASkeleTon."""
+"""Run the applicability evaluation for ASkeleTon."""
 
 from __future__ import annotations
 
@@ -117,7 +117,7 @@ def external_subjects(root: Path) -> dict[str, ExternalSubject]:
     }
 
 
-def chapter4_subjects() -> list[Subject]:
+def evaluation_subjects() -> list[Subject]:
     return [
         Subject(
             key="sut_showcase",
@@ -560,10 +560,10 @@ def skip_reason_rows(rows: list[dict]) -> list[dict]:
     return [{"reason": reason, "count": str(count)} for reason, count in totals.most_common()]
 
 
-def write_paper_ready_tables(out_dir: Path, baseline: list[dict], coverage: list[dict],
-                             sensitivity: list[dict], skips: list[dict]) -> None:
+def write_evaluation_tables(out_dir: Path, baseline: list[dict], coverage: list[dict],
+                            sensitivity: list[dict], skips: list[dict]) -> None:
     lines = [
-        "# publication Evaluation Summary",
+        "# Evaluation Summary",
         "",
         f"Raw data directory: `{out_dir}`",
         "",
@@ -622,11 +622,11 @@ def write_paper_ready_tables(out_dir: Path, baseline: list[dict], coverage: list
     for row in skips:
         lines.append(f"| {row['reason']} | {row['count']} |")
 
-    (out_dir / "paper_ready_tables.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (out_dir / "evaluation_tables.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def update_latest_symlink(root: Path, out_dir: Path) -> None:
-    latest = root / "analysis" / "publication_eval_latest"
+    latest = root / "analysis" / "eval_latest"
     if latest.exists() or latest.is_symlink():
         latest.unlink()
     target = out_dir.name if out_dir.parent == latest.parent else out_dir
@@ -675,17 +675,17 @@ def write_run_metadata(root: Path, out_dir: Path, subjects: list[Subject]) -> No
 
 
 def build_viewer(root: Path, out_dir: Path) -> None:
-    run([sys.executable, str(root / "scripts" / "build_publication_viewer.py"), str(out_dir)], cwd=root)
+    run([sys.executable, str(root / "scripts" / "build_eval_viewer.py"), str(out_dir)], cwd=root)
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
-    default_out = repo_root() / "analysis" / f"publication_eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    default_out = repo_root() / "analysis" / f"eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out-dir", type=Path, default=default_out, help="Directory for evaluation outputs.")
     parser.add_argument(
         "--subjects",
         default="all",
-        help="Comma-separated subset of chapter-4 subject keys, or 'all'.",
+        help="Comma-separated subset of evaluation subject keys, or 'all'.",
     )
     parser.add_argument("--prepare-subjects", action="store_true", help="Clone and checkout recorded external subject snapshots.")
     parser.add_argument("--build-viewer", action="store_true", help="Generate viewer.html after the evaluation completes.")
@@ -709,7 +709,7 @@ def main(argv: list[str] | None = None) -> int:
 
     ensure_subject_inputs(root, prepare_subjects=args.prepare_subjects)
     compdbs = prepare_compdbs(root, out_dir)
-    subjects = chapter4_subjects()
+    subjects = evaluation_subjects()
     if args.subjects != "all":
         requested = {item.strip() for item in args.subjects.split(",") if item.strip()}
         unknown = sorted(requested.difference(subject.key for subject in subjects))
@@ -799,7 +799,7 @@ def main(argv: list[str] | None = None) -> int:
         sensitivity,
     )
     write_csv(out_dir / "skip_reason_summary.csv", ["reason", "count"], skips)
-    write_paper_ready_tables(out_dir, baseline, coverage, sensitivity, skips)
+    write_evaluation_tables(out_dir, baseline, coverage, sensitivity, skips)
     write_run_metadata(root, out_dir, subjects)
     update_latest_symlink(root, out_dir)
 
@@ -807,7 +807,7 @@ def main(argv: list[str] | None = None) -> int:
         build_viewer(root, out_dir)
 
     print("")
-    print(f"Chapter 4 evaluation complete: {out_dir}")
+    print(f"Evaluation complete: {out_dir}")
     print(f"Total runs: {total_runs}")
     return 0
 
