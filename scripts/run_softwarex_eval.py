@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Run the full publication evaluation campaign for ASkeleTon.
-
-The campaign reproduced by this script is the one used for the existing
-`campaign_all_options_no_frameworks` results: five subjects, a full semantic
-option matrix, and additional operational runs.
-"""
+"""Reproduce the publication Chapter 4 applicability evaluation for ASkeleTon."""
 
 from __future__ import annotations
 
@@ -12,103 +7,232 @@ import argparse
 import csv
 import json
 import os
-import shlex
 import shutil
 import subprocess
 import sys
-import time
-from collections import Counter, defaultdict
+from collections import Counter
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 
 
+FRAMEWORK = "gtest"
+SEED = 123
+RULE_MAX_CASES = 3
 PROFILES = ["random", "boundary", "safe", "stress"]
-COVERAGE_MODES = ["balanced", "strict", "aggressive"]
-ORACLE_MODES = ["explicit", "mirror", "property"]
-RULE_MODES = [("rule_on", ["--rule-data"]), ("rule_off", ["--no-rule-data"])]
-BASE_SEED = 123
+COVERAGE_MODES = ["strict", "balanced", "aggressive"]
+ORACLE_MODES = ["mirror", "explicit", "property"]
+RULE_DATA_LEVELS = ["off", "on"]
 
 
 @dataclass(frozen=True)
 class ExternalSubject:
     key: str
-    path: Path
     repo: str
     commit: str
+    path: str
     description: str
+
+
+@dataclass(frozen=True)
+class Subject:
+    key: str
+    label: str
+    subject_group: str
+    experiment_plan: str
+    source: str
+    notes: str
 
 
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[1]
 
 
-def run_command(command: list[str], cwd: Path, *, check: bool = True) -> subprocess.CompletedProcess:
-    return subprocess.run(command, cwd=cwd, check=check, text=True)
+def run(command: list[str], cwd: Path, *, env: dict | None = None,
+        capture_output: bool = False, check: bool = True) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        command,
+        cwd=cwd,
+        env=env,
+        text=True,
+        capture_output=capture_output,
+        check=check,
+    )
 
 
-def run_shell(command: str, cwd: Path) -> None:
-    subprocess.run(["bash", "-lc", command], cwd=cwd, check=True)
+def run_shell(command: str, cwd: Path, *, env: dict | None = None) -> None:
+    run(["bash", "-lc", command], cwd, env=env, check=True)
 
 
-def write_json(path: Path, data) -> None:
+def write_json(path: Path, payload) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as handle:
-        json.dump(data, handle, indent=2, sort_keys=True)
-        handle.write("\n")
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def write_text(path: Path, data: str) -> None:
+def write_csv(path: Path, fieldnames: list[str], rows: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(data, encoding="utf-8")
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
+
+
+def percent(value: float | None) -> str:
+    if value is None:
+        return ""
+    return f"{value * 100:.2f}%"
 
 
 def external_subjects(root: Path) -> dict[str, ExternalSubject]:
-    examples = root / "examples"
     return {
         "tinyxml2": ExternalSubject(
             key="tinyxml2",
-            path=examples / "tinyxml2",
             repo="https://github.com/leethomason/tinyxml2.git",
-            commit="3dcad8e3c38e7091ae3771bf63020027f91715ce",
-            description="tinyxml2 11.0.0 development snapshot",
+            commit="3324d04d58de9d5db09327db6442f075e519f11b",
+            path=str(root / "examples" / "tinyxml2"),
+            description="tinyxml2 snapshot used for Chapter 4.",
         ),
         "sqlite": ExternalSubject(
             key="sqlite",
-            path=examples / "sqlite",
-            repo="https://github.com/sqlite/sqlite.git",
-            commit="140cbff0d2acc5b375109d567fba352a3be2663f",
-            description="SQLite 3.53.0 development snapshot",
+            repo="https://github.com/sqlite/sqlite",
+            commit="c739d132175932cde2c7c2f38d625165991f2a5d",
+            path=str(root / "examples" / "sqlite"),
+            description="SQLite snapshot used for Chapter 4.",
         ),
         "openssl": ExternalSubject(
             key="openssl",
-            path=examples / "openssl",
-            repo="https://github.com/openssl/openssl.git",
-            commit="81cc6cb97ef83ad138eebd47129368b9e963e8cd",
-            description="OpenSSL 4.0.0-dev snapshot",
+            repo="https://github.com/openssl/openssl",
+            commit="0ed06337e38ec70e5beb043d5a1da9a6b6e8c57e",
+            path=str(root / "examples" / "openssl"),
+            description="OpenSSL snapshot used for Chapter 4.",
+        ),
+        "yamlcpp": ExternalSubject(
+            key="yamlcpp",
+            repo="https://github.com/jbeder/yaml-cpp",
+            commit="05c050c6c14d5c3a82cbc368b50d985896922196",
+            path=str(root / "examples" / "yaml-cpp"),
+            description="yaml-cpp snapshot used for Chapter 4.",
         ),
     }
 
 
-def git_head(path: Path) -> str:
-    if not (path / ".git").exists():
-        return ""
-    proc = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=path,
-        check=False,
-        text=True,
-        capture_output=True,
-    )
-    return proc.stdout.strip() if proc.returncode == 0 else ""
+def chapter4_subjects() -> list[Subject]:
+    return [
+        Subject(
+            key="sut_showcase",
+            label="Illustrative showcase",
+            subject_group="full_factorial",
+            experiment_plan="full_factorial",
+            source="examples/sut_showcase.cpp",
+            notes="Controlled example with intended skips.",
+        ),
+        Subject(
+            key="tinyxml2_core",
+            label="tinyxml2 core",
+            subject_group="full_factorial",
+            experiment_plan="full_factorial",
+            source="examples/tinyxml2/tinyxml2.cpp",
+            notes="Real library TU with broad method surface.",
+        ),
+        Subject(
+            key="tinyxml2_xmltest",
+            label="tinyxml2 xmltest",
+            subject_group="base_plus_coverage",
+            experiment_plan="base_plus_coverage",
+            source="examples/tinyxml2/xmltest.cpp",
+            notes="Real program TU with high success rate.",
+        ),
+        Subject(
+            key="yamlcpp_emitter",
+            label="yaml-cpp emitter",
+            subject_group="base_plus_coverage",
+            experiment_plan="base_plus_coverage",
+            source="examples/yaml-cpp/src/emitter.cpp",
+            notes="Real C++ TU with richer type shapes.",
+        ),
+        Subject(
+            key="openssl_ctype",
+            label="OpenSSL ctype",
+            subject_group="base_plus_coverage",
+            experiment_plan="base_plus_coverage",
+            source="examples/openssl/crypto/ctype.c",
+            notes="Compact real C TU with full generation.",
+        ),
+        Subject(
+            key="sqlite_util",
+            label="SQLite util",
+            subject_group="base_plus_coverage",
+            experiment_plan="base_plus_coverage",
+            source="examples/sqlite/src/util.c",
+            notes="Real SQLite core TU with internal utility routines and moderate pointer-heavy skips.",
+        ),
+    ]
 
 
-def clone_subject(subject: ExternalSubject) -> None:
-    if subject.path.exists():
+def clone_or_checkout(subject: ExternalSubject, *, prepare: bool) -> None:
+    path = Path(subject.path)
+    if not path.exists():
+        if not prepare:
+            raise SystemExit(
+                f"Missing external subject '{subject.key}' at {path}.\n"
+                "Re-run with --prepare-subjects to clone the recorded snapshot."
+            )
+        path.parent.mkdir(parents=True, exist_ok=True)
+        run(["git", "clone", subject.repo, str(path)], cwd=path.parent)
+
+    head = run(["git", "rev-parse", "HEAD"], cwd=path, capture_output=True).stdout.strip()
+    if head == subject.commit:
         return
-    subject.path.parent.mkdir(parents=True, exist_ok=True)
-    run_command(["git", "clone", "--no-checkout", subject.repo, str(subject.path)], cwd=subject.path.parent)
-    run_command(["git", "checkout", subject.commit], cwd=subject.path)
+
+    if not prepare:
+        raise SystemExit(
+            f"External subject '{subject.key}' is at {head}, expected {subject.commit}.\n"
+            "Re-run with --prepare-subjects to checkout the recorded snapshot."
+        )
+
+    run(["git", "fetch", "--all", "--tags"], cwd=path)
+    run(["git", "checkout", subject.commit], cwd=path)
+
+
+def ensure_tinyxml2_compile_db(root: Path) -> None:
+    source = root / "examples" / "tinyxml2"
+    build = source / "build"
+    if (build / "compile_commands.json").exists():
+        return
+    run(
+        [
+            "cmake",
+            "-S",
+            str(source),
+            "-B",
+            str(build),
+            "-DCMAKE_BUILD_TYPE=Release",
+            "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        ],
+        cwd=root,
+    )
+
+
+def ensure_yamlcpp_compile_db(root: Path) -> None:
+    source = root / "examples" / "yaml-cpp"
+    build = source / "build"
+    if (build / "compile_commands.json").exists():
+        return
+    run(
+        [
+            "cmake",
+            "-S",
+            str(source),
+            "-B",
+            str(build),
+            "-DCMAKE_BUILD_TYPE=Release",
+            "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+            "-DYAML_CPP_BUILD_TESTS=OFF",
+            "-DYAML_CPP_BUILD_TOOLS=OFF",
+        ],
+        cwd=root,
+    )
 
 
 def prepare_sqlite(sqlite_dir: Path) -> None:
@@ -133,497 +257,558 @@ def prepare_openssl(openssl_dir: Path) -> None:
         run_shell("make include/openssl/opensslv.h >/tmp/askeleton_openssl_make.log 2>&1", openssl_dir)
 
 
-def ensure_external_subjects(root: Path, prepare: bool, required_keys: set[str]) -> None:
-    missing = []
-    wrong_commit = []
-    subjects = external_subjects(root)
-    for key in sorted(required_keys):
-        subject = subjects[key]
-        if prepare:
-            clone_subject(subject)
-        if not subject.path.exists():
-            missing.append(subject)
-            continue
-        head = git_head(subject.path)
-        if head and head != subject.commit:
-            wrong_commit.append((subject, head))
+def ensure_subject_inputs(root: Path, *, prepare_subjects: bool) -> None:
+    externals = external_subjects(root)
+    for key in ["tinyxml2", "sqlite", "openssl", "yamlcpp"]:
+        clone_or_checkout(externals[key], prepare=prepare_subjects)
 
-    if missing:
-        lines = [
-            "Missing external subjects required for the full publication campaign:",
-            "",
-        ]
-        for subject in missing:
-            lines.append(f"- {subject.key}: {subject.path}")
-            lines.append(f"  repo: {subject.repo}")
-            lines.append(f"  commit: {subject.commit}")
-        lines.extend(
-            [
-                "",
-                "Run with --prepare-subjects to clone the public repositories automatically,",
-                "or place the exact snapshots at the paths above.",
-            ]
-        )
-        raise SystemExit("\n".join(lines))
-
-    if wrong_commit:
-        lines = [
-            "External subject commits do not match the recorded publication campaign:",
-            "",
-        ]
-        for subject, head in wrong_commit:
-            lines.append(f"- {subject.key}: expected {subject.commit}, found {head}")
-        lines.append("")
-        lines.append("Use --prepare-subjects in a clean tree, or checkout the recorded commits manually.")
-        raise SystemExit("\n".join(lines))
-
-    if "sqlite" in required_keys:
-        prepare_sqlite(root / "examples" / "sqlite")
-    if "openssl" in required_keys:
-        prepare_openssl(root / "examples" / "openssl")
+    ensure_tinyxml2_compile_db(root)
+    ensure_yamlcpp_compile_db(root)
+    prepare_sqlite(root / "examples" / "sqlite")
+    prepare_openssl(root / "examples" / "openssl")
 
 
-def build_cases(root: Path) -> dict:
-    examples = root / "examples"
+def create_compdb_dir(path: Path, entry: dict) -> Path:
+    path.mkdir(parents=True, exist_ok=True)
+    write_json(path / "compile_commands.json", [entry])
+    return path
+
+
+def prepare_compdbs(root: Path, out_dir: Path) -> dict[str, Path]:
+    compdb_root = out_dir / "_compdb"
+    examples_dir = root / "examples"
     return {
-        "sut": {
-            "source": examples / "sut.cpp",
-            "compile_entry": {
-                "directory": str(examples),
-                "arguments": [
-                    "clang++-18",
-                    "-std=c++20",
-                    f"-I{examples}",
-                    "-c",
-                    str(examples / "sut.cpp"),
-                ],
-                "file": str(examples / "sut.cpp"),
+        "sut_showcase": create_compdb_dir(
+            compdb_root / "examples",
+            {
+                "directory": str(examples_dir),
+                "command": f"clang++-18 -std=c++20 -I{examples_dir} -c {examples_dir / 'sut_showcase.cpp'}",
+                "file": str(examples_dir / "sut_showcase.cpp"),
             },
-            "bootstrap_ok": True,
-        },
-        "sut_showcase": {
-            "source": examples / "sut_showcase.cpp",
-            "compile_entry": {
-                "directory": str(examples),
-                "arguments": [
-                    "clang++-18",
-                    "-std=c++20",
-                    f"-I{examples}",
-                    "-c",
-                    str(examples / "sut_showcase.cpp"),
-                ],
-                "file": str(examples / "sut_showcase.cpp"),
+        ),
+        "openssl_ctype": create_compdb_dir(
+            compdb_root / "openssl",
+            {
+                "directory": str(root / "examples" / "openssl"),
+                "command": (
+                    f"clang-18 -std=c11 -I{root / 'examples' / 'openssl'} "
+                    f"-I{root / 'examples' / 'openssl' / 'include'} "
+                    f"-c {root / 'examples' / 'openssl' / 'crypto' / 'ctype.c'}"
+                ),
+                "file": str(root / "examples" / "openssl" / "crypto" / "ctype.c"),
             },
-            "bootstrap_ok": True,
-        },
-        "tinyxml2": {
-            "source": examples / "tinyxml2" / "tinyxml2.cpp",
-            "compile_entry": {
-                "directory": str(examples / "tinyxml2"),
-                "arguments": [
-                    "clang++-18",
-                    "-std=c++17",
-                    f"-I{examples / 'tinyxml2'}",
-                    "-c",
-                    str(examples / "tinyxml2" / "tinyxml2.cpp"),
-                ],
-                "file": str(examples / "tinyxml2" / "tinyxml2.cpp"),
+        ),
+        "sqlite_util": create_compdb_dir(
+            compdb_root / "sqlite",
+            {
+                "directory": str(root / "examples" / "sqlite"),
+                "command": (
+                    f"clang-18 -std=c11 -I{root / 'examples' / 'sqlite'} "
+                    f"-I{root / 'examples' / 'sqlite' / 'src'} "
+                    f"-c {root / 'examples' / 'sqlite' / 'src' / 'util.c'}"
+                ),
+                "file": str(root / "examples" / "sqlite" / "src" / "util.c"),
             },
-            "bootstrap_ok": False,
-        },
-        "sqlite": {
-            "source": examples / "sqlite" / "src" / "printf.c",
-            "compile_entry": {
-                "directory": str(examples / "sqlite" / "src"),
-                "arguments": [
-                    "clang-18",
-                    "-std=c11",
-                    f"-I{examples / 'sqlite' / 'src'}",
-                    f"-I{examples / 'sqlite'}",
-                    "-DSQLITE_THREADSAFE=1",
-                    "-DSQLITE_OMIT_LOAD_EXTENSION=1",
-                    "-c",
-                    str(examples / "sqlite" / "src" / "printf.c"),
-                ],
-                "file": str(examples / "sqlite" / "src" / "printf.c"),
-            },
-            "bootstrap_ok": False,
-        },
-        "openssl": {
-            "source": examples / "openssl" / "crypto" / "params.c",
-            "compile_entry": {
-                "directory": str(examples / "openssl"),
-                "arguments": [
-                    "clang-18",
-                    "-std=c11",
-                    f"-I{examples / 'openssl' / 'include'}",
-                    f"-I{examples / 'openssl'}",
-                    f"-I{examples / 'openssl' / 'crypto'}",
-                    "-DOPENSSL_THREADS",
-                    "-D_REENTRANT",
-                    "-c",
-                    str(examples / "openssl" / "crypto" / "params.c"),
-                ],
-                "file": str(examples / "openssl" / "crypto" / "params.c"),
-            },
-            "bootstrap_ok": False,
-        },
+        ),
     }
 
 
-def prepare_compdbs(campaign_root: Path, cases: dict) -> None:
-    compdb_root = campaign_root / "compdb"
-    for name, case in cases.items():
-        normal_dir = compdb_root / name / "normal"
-        write_json(normal_dir / "compile_commands.json", [case["compile_entry"]])
-        if case["bootstrap_ok"]:
-            write_json(compdb_root / name / "bootstrap" / "compile_commands.json", [])
+def resolve_build_path(root: Path, out_dir: Path, subject: Subject, compdbs: dict[str, Path]) -> Path:
+    if subject.key in compdbs:
+        return compdbs[subject.key]
+    if subject.key in {"tinyxml2_core", "tinyxml2_xmltest"}:
+        return root / "examples" / "tinyxml2" / "build"
+    if subject.key == "yamlcpp_emitter":
+        return root / "examples" / "yaml-cpp" / "build"
+    raise KeyError(subject.key)
 
 
-def semantic_runs() -> list[tuple[str, list[str]]]:
+def full_factorial_runs(subject: Subject) -> list[dict]:
     runs = []
     for profile in PROFILES:
-        for coverage in COVERAGE_MODES:
-            for oracle in ORACLE_MODES:
-                for rule_name, rule_flags in RULE_MODES:
-                    run_name = (
-                        f"matrix_profile-{profile}"
-                        f"__coverage-{coverage}"
-                        f"__oracle-{oracle}"
-                        f"__{rule_name}"
+        for coverage_mode in COVERAGE_MODES:
+            for oracle_mode in ORACLE_MODES:
+                for rule_data in RULE_DATA_LEVELS:
+                    runs.append(
+                        {
+                            "run_id": (
+                                f"{subject.key}__full_factorial__profile-{profile}"
+                                f"__coverage-{coverage_mode}"
+                                f"__oracle-{oracle_mode}"
+                                f"__rule-{rule_data}"
+                            ),
+                            "experiment_group": "full_factorial",
+                            "profile": profile,
+                            "coverage_mode": coverage_mode,
+                            "oracle_mode": oracle_mode,
+                            "rule_data": rule_data,
+                        }
                     )
-                    flags = [
-                        f"--profile={profile}",
-                        f"--coverage-mode={coverage}",
-                        f"--oracle-mode={oracle}",
-                        f"--seed={BASE_SEED}",
-                        *rule_flags,
-                    ]
-                    runs.append((run_name, flags))
     return runs
 
 
-def operational_runs(bootstrap_ok: bool) -> list[tuple[str, list[str]]]:
-    base_seeded = [
-        "--profile=random",
-        "--coverage-mode=balanced",
-        "--oracle-mode=explicit",
-        "--rule-data",
-        f"--seed={BASE_SEED}",
+def base_plus_coverage_runs(subject: Subject) -> list[dict]:
+    return [
+        {
+            "run_id": f"{subject.key}__base__profile-random__coverage-balanced__oracle-explicit__rule-on",
+            "experiment_group": "base",
+            "profile": "random",
+            "coverage_mode": "balanced",
+            "oracle_mode": "explicit",
+            "rule_data": "on",
+        },
+        {
+            "run_id": f"{subject.key}__coverage_ablation__profile-random__coverage-strict__oracle-explicit__rule-on",
+            "experiment_group": "coverage_ablation",
+            "profile": "random",
+            "coverage_mode": "strict",
+            "oracle_mode": "explicit",
+            "rule_data": "on",
+        },
+        {
+            "run_id": f"{subject.key}__coverage_ablation__profile-random__coverage-aggressive__oracle-explicit__rule-on",
+            "experiment_group": "coverage_ablation",
+            "profile": "random",
+            "coverage_mode": "aggressive",
+            "oracle_mode": "explicit",
+            "rule_data": "on",
+        },
     ]
-    runs = [
-        ("default_unseeded", []),
-        ("rule_max_cases_5", [*base_seeded, "--rule-max-cases=5"]),
-        ("deep_level_2", [*base_seeded, "--deep-level=2"]),
-        (
-            "extra_args",
-            [
-                *base_seeded,
-                "--extra-arg=-Wno-unused-parameter",
-                "--extra-arg-before=-DASKELETON_CAMPAIGN=1",
-            ],
-        ),
-        ("no_system_files_refresh", [*base_seeded, "--no-system-files-refresh"]),
-        ("include_impl_under_include", [*base_seeded, "--include-impl-under-include"]),
-        ("quiet", [*base_seeded, "--quiet"]),
-        ("verbose", [*base_seeded, "--verbose"]),
-        ("debug", [*base_seeded, "--debug"]),
-    ]
-    if bootstrap_ok:
-        runs.append(("bootstrap_compdb", ["--bootstrap-compdb"]))
-    return runs
 
 
-def parse_report(report_path: Path):
-    if not report_path.exists():
+def planned_runs(subject: Subject) -> list[dict]:
+    if subject.experiment_plan == "full_factorial":
+        return full_factorial_runs(subject)
+    if subject.experiment_plan == "base_plus_coverage":
+        return base_plus_coverage_runs(subject)
+    raise KeyError(subject.experiment_plan)
+
+
+def parse_report(path: Path) -> dict | None:
+    if not path.exists():
         return None
-    return json.loads(report_path.read_text(encoding="utf-8"))
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
-def run_askeleton(root: Path, case_name: str, source_path: Path, compdb_dir: Path,
-                  run_dir: Path, flags: list[str]) -> dict:
-    generated_dir = run_dir / "generated"
-    report_path = run_dir / "report.json"
-    log_path = run_dir / "log.json"
-    default_report_path = generated_dir / "askeleton_report.json"
-    cmd = [
+def run_one(root: Path, subject: Subject, build_path: Path, source_path: Path, out_dir: Path,
+            plan: dict, total_index: int, total_runs: int) -> dict:
+    print(f"[{total_index}/{total_runs}] {plan['run_id']}", flush=True)
+
+    subject_dir = out_dir / subject.key
+    report_path = subject_dir / "reports" / f"{plan['run_id']}.json"
+    log_path = subject_dir / "logs" / f"{plan['run_id']}.log"
+    generated_dir = subject_dir / "generated" / plan["run_id"]
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    generated_dir.parent.mkdir(parents=True, exist_ok=True)
+
+    command = [
         str(root / "askeleton"),
         "-p",
-        str(compdb_dir),
+        str(build_path),
+        "--framework",
+        FRAMEWORK,
+        "--seed",
+        str(SEED),
+        "--profile",
+        plan["profile"],
+        "--coverage-mode",
+        plan["coverage_mode"],
+        "--oracle-mode",
+        plan["oracle_mode"],
         "--report",
         str(report_path),
-        "--report-json",
-        "--log-json",
-        str(log_path),
         "--out-dir",
         str(generated_dir),
-        *flags,
         str(source_path),
     ]
-    write_text(run_dir / "command.txt", " ".join(shlex.quote(part) for part in cmd) + "\n")
-    started = time.time()
-    completed = subprocess.run(
-        cmd,
-        cwd=str(root),
+    if plan["rule_data"] == "on":
+        command.extend(["--rule-data", "--rule-max-cases", str(RULE_MAX_CASES)])
+    else:
+        command.append("--no-rule-data")
+
+    completed = run(
+        command,
+        cwd=root,
         env={**os.environ, "ASKELETON_HOME": str(root)},
-        text=True,
         capture_output=True,
+        check=False,
     )
-    elapsed = time.time() - started
-    write_text(run_dir / "stdout.txt", completed.stdout)
-    write_text(run_dir / "stderr.txt", completed.stderr)
-    report = parse_report(report_path)
-    summary = (report or {}).get("summary", {})
+    log_path.write_text(completed.stdout + completed.stderr, encoding="utf-8")
+
+    report = parse_report(report_path) or {}
+    summary = report.get("summary", {})
     coverage = summary.get("coverage", {})
     row = {
-        "case": case_name,
-        "run_name": run_dir.name,
-        "returncode": completed.returncode,
-        "elapsed_seconds": round(elapsed, 3),
-        "source": str(source_path),
-        "compdb_dir": str(compdb_dir),
-        "found": coverage.get("found"),
-        "generated": coverage.get("generated"),
-        "skipped": coverage.get("skipped"),
-        "generation_rate": coverage.get("generation_rate"),
-        "skip_reasons": summary.get("by_reason", {}),
-        "report_path": str(report_path) if report_path.exists() else "",
-        "report_json_path": str(default_report_path) if default_report_path.exists() else "",
-        "log_path": str(log_path) if log_path.exists() else "",
+        "run_id": plan["run_id"],
+        "experiment_group": plan["experiment_group"],
+        "subject": subject.key,
+        "label": subject.label,
+        "subject_group": subject.subject_group,
+        "notes": subject.notes,
+        "framework": FRAMEWORK,
+        "seed": str(SEED),
+        "profile": plan["profile"],
+        "coverage_mode": plan["coverage_mode"],
+        "oracle_mode": plan["oracle_mode"],
+        "rule_data": plan["rule_data"],
+        "rule_max_cases": str(RULE_MAX_CASES) if plan["rule_data"] == "on" else "",
+        "exit_code": str(completed.returncode),
+        "found": str(coverage.get("found", "")),
+        "generated": str(coverage.get("generated", "")),
+        "skipped": str(coverage.get("skipped", "")),
+        "generation_rate": "" if coverage.get("generation_rate") is None else str(coverage.get("generation_rate")),
+        "skip_rate": "" if coverage.get("skip_rate") is None else str(coverage.get("skip_rate")),
+        "by_reason_json": json.dumps(summary.get("by_reason", {}), sort_keys=True),
+        "by_kind_json": json.dumps(summary.get("by_kind", {}), sort_keys=True),
+        "report_path": str(report_path),
+        "log_path": str(log_path),
         "generated_dir": str(generated_dir),
     }
-    write_json(run_dir / "run_meta.json", row)
     return row
 
 
-def selected_cases(all_cases: dict, requested: str) -> dict:
-    if requested == "all":
-        return all_cases
-    names = [item.strip() for item in requested.split(",") if item.strip()]
-    unknown = [name for name in names if name not in all_cases]
-    if unknown:
-        raise SystemExit(f"Unknown case(s): {', '.join(unknown)}")
-    return {name: all_cases[name] for name in names}
-
-
-def write_case_overview(summaries_dir: Path, by_case: dict[str, list[dict]]) -> None:
-    overview = {}
-    lines = ["# Case Overview", ""]
-    for case_name in sorted(by_case):
-        rows = by_case[case_name]
-        by_run = {row["run_name"]: row for row in rows}
-        default = by_run.get("default_unseeded")
-        balanced = by_run.get("matrix_profile-random__coverage-balanced__oracle-explicit__rule_on")
-        strict = by_run.get("matrix_profile-random__coverage-strict__oracle-explicit__rule_on")
-        non_zero = sum(1 for row in rows if row["returncode"] != 0)
-        overview[case_name] = {
-            "runs": len(rows),
-            "non_zero_returncodes": non_zero,
-            "default_unseeded": default,
-            "balanced_seeded_rule_on": balanced,
-            "strict_seeded_rule_on": strict,
-        }
-        lines.append(f"## {case_name}")
-        lines.append("")
-        lines.append(f"- Runs: {len(rows)}")
-        lines.append(f"- Non-zero return codes: {non_zero}")
-        for label, row in [
-            ("Default unseeded", default),
-            ("Balanced seeded rule_on", balanced),
-            ("Strict seeded rule_on", strict),
-        ]:
-            if row:
-                lines.append(
-                    f"- {label}: found={row['found']}, generated={row['generated']}, "
-                    f"skipped={row['skipped']}, rate={row['generation_rate']:.4f}, "
-                    f"skip_reasons={json.dumps(row['skip_reasons'], sort_keys=True)}"
-                )
-        lines.append("")
-    write_json(summaries_dir / "case_overview.json", overview)
-    write_text(summaries_dir / "case_overview.md", "\n".join(lines))
-
-
-def write_summaries(campaign_root: Path, rows: list[dict]) -> None:
-    summaries_dir = campaign_root / "summaries"
-    summaries_dir.mkdir(parents=True, exist_ok=True)
-    write_json(summaries_dir / "all_runs.json", rows)
-
-    fieldnames = [
-        "case",
-        "run_name",
-        "returncode",
-        "elapsed_seconds",
-        "found",
-        "generated",
-        "skipped",
-        "generation_rate",
-        "skip_reasons",
-        "report_path",
-        "report_json_path",
-        "log_path",
-        "generated_dir",
-    ]
-    with (summaries_dir / "all_runs.csv").open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
-        writer.writeheader()
-        for row in rows:
-            out = {key: row.get(key, "") for key in fieldnames}
-            out["skip_reasons"] = json.dumps(row["skip_reasons"], sort_keys=True)
-            writer.writerow(out)
-
-    by_case = defaultdict(list)
+def row_lookup(rows: list[dict]) -> dict[tuple[str, str, str, str, str], dict]:
+    lookup = {}
     for row in rows:
-        by_case[row["case"]].append(row)
-
-    lines = ["# ASkeleTon Campaign Results", ""]
-    for case_name in sorted(by_case):
-        case_rows = by_case[case_name]
-        lines.append(f"## {case_name}")
-        lines.append("")
-        lines.append(f"- Runs: {len(case_rows)}")
-        lines.append(f"- Successful runs: {sum(1 for row in case_rows if row['returncode'] == 0)}")
-        lines.append("- Summary CSV: summaries/all_runs.csv")
-        lines.append("")
-
-        case_csv_path = summaries_dir / f"{case_name}.csv"
-        with case_csv_path.open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(
-                handle,
-                fieldnames=[
-                    "run_name",
-                    "returncode",
-                    "elapsed_seconds",
-                    "found",
-                    "generated",
-                    "skipped",
-                    "generation_rate",
-                    "skip_reasons",
-                    "report_path",
-                    "log_path",
-                    "generated_dir",
-                ],
+        lookup[
+            (
+                row["subject"],
+                row["profile"],
+                row["coverage_mode"],
+                row["oracle_mode"],
+                row["rule_data"],
             )
-            writer.writeheader()
-            for row in case_rows:
-                writer.writerow(
+        ] = row
+    return lookup
+
+
+def baseline_summary_rows(subjects: list[Subject], rows: list[dict]) -> list[dict]:
+    lookup = row_lookup(rows)
+    result = []
+    for subject in subjects:
+        row = lookup[(subject.key, "random", "balanced", "explicit", "on")]
+        result.append(
+            {
+                "subject": subject.key,
+                "label": subject.label,
+                "found": row["found"],
+                "generated": row["generated"],
+                "skipped": row["skipped"],
+                "generation_rate": percent(float(row["generation_rate"])),
+            }
+        )
+    return result
+
+
+def coverage_ablation_rows(subjects: list[Subject], rows: list[dict]) -> list[dict]:
+    lookup = row_lookup(rows)
+    result = []
+    for subject in subjects:
+        strict = lookup[(subject.key, "random", "strict", "explicit", "on")]
+        balanced = lookup[(subject.key, "random", "balanced", "explicit", "on")]
+        aggressive = lookup[(subject.key, "random", "aggressive", "explicit", "on")]
+        result.append(
+            {
+                "subject": subject.key,
+                "label": subject.label,
+                "strict_rate": percent(float(strict["generation_rate"])),
+                "balanced_rate": percent(float(balanced["generation_rate"])),
+                "aggressive_rate": percent(float(aggressive["generation_rate"])),
+                "strict_generated": strict["generated"],
+                "balanced_generated": balanced["generated"],
+                "aggressive_generated": aggressive["generated"],
+            }
+        )
+    return result
+
+
+def full_factorial_sensitivity_rows(subjects: list[Subject], rows: list[dict]) -> list[dict]:
+    result = []
+    dimensions = [
+        ("profile", PROFILES),
+        ("coverage_mode", COVERAGE_MODES),
+        ("oracle_mode", ORACLE_MODES),
+        ("rule_data", RULE_DATA_LEVELS),
+    ]
+
+    for subject in subjects:
+        subject_rows = [row for row in rows if row["subject"] == subject.key and row["experiment_group"] == "full_factorial"]
+        for dimension, levels in dimensions:
+            for level in levels:
+                selected = [float(row["generation_rate"]) for row in subject_rows if row[dimension] == level]
+                result.append(
                     {
-                        key: json.dumps(row[key], sort_keys=True)
-                        if key == "skip_reasons"
-                        else row[key]
-                        for key in writer.fieldnames
+                        "subject": subject.key,
+                        "dimension": dimension,
+                        "level": level,
+                        "avg_generation_rate": percent(sum(selected) / len(selected)),
+                        "min_generation_rate": percent(min(selected)),
+                        "max_generation_rate": percent(max(selected)),
+                        "runs": str(len(selected)),
                     }
                 )
-
-        lines.append("| run | rc | found | generated | skipped | rate | skip_reasons |")
-        lines.append("| --- | --- | --- | --- | --- | --- | --- |")
-        for row in sorted(case_rows, key=lambda item: item["run_name"]):
-            rate = row["generation_rate"]
-            rate_str = "" if rate is None else f"{rate:.4f}"
-            reason_str = json.dumps(row["skip_reasons"], sort_keys=True)
-            lines.append(
-                f"| {row['run_name']} | {row['returncode']} | {row['found']} | "
-                f"{row['generated']} | {row['skipped']} | {rate_str} | {reason_str} |"
-            )
-        lines.append("")
-
-    write_text(summaries_dir / "README.md", "\n".join(lines) + "\n")
-    write_case_overview(summaries_dir, by_case)
+    return result
 
 
-def write_campaign_metadata(root: Path, campaign_root: Path, cases: dict) -> None:
+def skip_reason_rows(rows: list[dict]) -> list[dict]:
+    totals: Counter[str] = Counter()
+    for row in rows:
+        reasons = json.loads(row["by_reason_json"]) if row["by_reason_json"] else {}
+        for reason, count in reasons.items():
+            totals[reason] += int(count)
+    return [{"reason": reason, "count": str(count)} for reason, count in totals.most_common()]
+
+
+def write_paper_ready_tables(out_dir: Path, baseline: list[dict], coverage: list[dict],
+                             sensitivity: list[dict], skips: list[dict]) -> None:
+    lines = [
+        "# publication Evaluation Summary",
+        "",
+        f"Raw data directory: `{out_dir}`",
+        "",
+        "## Baseline Configuration",
+        "",
+        f"- Framework: `{FRAMEWORK}`; seed: `{SEED}`; profile: `random`; coverage: `balanced`; oracle: `explicit`; rule-data: `on`.",
+        "",
+        "| Subject | Found | Generated | Skipped | Generation rate |",
+        "| --- | ---: | ---: | ---: | ---: |",
+    ]
+    for row in baseline:
+        lines.append(
+            f"| {row['label']} | {row['found']} | {row['generated']} | {row['skipped']} | {row['generation_rate']} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Coverage-Mode Ablation",
+            "",
+            "| Subject | Strict | Balanced | Aggressive | Strict gen | Balanced gen | Aggressive gen |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+        ]
+    )
+    for row in coverage:
+        lines.append(
+            f"| {row['label']} | {row['strict_rate']} | {row['balanced_rate']} | {row['aggressive_rate']} | "
+            f"{row['strict_generated']} | {row['balanced_generated']} | {row['aggressive_generated']} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Full-Factorial Sensitivity",
+            "",
+            "| Subject | Dimension | Level | Avg rate | Min rate | Max rate | Runs |",
+            "| --- | --- | --- | ---: | ---: | ---: | ---: |",
+        ]
+    )
+    for row in sensitivity:
+        lines.append(
+            f"| {row['subject']} | {row['dimension']} | {row['level']} | "
+            f"{row['avg_generation_rate']} | {row['min_generation_rate']} | "
+            f"{row['max_generation_rate']} | {row['runs']} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Top Skip Reasons",
+            "",
+            "| Reason | Count |",
+            "| --- | ---: |",
+        ]
+    )
+    for row in skips:
+        lines.append(f"| {row['reason']} | {row['count']} |")
+
+    (out_dir / "paper_ready_tables.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def update_latest_symlink(root: Path, out_dir: Path) -> None:
+    latest = root / "analysis" / "publication_eval_latest"
+    if latest.exists() or latest.is_symlink():
+        latest.unlink()
+    target = out_dir.name if out_dir.parent == latest.parent else out_dir
+    latest.symlink_to(target)
+
+
+def write_run_metadata(root: Path, out_dir: Path, subjects: list[Subject]) -> None:
+    build_path_map = {
+        "sut_showcase": out_dir / "_compdb" / "examples",
+        "tinyxml2_core": root / "examples" / "tinyxml2" / "build",
+        "tinyxml2_xmltest": root / "examples" / "tinyxml2" / "build",
+        "yamlcpp_emitter": root / "examples" / "yaml-cpp" / "build",
+        "openssl_ctype": out_dir / "_compdb" / "openssl",
+        "sqlite_util": out_dir / "_compdb" / "sqlite",
+    }
     metadata = {
-        "askeleton_version": subprocess.check_output(
-            [str(root / "askeleton"), "--version"],
-            cwd=root,
-            text=True,
-            env={**os.environ, "ASKELETON_HOME": str(root)},
-        ).strip(),
-        "created_at": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
-        "profiles": PROFILES,
-        "coverage_modes": COVERAGE_MODES,
-        "oracle_modes": ORACLE_MODES,
-        "seed": BASE_SEED,
-        "cases": {
-            name: {
-                "source": str(case["source"]),
-                "bootstrap_ok": case["bootstrap_ok"],
+        "framework": FRAMEWORK,
+        "seed": SEED,
+        "rule_max_cases": RULE_MAX_CASES,
+        "full_factorial_subjects": [subject.key for subject in subjects if subject.subject_group == "full_factorial"],
+        "base_plus_coverage_subjects": [subject.key for subject in subjects if subject.subject_group == "base_plus_coverage"],
+        "total_runs": sum(len(planned_runs(subject)) for subject in subjects),
+        "subjects": {
+            subject.key: {
+                "key": subject.key,
+                "label": subject.label,
+                "group": subject.subject_group,
+                "build_path": str(build_path_map[subject.key]),
+                "source": str(root / subject.source),
+                "notes": subject.notes,
             }
-            for name, case in cases.items()
+            for subject in subjects
         },
+        "raw_csv": str(out_dir / "raw_runs.csv"),
         "external_subjects": {
             key: {
-                "path": str(subject.path),
-                "repo": subject.repo,
-                "commit": subject.commit,
-                "description": subject.description,
+                "repo": value.repo,
+                "commit": value.commit,
+                "path": value.path,
+                "description": value.description,
             }
-            for key, subject in external_subjects(root).items()
+            for key, value in external_subjects(root).items()
         },
     }
-    write_json(campaign_root / "campaign_metadata.json", metadata)
+    write_json(out_dir / "run_metadata.json", metadata)
+
+
+def build_viewer(root: Path, out_dir: Path) -> None:
+    run([sys.executable, str(root / "scripts" / "build_publication_viewer.py"), str(out_dir)], cwd=root)
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     default_out = repo_root() / "analysis" / f"publication_eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--out-dir", type=Path, default=default_out,
-                        help="Directory for campaign outputs.")
-    parser.add_argument("--cases", default="all",
-                        help="Comma-separated case list, or 'all'.")
-    parser.add_argument("--prepare-subjects", action="store_true",
-                        help="Clone missing external subject repositories at the recorded commits.")
-    parser.add_argument("--force", action="store_true",
-                        help="Delete --out-dir first if it already exists.")
+    parser.add_argument("--out-dir", type=Path, default=default_out, help="Directory for evaluation outputs.")
+    parser.add_argument(
+        "--subjects",
+        default="all",
+        help="Comma-separated subset of chapter-4 subject keys, or 'all'.",
+    )
+    parser.add_argument("--prepare-subjects", action="store_true", help="Clone and checkout recorded external subject snapshots.")
+    parser.add_argument("--build-viewer", action="store_true", help="Generate viewer.html after the evaluation completes.")
+    parser.add_argument("--force", action="store_true", help="Delete --out-dir first if it already exists.")
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv or sys.argv[1:])
     root = repo_root()
-    campaign_root = args.out_dir if args.out_dir.is_absolute() else root / args.out_dir
+    out_dir = args.out_dir if args.out_dir.is_absolute() else root / args.out_dir
 
     if not (root / "askeleton").exists():
         raise SystemExit("Missing ./askeleton. Build first with: make CXX=clang++-18")
 
-    if campaign_root.exists():
+    if out_dir.exists():
         if not args.force:
-            raise SystemExit(f"Output directory already exists: {campaign_root}\nUse --force to overwrite it.")
-        shutil.rmtree(campaign_root)
-    campaign_root.mkdir(parents=True, exist_ok=True)
+            raise SystemExit(f"Output directory already exists: {out_dir}\nUse --force to overwrite it.")
+        shutil.rmtree(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
-    cases = selected_cases(build_cases(root), args.cases)
-    ensure_external_subjects(root, args.prepare_subjects, set(cases).intersection(external_subjects(root)))
-    prepare_compdbs(campaign_root, cases)
-    write_campaign_metadata(root, campaign_root, cases)
+    ensure_subject_inputs(root, prepare_subjects=args.prepare_subjects)
+    compdbs = prepare_compdbs(root, out_dir)
+    subjects = chapter4_subjects()
+    if args.subjects != "all":
+        requested = {item.strip() for item in args.subjects.split(",") if item.strip()}
+        unknown = sorted(requested.difference(subject.key for subject in subjects))
+        if unknown:
+            raise SystemExit(f"Unknown subject(s): {', '.join(unknown)}")
+        subjects = [subject for subject in subjects if subject.key in requested]
+    total_runs = sum(len(planned_runs(subject)) for subject in subjects)
 
-    rows = []
-    total = sum(72 + len(operational_runs(case["bootstrap_ok"])) for case in cases.values())
+    rows: list[dict] = []
     index = 0
-    for case_name, case in cases.items():
-        source = case["source"]
-        normal_compdb = campaign_root / "compdb" / case_name / "normal"
-        for run_name, flags in semantic_runs():
+    for subject in subjects:
+        build_path = resolve_build_path(root, out_dir, subject, compdbs)
+        source_path = root / subject.source
+        for plan in planned_runs(subject):
             index += 1
-            print(f"[{index}/{total}] {case_name} {run_name}", flush=True)
-            run_dir = campaign_root / "runs" / case_name / run_name
-            run_dir.mkdir(parents=True, exist_ok=True)
-            rows.append(run_askeleton(root, case_name, source, normal_compdb, run_dir, flags))
-        for run_name, flags in operational_runs(case["bootstrap_ok"]):
-            index += 1
-            print(f"[{index}/{total}] {case_name} {run_name}", flush=True)
-            compdb = campaign_root / "compdb" / case_name / "bootstrap" if run_name == "bootstrap_compdb" else normal_compdb
-            run_dir = campaign_root / "runs" / case_name / run_name
-            run_dir.mkdir(parents=True, exist_ok=True)
-            rows.append(run_askeleton(root, case_name, source, compdb, run_dir, flags))
+            rows.append(run_one(root, subject, build_path, source_path, out_dir, plan, index, total_runs))
 
-    write_summaries(campaign_root, rows)
+    write_csv(
+        out_dir / "raw_runs.csv",
+        [
+            "run_id",
+            "experiment_group",
+            "subject",
+            "label",
+            "subject_group",
+            "notes",
+            "framework",
+            "seed",
+            "profile",
+            "coverage_mode",
+            "oracle_mode",
+            "rule_data",
+            "rule_max_cases",
+            "exit_code",
+            "found",
+            "generated",
+            "skipped",
+            "generation_rate",
+            "skip_rate",
+            "by_reason_json",
+            "by_kind_json",
+            "report_path",
+            "log_path",
+            "generated_dir",
+        ],
+        rows,
+    )
 
-    counts = Counter(row["case"] for row in rows)
+    baseline = baseline_summary_rows(subjects, rows)
+    coverage = coverage_ablation_rows(subjects, rows)
+    sensitivity = full_factorial_sensitivity_rows(
+        [subject for subject in subjects if subject.subject_group == "full_factorial"],
+        rows,
+    )
+    skips = skip_reason_rows(rows)
+
+    write_csv(
+        out_dir / "baseline_summary.csv",
+        ["subject", "label", "found", "generated", "skipped", "generation_rate"],
+        baseline,
+    )
+    write_csv(
+        out_dir / "coverage_ablation.csv",
+        [
+            "subject",
+            "label",
+            "strict_rate",
+            "balanced_rate",
+            "aggressive_rate",
+            "strict_generated",
+            "balanced_generated",
+            "aggressive_generated",
+        ],
+        coverage,
+    )
+    write_csv(
+        out_dir / "full_factorial_sensitivity.csv",
+        [
+            "subject",
+            "dimension",
+            "level",
+            "avg_generation_rate",
+            "min_generation_rate",
+            "max_generation_rate",
+            "runs",
+        ],
+        sensitivity,
+    )
+    write_csv(out_dir / "skip_reason_summary.csv", ["reason", "count"], skips)
+    write_paper_ready_tables(out_dir, baseline, coverage, sensitivity, skips)
+    write_run_metadata(root, out_dir, subjects)
+    update_latest_symlink(root, out_dir)
+
+    if args.build_viewer:
+        build_viewer(root, out_dir)
+
     print("")
-    print(f"Campaign complete: {campaign_root}")
-    print(f"Total runs: {len(rows)}")
-    for case_name in sorted(counts):
-        print(f"  {case_name}: {counts[case_name]}")
+    print(f"Chapter 4 evaluation complete: {out_dir}")
+    print(f"Total runs: {total_runs}")
     return 0
 
 

@@ -29,4 +29,4 @@ cat > "${TMP_DIR}/compile_commands.json" <<EOF
 EOF
 
 ASKELETON_HOME="${ROOT_DIR}" "${ROOT_DIR}/askeleton" -p "${TMP_DIR}" "${TMP_DIR}/sample.cpp"
-echo "Sanity run completed. Output in ${ROOT_DIR}/Generated/UT/sample"
+echo "Sanity run completed. Output in ${TMP_DIR}/tests/generated/sample"

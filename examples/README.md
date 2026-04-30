@@ -33,7 +33,7 @@ ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb --profile=boundary -p examp
 ```
 
 Output is written to:
-Generated/UT/sut/
+examples/tests/generated/sut/
 
 Interactive demo runner:
 ```bash

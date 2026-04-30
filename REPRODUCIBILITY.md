@@ -95,15 +95,31 @@ See `.github/workflows/ci.yml`.
 
 ## publication Evaluation Workflow
 
-The script `scripts/run_publication_eval.py` runs the full publication evaluation
-campaign used for the release results. The complete campaign contains 407
-ASkeleTon executions:
+The script `scripts/run_publication_eval.py` reproduces the Chapter 4
+applicability evaluation described in the publication article.
 
-- `sut`: 82 runs.
-- `sut_showcase`: 82 runs.
-- `tinyxml2`: 81 runs.
-- `sqlite`: 81 runs.
-- `openssl`: 81 runs.
+The complete campaign contains 156 ASkeleTon executions:
+
+- `sut_showcase`: 72 runs (`full_factorial`)
+- `tinyxml2_core`: 72 runs (`full_factorial`)
+- `tinyxml2_xmltest`: 3 runs (`base_plus_coverage`)
+- `yamlcpp_emitter`: 3 runs (`base_plus_coverage`)
+- `openssl_ctype`: 3 runs (`base_plus_coverage`)
+- `sqlite_util`: 3 runs (`base_plus_coverage`)
+
+The two `full_factorial` subjects are evaluated across:
+
+- 4 profiles: `random`, `boundary`, `safe`, `stress`
+- 3 coverage modes: `strict`, `balanced`, `aggressive`
+- 3 oracle modes: `mirror`, `explicit`, `property`
+- 2 rule-data settings: `off`, `on`
+
+This yields `4 * 3 * 3 * 2 = 72` runs per full-factorial subject.
+
+The four `base_plus_coverage` subjects are evaluated with:
+
+- 1 baseline run: `random + balanced + explicit + rule-data on`
+- 2 coverage ablation runs: `strict` and `aggressive`
 
 By default, outputs are written under:
 
@@ -113,49 +129,89 @@ analysis/publication_eval_<timestamp>/
 
 including:
 
-- `campaign_metadata.json`
-- `summaries/all_runs.csv`
-- `summaries/all_runs.json`
-- `summaries/case_overview.md`
-- `summaries/case_overview.json`
-- `summaries/<case>.csv`
-- per-run reports, logs, commands, and generated outputs under `runs/`
+- `raw_runs.csv`
+- `baseline_summary.csv`
+- `coverage_ablation.csv`
+- `full_factorial_sensitivity.csv`
+- `skip_reason_summary.csv`
+- `paper_ready_tables.md`
+- `run_metadata.json`
+- `viewer.html` when `--build-viewer` is used
+- per-run reports, logs, and generated outputs under `<subject>/`
+
+The following repository files are part of the official publication
+reproducibility package:
+
+- `scripts/run_publication_eval.py`
+- `scripts/reproduce_publication.sh`
+- `scripts/build_publication_viewer.py`
+
+In addition, `figures/askeleton-workflow.svg` and
+`figures/askeleton-workflow.drawio` are kept as source assets for the workflow
+diagram used to explain the tool usage in the paper and repository materials.
 
 Run the complete campaign:
 
 ```bash
-scripts/run_publication_eval.py --prepare-subjects
+python3 scripts/run_publication_eval.py --prepare-subjects --build-viewer
+```
+
+Or use the one-command wrapper that builds ASkeleTon first:
+
+```bash
+./scripts/reproduce_publication.sh
 ```
 
 Use `--out-dir` to choose an explicit output directory:
 
 ```bash
-scripts/run_publication_eval.py \
+python3 scripts/run_publication_eval.py \
   --prepare-subjects \
+  --build-viewer \
   --out-dir analysis/publication_eval_full
 ```
 
 Run a subset for a quick check:
 
 ```bash
-scripts/run_publication_eval.py --cases sut --out-dir /tmp/askeleton_eval_sut
+python3 scripts/run_publication_eval.py \
+  --subjects sut_showcase,openssl_ctype \
+  --out-dir /tmp/askeleton_eval_subset \
+  --build-viewer \
+  --force
 ```
 
-The full evaluation uses external subject projects that are intentionally not
-distributed inside the source repository. The script can clone missing subjects
-at the recorded commits when `--prepare-subjects` is used:
+The evaluation uses external subject projects that are intentionally not
+versioned as part of the release branch. The script can clone missing subjects
+and checkout the recorded snapshots when `--prepare-subjects` is used:
 
+- TinyXML2
+- yaml-cpp
 - OpenSSL
 - SQLite
-- tinyxml2
 
 Recorded external snapshots:
 
 | Subject | Repository | Commit |
 | --- | --- | --- |
-| OpenSSL | `https://github.com/openssl/openssl.git` | `81cc6cb97ef83ad138eebd47129368b9e963e8cd` |
-| SQLite | `https://github.com/sqlite/sqlite.git` | `140cbff0d2acc5b375109d567fba352a3be2663f` |
-| tinyxml2 | `https://github.com/leethomason/tinyxml2.git` | `3dcad8e3c38e7091ae3771bf63020027f91715ce` |
+| TinyXML2 | `https://github.com/leethomason/tinyxml2.git` | `3324d04d58de9d5db09327db6442f075e519f11b` |
+| yaml-cpp | `https://github.com/jbeder/yaml-cpp` | `05c050c6c14d5c3a82cbc368b50d985896922196` |
+| OpenSSL | `https://github.com/openssl/openssl` | `0ed06337e38ec70e5beb043d5a1da9a6b6e8c57e` |
+| SQLite | `https://github.com/sqlite/sqlite` | `c739d132175932cde2c7c2f38d625165991f2a5d` |
+
+The generated tables match the values reported in the paper for:
+
+- Table 4 applicability counts and generation rates
+- Table 5 omission-category totals
+
+The helper script `scripts/run_mode_matrix.py` is not part of the official
+publication reproduction path described here. It can still be useful for
+exploratory local analyses, but the paper-aligned entry points are the three
+scripts listed above.
+
+The script also updates:
+
+- `analysis/publication_eval_latest` as a symlink to the latest campaign output
 
 For archival publication, these external subjects and generated campaign
 outputs should also be provided by one of:

@@ -10,6 +10,7 @@ askeleton
 *.tmp
 __pycache__/
 data/system_files.json
+.codex_tmp/
 
 # Local external examples/datasets (not distributed)
 .campaign/
@@ -21,6 +22,7 @@ examples/*.tar.gz
 examples/compile_commands.json
 examples/openssl/
 examples/openssl-*/
+examples/fmt/
 examples/sqlite/
 examples/sqlite-src-*/
 examples/tinyxml2/

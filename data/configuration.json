@@ -44,8 +44,8 @@
     },
 
     "route": {
-        "generated": "Generated",
-        "ut": "Generated/UT",
+        "generated": "tests",
+        "ut": "tests/generated",
         "templates": "data/templates",
         "log": "Generated_log",
         "boost_templates": "data/templates/boost",
