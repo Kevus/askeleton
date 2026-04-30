@@ -33,7 +33,7 @@ ASKELETON_HOME=$(pwd) ./askeleton --profile=boundary -p examples examples/sut.cp
 ```
 
 Output is written to:
-Generated/UT/sut/
+examples/tests/generated/sut/
 
 Interactive demo runner:
 ```bash
