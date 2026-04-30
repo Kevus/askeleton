@@ -6,4 +6,4 @@ CXX_BIN="${CXX:-clang++-18}"
 
 cd "$ROOT_DIR"
 make CXX="$CXX_BIN"
-python3 scripts/run_publication_eval.py --prepare-subjects --build-viewer "$@"
+python3 scripts/run_eval.py --prepare-subjects --build-viewer "$@"

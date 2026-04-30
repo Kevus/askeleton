@@ -1,7 +1,7 @@
 # Reproducibility
 
 This document describes how to reproduce the release smoke tests and the
-publication evaluation workflow for ASkeleTon 1.0.0.
+applicability evaluation workflow for ASkeleTon 1.0.0.
 
 ## Tested Environment
 
@@ -93,10 +93,10 @@ The GitHub Actions workflow builds ASkeleTon and validates generated tests for:
 
 See `.github/workflows/ci.yml`.
 
-## publication Evaluation Workflow
+## Applicability Evaluation Workflow
 
-The script `scripts/run_publication_eval.py` reproduces the Chapter 4
-applicability evaluation described in the publication article.
+The script `scripts/run_eval.py` reproduces the applicability evaluation used
+for the companion manuscript.
 
 The complete campaign contains 156 ASkeleTon executions:
 
@@ -124,7 +124,7 @@ The four `base_plus_coverage` subjects are evaluated with:
 By default, outputs are written under:
 
 ```text
-analysis/publication_eval_<timestamp>/
+analysis/eval_<timestamp>/
 ```
 
 including:
@@ -134,47 +134,47 @@ including:
 - `coverage_ablation.csv`
 - `full_factorial_sensitivity.csv`
 - `skip_reason_summary.csv`
-- `paper_ready_tables.md`
+- `evaluation_tables.md`
 - `run_metadata.json`
 - `viewer.html` when `--build-viewer` is used
 - per-run reports, logs, and generated outputs under `<subject>/`
 
-The following repository files are part of the official publication
-reproducibility package:
+The following repository files are part of the release reproducibility
+workflow:
 
-- `scripts/run_publication_eval.py`
-- `scripts/reproduce_publication.sh`
-- `scripts/build_publication_viewer.py`
+- `scripts/run_eval.py`
+- `scripts/reproduce_eval.sh`
+- `scripts/build_eval_viewer.py`
 
 In addition, `figures/askeleton-workflow.svg` and
 `figures/askeleton-workflow.drawio` are kept as source assets for the workflow
-diagram used to explain the tool usage in the paper and repository materials.
+diagram used to explain the tool usage in repository and release materials.
 
 Run the complete campaign:
 
 ```bash
-python3 scripts/run_publication_eval.py --prepare-subjects --build-viewer
+python3 scripts/run_eval.py --prepare-subjects --build-viewer
 ```
 
 Or use the one-command wrapper that builds ASkeleTon first:
 
 ```bash
-./scripts/reproduce_publication.sh
+./scripts/reproduce_eval.sh
 ```
 
 Use `--out-dir` to choose an explicit output directory:
 
 ```bash
-python3 scripts/run_publication_eval.py \
+python3 scripts/run_eval.py \
   --prepare-subjects \
   --build-viewer \
-  --out-dir analysis/publication_eval_full
+  --out-dir analysis/eval_full
 ```
 
 Run a subset for a quick check:
 
 ```bash
-python3 scripts/run_publication_eval.py \
+python3 scripts/run_eval.py \
   --subjects sut_showcase,openssl_ctype \
   --out-dir /tmp/askeleton_eval_subset \
   --build-viewer \
@@ -199,19 +199,17 @@ Recorded external snapshots:
 | OpenSSL | `https://github.com/openssl/openssl` | `0ed06337e38ec70e5beb043d5a1da9a6b6e8c57e` |
 | SQLite | `https://github.com/sqlite/sqlite` | `c739d132175932cde2c7c2f38d625165991f2a5d` |
 
-The generated tables match the values reported in the paper for:
+The generated tables provide the reference applicability counts and omission
+category totals for this evaluation workflow.
 
-- Table 4 applicability counts and generation rates
-- Table 5 omission-category totals
-
-The helper script `scripts/run_mode_matrix.py` is not part of the official
-publication reproduction path described here. It can still be useful for
-exploratory local analyses, but the paper-aligned entry points are the three
+The helper script `scripts/run_mode_matrix.py` is not part of the release
+reproduction path described here. It can still be useful for
+exploratory local analyses, but the evaluation-focused entry points are the three
 scripts listed above.
 
 The script also updates:
 
-- `analysis/publication_eval_latest` as a symlink to the latest campaign output
+- `analysis/eval_latest` as a symlink to the latest campaign output
 
 For archival publication, these external subjects and generated campaign
 outputs should also be provided by one of:
@@ -253,6 +251,7 @@ Confirm that:
 
 - `./askeleton --version` reports `ASkeleTon 1.0.0`.
 - `LICENSE.txt` is present.
-- `CITATION.cff` is present and has the final repository URL and DOI.
+- `CITATION.cff` is present and has the final repository URL.
+- `CITATION.cff` is updated with the final DOI once the archival record is minted.
 - `.zenodo.json` is present and has the final repository URL.
 - No external-project folders or generated artifacts are staged for commit.

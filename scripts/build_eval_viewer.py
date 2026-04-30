@@ -12,7 +12,7 @@ def load_csv(path: Path):
 
 def main() -> int:
     if len(sys.argv) != 2:
-        print("usage: build_publication_viewer.py <analysis_dir>", file=sys.stderr)
+        print("usage: build_eval_viewer.py <analysis_dir>", file=sys.stderr)
         return 1
 
     out_dir = Path(sys.argv[1]).resolve()
@@ -29,7 +29,7 @@ def main() -> int:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>publication Evaluation Viewer</title>
+  <title>Evaluation Viewer</title>
   <style>
     :root {{
       --bg: #f4efe6;
@@ -196,7 +196,7 @@ def main() -> int:
 <body>
   <div class="wrap">
     <section class="hero">
-      <h1>publication Evaluation Viewer</h1>
+      <h1>Evaluation Viewer</h1>
       <p>Interactive view over the current ASkeleTon evaluation package. All data are embedded in this file.</p>
       <div class="stats" id="stats"></div>
     </section>
