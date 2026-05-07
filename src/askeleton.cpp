@@ -123,6 +123,7 @@ static bool shouldKeepCompileArg(llvm::StringRef arg) {
     }
     return arg.starts_with("-I") || arg.starts_with("-isystem") || arg.starts_with("-D") ||
            arg.starts_with("-iquote") || arg.starts_with("-stdlib=") ||
+           arg.starts_with("-std=") ||
            arg.starts_with("-fPIC") ||
            arg.starts_with("-fvisibility") || arg.starts_with("-pthread") ||
            arg == "-include";

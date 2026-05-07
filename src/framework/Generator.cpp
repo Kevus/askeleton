@@ -511,7 +511,7 @@ void Generator::setValuesToChange(std::map<std::string, std::string> &valuesToCh
         sourceObjectFiles.push_back(objectName);
         const char *compiler = isCSourceFile(sourcePath) ? "$(CC)" : "$(CXX)";
         const char *flags =
-            isCSourceFile(sourcePath) ? "$(CPPFLAGS) $(CFLAGS)" : "$(CPPFLAGS) $(CXXFLAGS)";
+            isCSourceFile(sourcePath) ? "$(CFLAGS) $(CPPFLAGS)" : "$(CXXFLAGS) $(CPPFLAGS)";
         sourceBuildRules << objectName << ": " << sourcePath
                          << "\n\t" << compiler << " " << flags << " -c $< -o $@\n";
     }
@@ -521,8 +521,8 @@ void Generator::setValuesToChange(std::map<std::string, std::string> &valuesToCh
         objectFiles.push_back(objectName);
         sourceObjectFiles.push_back(objectName);
         const char *compiler = isCSourceFile(companions[i]) ? "$(CC)" : "$(CXX)";
-        const char *flags = isCSourceFile(companions[i]) ? "$(CPPFLAGS) $(CFLAGS)"
-                                                         : "$(CPPFLAGS) $(CXXFLAGS)";
+        const char *flags = isCSourceFile(companions[i]) ? "$(CFLAGS) $(CPPFLAGS)"
+                                                         : "$(CXXFLAGS) $(CPPFLAGS)";
         sourceBuildRules << objectName << ": " << companions[i]
                          << "\n\t" << compiler << " " << flags << " -c $< -o $@\n";
     }

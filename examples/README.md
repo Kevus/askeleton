@@ -17,6 +17,12 @@ Quick run:
 ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p examples examples/sut.cpp
 ```
 
+Minimal end-to-end reproducibility workflow
+(generate -> build -> execute -> edit `.cfg` -> rerun):
+```bash
+./scripts/check_main_workflow.sh
+```
+
 Showcase run (broader feature surface + intentional skips in report):
 ```bash
 ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p examples --report=/tmp/sut_showcase_report.json examples/sut_showcase.cpp

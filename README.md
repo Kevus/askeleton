@@ -12,7 +12,7 @@ Outputs fixtures, tests, Makefiles, and `.cfg` data files with deterministic or 
 **Highlights**
 - AST-driven discovery of functions, methods, and constructors.
 - Profiles for data generation: `random`, `boundary`, `safe`, `stress`.
-- Coverage policies: `strict`, `balanced`.
+- Coverage policies: `strict`, `balanced`, `aggressive`.
 - Rule-based values extracted from comparisons.
 - Structured skip reasons in reports (`abstract_record`, `missing_instance_strategy`, etc.).
 - Structured input support for `std::optional`, `std::pair`, and `std::tuple`.
@@ -43,13 +43,19 @@ sudo apt update
 sudo apt install -y clang-18 llvm-18 llvm-18-dev llvm-18-tools libclang-18-dev build-essential
 ```
 
-For the default setup, install GoogleTest:
+GoogleTest (`libgtest-dev`) is required for the main reproducibility workflow.
+Boost.Test and Catch2 are optional backend dependencies; they are only
+required when generating, building, or running scaffolding for those
+backends.
+
+Install GoogleTest for the default setup and the minimal end-to-end
+reproducibility workflow:
 ```bash
 sudo apt install -y libgtest-dev
 ```
 
 If you want to generate tests for Boost.Test or Catch2, install the
-corresponding libraries:
+corresponding optional backend libraries:
 ```bash
 sudo apt install -y libboost-dev catch2
 ```
@@ -64,10 +70,37 @@ Install equivalents of LLVM/Clang 18, libclang development headers, and a C/C++ 
 
 **Build**
 ```bash
-make
+make CXX=clang++-18
+./askeleton --version
 ```
 `system_files.json` is created automatically if missing. Use
 `--no-system-files-refresh` to skip this check.
+
+**Minimal End-to-End Reproducibility Workflow**
+For a compact end-to-end workflow aligned with the paper's
+generate-build-run-refine path, run:
+
+```bash
+./scripts/check_main_workflow.sh
+```
+
+This script performs a minimal `examples/sut.cpp` workflow aligned with that
+usage path:
+- bootstrap `compile_commands.json`
+- generate GoogleTest scaffolding plus `.cfg` data
+- build the generated test
+- execute the generated binary
+- edit `sut.cfg` and confirm the rerun changes behavior
+- emit `report.json` and `log.json`
+
+The manuscript walkthrough example itself uses `examples/sut_showcase.cpp`; the
+script above is the smaller reproducibility check intended for clean clones.
+
+To inspect the generated files yourself, pass an explicit output directory:
+
+```bash
+./scripts/check_main_workflow.sh /tmp/askeleton_main_workflow
+```
 
 **Usage**
 ```text
@@ -81,7 +114,7 @@ Key options:
 - `--bootstrap-compdb`: auto-create/append minimal compile commands for missing source entries.
 - `--framework=<gtest|boost|catch>`: select test framework.
 - `--profile=<random|boundary|safe|stress>`: data generation profile.
-- `--coverage-mode=<strict|balanced>`: generation coverage policy.
+- `--coverage-mode=<strict|balanced|aggressive>`: generation coverage policy.
 - `--oracle-mode=<mirror|explicit|property>`: expected-value strategy.
 - `--seed=<N>`: deterministic data generation.
 - `--rule-data`: explicitly enable the default AST-guided rule-based values.
@@ -156,6 +189,9 @@ generate a test for a callable. This is separate from the data-generation
 - `strict`: favors conservative, easy-to-review scaffolding and skips callables
   that require mutable pointer/reference handling or non-default instance
   construction.
+- `aggressive`: accepted for compatibility and experimentation; currently close
+  to `balanced`, but kept explicit so repository workflows and paper tables can
+  reference it directly.
 
 If a callable is skipped, check the report for the recorded reason.
 
@@ -242,6 +278,16 @@ Common `reason` values:
 Full guide with didactic examples and fixes:
 - [`doc/SkipReasons.md`](doc/SkipReasons.md)
 
+**Repository Evidence**
+The main manuscript claims map to repository artifacts as follows:
+- `compile_commands.json` + Clang AST analysis: [`src/askeleton.cpp`](src/askeleton.cpp), [`doc/Architecture.md`](doc/Architecture.md)
+- Supported backends (`gtest`, `boost`, `catch`): [`src/framework/`](src/framework), [`data/templates/`](data/templates)
+- Separate editable test data and test logic: [`scripts/check_main_workflow.sh`](scripts/check_main_workflow.sh)
+- JSON report and execution log: [`src/Report.cpp`](src/Report.cpp), `--report`, `--log-json`
+- Explicit-oracle refinement in the minimal reproducibility workflow: [`scripts/check_main_workflow.sh`](scripts/check_main_workflow.sh), [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md)
+- Seeded generation and the available profiles/oracle modes: [`doc/CLI.md`](doc/CLI.md), `--seed`, `--profile`, `--oracle-mode`
+- Framework extensibility points: [`include/framework/Generator.hpp`](include/framework/Generator.hpp), [`doc/Architecture.md`](doc/Architecture.md)
+
 **Troubleshooting**
 - `compile_commands.json` not found: pass `-p <build-path>` to its directory.
 - `compile_commands.json` uses relative paths: supported. ASkeleTon normalizes
@@ -268,6 +314,12 @@ Full guide with didactic examples and fixes:
 - Dependencies: [`doc/Dependencies.md`](doc/Dependencies.md)
 - Examples: [`examples/README.md`](examples/README.md)
 - Reproducibility: [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md)
+
+**Citation**
+Use [`CITATION.cff`](CITATION.cff) to cite the software version used in the
+paper. Release metadata for archival deposition is tracked in
+[`.zenodo.json`](.zenodo.json) and should be updated with the final DOI when the
+archival record is minted.
 
 **License**
 ASkeleTon is released under the Apache License 2.0. See

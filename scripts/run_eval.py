@@ -170,6 +170,28 @@ def evaluation_subjects() -> list[Subject]:
     ]
 
 
+def select_subjects(subjects: list[Subject], selector: str) -> list[Subject]:
+    if selector == "all":
+        return subjects
+
+    requested = {item.strip() for item in selector.split(",") if item.strip()}
+    unknown = sorted(requested.difference(subject.key for subject in subjects))
+    if unknown:
+        raise SystemExit(f"Unknown subject(s): {', '.join(unknown)}")
+    return [subject for subject in subjects if subject.key in requested]
+
+
+def required_external_subject_keys(subjects: list[Subject]) -> set[str]:
+    mapping = {
+        "tinyxml2_core": "tinyxml2",
+        "tinyxml2_xmltest": "tinyxml2",
+        "yamlcpp_emitter": "yamlcpp",
+        "openssl_ctype": "openssl",
+        "sqlite_util": "sqlite",
+    }
+    return {mapping[subject.key] for subject in subjects if subject.key in mapping}
+
+
 def clone_or_checkout(subject: ExternalSubject, *, prepare: bool) -> None:
     path = Path(subject.path)
     if not path.exists():
@@ -257,15 +279,20 @@ def prepare_openssl(openssl_dir: Path) -> None:
         run_shell("make include/openssl/opensslv.h >/tmp/askeleton_openssl_make.log 2>&1", openssl_dir)
 
 
-def ensure_subject_inputs(root: Path, *, prepare_subjects: bool) -> None:
+def ensure_subject_inputs(root: Path, subjects: list[Subject], *, prepare_subjects: bool) -> None:
     externals = external_subjects(root)
-    for key in ["tinyxml2", "sqlite", "openssl", "yamlcpp"]:
+    required = required_external_subject_keys(subjects)
+    for key in sorted(required):
         clone_or_checkout(externals[key], prepare=prepare_subjects)
 
-    ensure_tinyxml2_compile_db(root)
-    ensure_yamlcpp_compile_db(root)
-    prepare_sqlite(root / "examples" / "sqlite")
-    prepare_openssl(root / "examples" / "openssl")
+    if "tinyxml2" in required:
+        ensure_tinyxml2_compile_db(root)
+    if "yamlcpp" in required:
+        ensure_yamlcpp_compile_db(root)
+    if "sqlite" in required:
+        prepare_sqlite(root / "examples" / "sqlite")
+    if "openssl" in required:
+        prepare_openssl(root / "examples" / "openssl")
 
 
 def create_compdb_dir(path: Path, entry: dict) -> Path:
@@ -627,6 +654,7 @@ def write_evaluation_tables(out_dir: Path, baseline: list[dict], coverage: list[
 
 def update_latest_symlink(root: Path, out_dir: Path) -> None:
     latest = root / "analysis" / "eval_latest"
+    latest.parent.mkdir(parents=True, exist_ok=True)
     if latest.exists() or latest.is_symlink():
         latest.unlink()
     target = out_dir.name if out_dir.parent == latest.parent else out_dir
@@ -707,15 +735,9 @@ def main(argv: list[str] | None = None) -> int:
         shutil.rmtree(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    ensure_subject_inputs(root, prepare_subjects=args.prepare_subjects)
+    subjects = select_subjects(evaluation_subjects(), args.subjects)
+    ensure_subject_inputs(root, subjects, prepare_subjects=args.prepare_subjects)
     compdbs = prepare_compdbs(root, out_dir)
-    subjects = evaluation_subjects()
-    if args.subjects != "all":
-        requested = {item.strip() for item in args.subjects.split(",") if item.strip()}
-        unknown = sorted(requested.difference(subject.key for subject in subjects))
-        if unknown:
-            raise SystemExit(f"Unknown subject(s): {', '.join(unknown)}")
-        subjects = [subject for subject in subjects if subject.key in requested]
     total_runs = sum(len(planned_runs(subject)) for subject in subjects)
 
     rows: list[dict] = []

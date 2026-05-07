@@ -35,6 +35,7 @@
 #include <sstream>
 #include <streambuf>
 #include <string>
+#include <system_error>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -43,7 +44,16 @@
 using namespace std;
 
 struct Fixture {
-	Fixture() { getConfigParameters("{target}.cfg"); }
+	static std::string ResolveConfigPath() {
+		std::error_code ec;
+		const auto executablePath = std::filesystem::read_symlink("/proc/self/exe", ec);
+		if (!ec) {
+			return (executablePath.parent_path() / "{target}.cfg").string();
+		}
+		return (std::filesystem::current_path() / "{target}.cfg").string();
+	}
+
+	Fixture() { getConfigParameters(ResolveConfigPath()); }
 
 	void replaceAll(std::string &str, const std::string &from, const std::string &to) {
 		size_t start_pos = 0;

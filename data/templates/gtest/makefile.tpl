@@ -32,10 +32,10 @@ $(TARGET): $(OBJS)
 {sourceBuildRule}
 
 tests.o: $(TARGET).cpp
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEPFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(DEPFLAGS) -c $< -o $@
 
 main.o: main.cpp
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(DEPFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(DEPFLAGS) -c $< -o $@
 
 clean:
 	rm -rf $(TARGET) $(OBJS) $(DEPS) *~
