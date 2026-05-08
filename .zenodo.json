@@ -1,37 +1,45 @@
 {
-  "title": "ASkeleTon",
+  "title": "ASkeleTon: Extensible Multi-Framework Unit Test Scaffolding Generation for C/C++",
   "version": "1.0.1",
   "license": "Apache-2.0",
   "upload_type": "software",
-  "description": "ASkeleTon generates C/C++ unit test scaffolding from compile_commands.json using Clang-based source analysis.",
+  "description": "ASkeleTon generates editable C/C++ unit test scaffolding from compilation databases using Clang-based source analysis, with GoogleTest, Boost.Test, and Catch2 backends.",
   "creators": [
     {
       "name": "Valle-Gómez, Kevin J.",
       "orcid": "0000-0001-6066-9441",
-      "affiliation": "Departamento de Ingeniería Informática, Escuela Superior de Ingeniería, Universidad de Cádiz, Spain"
+      "affiliation": "Universidad de Cádiz"
     },
     {
       "name": "Delgado-Pérez, Pedro",
       "orcid": "0000-0003-1568-9288",
-      "affiliation": "Departamento de Ingeniería Informática, Escuela Superior de Ingeniería, Universidad de Cádiz, Spain"
+      "affiliation": "Universidad de Cádiz"
     },
     {
       "name": "Medina-Bulo, Inmaculada",
       "orcid": "0000-0002-7543-2671",
-      "affiliation": "Departamento de Ingeniería Informática, Escuela Superior de Ingeniería, Universidad de Cádiz, Spain"
+      "affiliation": "Universidad de Cádiz"
     }
   ],
   "keywords": [
+    "C/C++",
+    "software testing",
     "unit testing",
-    "C",
-    "C++",
+    "test scaffolding",
     "Clang",
-    "test generation"
+    "GoogleTest",
+    "Boost.Test",
+    "Catch2"
   ],
   "related_identifiers": [
     {
       "identifier": "https://github.com/Kevus/askeleton",
       "relation": "isSupplementTo",
+      "resource_type": "software"
+    },
+    {
+      "identifier": "https://github.com/Kevus/askeleton/releases/tag/v1.0.1",
+      "relation": "isVersionOf",
       "resource_type": "software"
     }
   ]
