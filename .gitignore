@@ -13,7 +13,7 @@ data/system_files.json
 .codex_tmp/
 
 # Local manuscript/review artifacts
-_publication__ASkeleTon*.zip
+*_ASkeleTon*.zip
 doc/askeleton-current-flow.svg
 
 # Local external examples/datasets (not distributed)
