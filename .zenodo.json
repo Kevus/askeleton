@@ -1,6 +1,6 @@
 {
   "title": "ASkeleTon: Extensible Multi-Framework Unit Test Scaffolding Generation for C/C++",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "license": "Apache-2.0",
   "upload_type": "software",
   "description": "ASkeleTon generates editable C/C++ unit test scaffolding from compilation databases using Clang-based source analysis, with GoogleTest, Boost.Test, and Catch2 backends.",
@@ -38,7 +38,7 @@
       "resource_type": "software"
     },
     {
-      "identifier": "https://github.com/Kevus/askeleton/releases/tag/v1.0.1",
+      "identifier": "https://github.com/Kevus/askeleton/releases/tag/v1.0.0",
       "relation": "isVersionOf",
       "resource_type": "software"
     }

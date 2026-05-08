@@ -2,7 +2,7 @@
 
 This document describes how to reproduce the release smoke tests, the main
 clean-clone example workflow, and the applicability evaluation workflow for
-ASkeleTon 1.0.1.
+ASkeleTon 1.0.0.
 
 ## Tested Environment
 
@@ -47,7 +47,7 @@ make CXX=clang++-18
 Expected version output for this release:
 
 ```text
-ASkeleTon 1.0.1
+ASkeleTon 1.0.0
 Built with LLVM 18.x.y
 ```
 
@@ -304,7 +304,7 @@ make CXX=clang++-18
 
 Confirm that:
 
-- `./askeleton --version` reports `ASkeleTon 1.0.1`.
+- `./askeleton --version` reports `ASkeleTon 1.0.0`.
 - `LICENSE.txt` is present.
 - `CITATION.cff` is present and has the final repository URL.
 - `CITATION.cff` is updated with the final DOI once the archival record is minted.
