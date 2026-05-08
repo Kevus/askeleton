@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Local pre-release checks for the publication artifact before commit/tag.
+# Local release readiness checks for the ASkeleTon reproducible artifact.
 # Run this from a working tree to validate repository metadata, docs, and
-# the reproducibility workflows expected for the submission package.
+# the reproducibility workflows expected for the release/publication artifact.
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
@@ -73,8 +73,8 @@ else
   echo ".gitignore broad-pattern check passed."
 fi
 
-if ! grep -Eq 'publication.*\.zip|_publication.*\.zip|\*publication\*\.zip' .gitignore; then
-  warn ".gitignore may not explicitly ignore publication manuscript ZIPs."
+if ! grep -Eq 'ASkeleTon.*\.zip|_.*ASkeleTon.*\.zip|\*ASkeleTon\*\.zip|manuscript.*\.zip|publication.*\.zip' .gitignore; then
+  warn ".gitignore may not explicitly ignore local manuscript/publication ZIPs."
 fi
 
 section "3. Documentation wording / overclaim scan"
@@ -178,16 +178,11 @@ echo "Pre-release check PASSED."
 echo
 echo "Suggested next commands:"
 echo "  git diff --stat HEAD"
-echo "  git diff -- README.md REPRODUCIBILITY.md scripts/check_main_workflow.sh .gitignore"
-echo "  git add .github/workflows/ci.yml .gitignore README.md REPRODUCIBILITY.md \\"
-echo "    data/templates/boost/fixture.tpl data/templates/boost/makefile.tpl \\"
-echo "    data/templates/catch2/fixture.tpl data/templates/catch2/makefile.tpl \\"
-echo "    data/templates/gtest/fixture.tpl data/templates/gtest/makefile.tpl \\"
-echo "    examples/README.md scripts/check_main_workflow.sh scripts/run_eval.py \\"
-echo "    src/askeleton.cpp src/framework/Generator.cpp"
-echo "  git commit -m \"Prepare publication reproducibility workflow\""
+echo "  git diff -- README.md REPRODUCIBILITY.md CITATION.cff .zenodo.json include/constants.hpp scripts/pre_release_check.sh"
+echo "  git add README.md REPRODUCIBILITY.md CITATION.cff .zenodo.json include/constants.hpp scripts/pre_release_check.sh"
+echo "  git commit -m \"Prepare ASkeleTon v1.0.1 release\""
 echo
 echo "After CI passes:"
-echo "  git tag -a v1.0.0 -m \"ASkeleTon v1.0.0 publication submission\""
+echo "  git tag -a v1.0.1 -m \"ASkeleTon v1.0.1 release/publication artifact\""
 echo "  git push origin main"
-echo "  git push origin v1.0.0"
+echo "  git push origin v1.0.1"

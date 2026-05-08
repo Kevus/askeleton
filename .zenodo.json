@@ -1,6 +1,6 @@
 {
   "title": "ASkeleTon",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "Apache-2.0",
   "upload_type": "software",
   "description": "ASkeleTon generates C/C++ unit test scaffolding from compile_commands.json using Clang-based source analysis.",
