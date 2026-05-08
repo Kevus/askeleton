@@ -184,5 +184,5 @@ echo "  git commit -m \"Prepare ASkeleTon v1.0.1 release\""
 echo
 echo "After CI passes:"
 echo "  git tag -a v1.0.1 -m \"ASkeleTon v1.0.1 release/publication artifact\""
-echo "  git push origin main"
+echo "  git push origin master"
 echo "  git push origin v1.0.1"
