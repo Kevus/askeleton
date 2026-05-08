@@ -29,6 +29,7 @@
 #include <sstream>
 #include <streambuf>
 #include <string>
+#include <system_error>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -37,8 +38,17 @@
 using namespace std;
 
 struct Fixture : public ::testing::Test {
+	static std::string ResolveConfigPath() {
+		std::error_code ec;
+		const auto executablePath = std::filesystem::read_symlink("/proc/self/exe", ec);
+		if (!ec) {
+			return (executablePath.parent_path() / "{target}.cfg").string();
+		}
+		return (std::filesystem::current_path() / "{target}.cfg").string();
+	}
+
 	static void SetUpTestSuite() {
-		getConfigParameters("{target}.cfg"); 
+		getConfigParameters(ResolveConfigPath()); 
 	}
 
 	static bool getConfigParameters(std::string cfgPath) {

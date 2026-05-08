@@ -1,7 +1,0 @@
-[
-  {
-    "directory": "/home/kevus/astutmatcher/examples/matclpro",
-    "command": "clang++-18 -std=c++20 -I/home/kevus/astutmatcher/examples/matclpro/include -c /home/kevus/astutmatcher/examples/matclpro/test/testmat.cpp",
-    "file": "/home/kevus/astutmatcher/examples/matclpro/test/testmat.cpp"
-  }
-]

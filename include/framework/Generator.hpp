@@ -150,8 +150,8 @@ protected:
 
     std::filesystem::path templateFrameworkPath, templateMethodPath;
     std::filesystem::path utPath, fixturePath, makefilePath, supportedPath, testPath;
-    static const nlohmann::json &config;
-    static const nlohmann::json &templateItems;
+    static const nlohmann::json &config();
+    static const nlohmann::json &templateItems();
     static OracleMode oracleMode;
     static std::map<std::string, std::string> compileFlagsBySourcePath;
     static std::map<std::string, std::vector<std::string>> companionSourcesBySourcePath;

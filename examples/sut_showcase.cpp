@@ -13,16 +13,16 @@
  * ============================================================================
  *
  * 1) Basic generation (default: gtest, balanced, explicit oracle):
- *    ASKELETON_HOME=$(pwd) ./askeleton -p examples examples/sut_showcase.cpp
+ *    ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p examples examples/sut_showcase.cpp
  *
  * 2) Generate report JSON (recommended for presentation):
- *    ASKELETON_HOME=$(pwd) ./askeleton -p examples \
+ *    ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p examples \
  *      --report=/tmp/sut_showcase_report.json \
  *      --out-dir /tmp/sut_showcase_out \
  *      examples/sut_showcase.cpp
  *
  * 3) Show policy-based skips (strict coverage):
- *    ASKELETON_HOME=$(pwd) ./askeleton -p examples \
+ *    ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p examples \
  *      --coverage-mode=strict \
  *      --report=/tmp/sut_showcase_strict_report.json \
  *      --out-dir /tmp/sut_showcase_strict_out \

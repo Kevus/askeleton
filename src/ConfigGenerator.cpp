@@ -17,23 +17,29 @@ using json = nlohmann::json;
 namespace fs = std::filesystem;
 
 RandomValuesGenerator ConfigGenerator::rvg;
-const json &ConfigGenerator::config = getConfig();
-const json &ConfigGenerator::tplItems = getTemplateItems();
 std::string ConfigGenerator::dataProfile = "random";
 std::optional<uint32_t> ConfigGenerator::seedValue = std::nullopt;
 OracleMode ConfigGenerator::oracleMode = OracleMode::Explicit;
 
+const json &ConfigGenerator::config() {
+    return getConfig();
+}
+
+const json &ConfigGenerator::tplItems() {
+    return getTemplateItems();
+}
+
 ConfigGenerator::ConfigGenerator(const string &target)
-    : target(target), testFolder(getAskeletonHome() / config["route"]["ut"] / target),
+    : target(target), testFolder(getAskeletonHome() / config()["route"]["ut"] / target),
       configFilePath(fs::path(testFolder) / (target + ".cfg")) {
     fs::create_directories(testFolder);
-    fs::path configFileTemplate = getAskeletonHome() / config["route"]["templates"] /
-                                  config["file"]["template"]["cfg_tpl"];
+    fs::path configFileTemplate = getAskeletonHome() / config()["route"]["templates"] /
+                                  config()["file"]["template"]["cfg_tpl"];
 
     map<string, string> replacements = {
-        {tplItems["tplitem"]["file_path"], target},
-        {tplItems["tplitem"]["target"], target},
-        {tplItems["tplitem"]["date_of_generation"], getTodayString()}};
+        {tplItems()["tplitem"]["file_path"], target},
+        {tplItems()["tplitem"]["target"], target},
+        {tplItems()["tplitem"]["date_of_generation"], getTodayString()}};
 
     replaceTokensInFile(configFileTemplate, configFilePath, replacements);
 

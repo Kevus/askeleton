@@ -34,6 +34,7 @@
 #include <sstream>
 #include <streambuf>
 #include <string>
+#include <system_error>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -47,12 +48,21 @@ using namespace std;
 using namespace boost;
 
 struct Fixture {
+	static std::string ResolveConfigPath() {
+		std::error_code ec;
+		const auto executablePath = std::filesystem::read_symlink("/proc/self/exe", ec);
+		if (!ec) {
+			return (executablePath.parent_path() / "{target}.cfg").string();
+		}
+		return (std::filesystem::current_path() / "{target}.cfg").string();
+	}
+
 	Fixture():argc(boost::unit_test::framework::master_test_suite().argc),
 	argv(boost::unit_test::framework::master_test_suite().argv) {
 
 		stringstream file;
 		file << argv[1];
-		getConfigParameters("{target}.cfg");
+		getConfigParameters(ResolveConfigPath());
 	}
 
 	bool getConfigParameters(string cfgPath) {

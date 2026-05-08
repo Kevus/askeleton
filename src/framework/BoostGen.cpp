@@ -17,7 +17,7 @@ BoostGen::BoostGen(const std::string &targetName,
     : Generator(targetName, targetQualifiedName, filePath, isFromClass) {
 
     setFrameworkTemplatePath(getAskeletonHome() /
-                             config["route"]["boost_templates"].get<string>());
+                             config()["route"]["boost_templates"].get<string>());
 
     map<string, string> tokensToReplace;
     setValuesToChange(tokensToReplace);
@@ -28,7 +28,7 @@ void BoostGen::generateFullAssert(const std::string &function,
                                   const std::vector<InfoVariable> &parameters,
                                   const InfoType &returnType, bool isStatic) {
     const static fs::path tplFunctionPath =
-        templateFrameworkPath / config["file"]["template"]["case"]["function"];
+        templateFrameworkPath / config()["file"]["template"]["case"]["function"];
     const unsigned number = getFunctionCounter(function) + 1;
     const string returnTypeOriginal = buildExpectedType(returnType);
     const string returnReadMethod =
@@ -45,14 +45,14 @@ void BoostGen::generateFullAssert(const std::string &function,
         generateAssertForFunction(function, parameters, returnType, isStatic);
 
     map<string, string> tokensToReplace = {
-        {templateItems["tplitem"]["boost"]["target"], targetName},
-        {templateItems["tplitem"]["boost"]["function"], function},
-        {templateItems["tplitem"]["boost"]["number"], to_string(number)},
-        {templateItems["tplitem"]["boost"]["initializations"], initializations},
-        {templateItems["tplitem"]["boost"]["return_type"], returnTypeOriginal},
-        {templateItems["tplitem"]["boost"]["return_read_method"], returnReadMethod},
-        {templateItems["tplitem"]["assert"], assert},
-        {templateItems["tplitem"]["boost"]["pointers"], pointers}};
+        {templateItems()["tplitem"]["boost"]["target"], targetName},
+        {templateItems()["tplitem"]["boost"]["function"], function},
+        {templateItems()["tplitem"]["boost"]["number"], to_string(number)},
+        {templateItems()["tplitem"]["boost"]["initializations"], initializations},
+        {templateItems()["tplitem"]["boost"]["return_type"], returnTypeOriginal},
+        {templateItems()["tplitem"]["boost"]["return_read_method"], returnReadMethod},
+        {templateItems()["tplitem"]["assert"], assert},
+        {templateItems()["tplitem"]["boost"]["pointers"], pointers}};
 
     string testContent = replaceTokensInFile(tplFunctionPath, tokensToReplace);
 
@@ -75,7 +75,7 @@ void BoostGen::generateFunctionAssert(const std::string &function,
 
 void BoostGen::generateConstructorAssert(const std::vector<InfoVariable> &parameters) {
     const static fs::path tplCtorPath =
-        templateFrameworkPath / config["file"]["template"]["case"]["constructor"];
+        templateFrameworkPath / config()["file"]["template"]["case"]["constructor"];
     const unsigned number = getFunctionCounter(targetName) + 1;
     const std::string ctorKey = targetName;
     const std::string initializations =
@@ -87,13 +87,13 @@ void BoostGen::generateConstructorAssert(const std::vector<InfoVariable> &parame
         pointers = pointers + "\n";
 
     map<string, string> tokensToReplace = {
-        {templateItems["tplitem"]["boost"]["target"], targetName},
-        {templateItems["tplitem"]["boost"]["function"], ctorKey},
-        {templateItems["tplitem"]["boost"]["number"], to_string(number)},
-        {templateItems["tplitem"]["boost"]["initializations"], initializations},
-        {templateItems["tplitem"]["boost"]["class"], targetQualifiedName},
-        {templateItems["tplitem"]["boost"]["parameters"], parametersInvocation},
-        {templateItems["tplitem"]["boost"]["pointers"], pointers},
+        {templateItems()["tplitem"]["boost"]["target"], targetName},
+        {templateItems()["tplitem"]["boost"]["function"], ctorKey},
+        {templateItems()["tplitem"]["boost"]["number"], to_string(number)},
+        {templateItems()["tplitem"]["boost"]["initializations"], initializations},
+        {templateItems()["tplitem"]["boost"]["class"], targetQualifiedName},
+        {templateItems()["tplitem"]["boost"]["parameters"], parametersInvocation},
+        {templateItems()["tplitem"]["boost"]["pointers"], pointers},
     };
 
     string testContent = replaceTokensInFile(tplCtorPath, tokensToReplace);
@@ -107,15 +107,15 @@ bool BoostGen::supportsConstructorTests() const { return true; }
 std::string BoostGen::generatePointersAsserts(const std::vector<InfoVariable> &parameters,
                                               const std::string &function) const {
     const static string TPLITEM_BOOST_PARAMETER =
-                            templateItems["tplitem"]["boost"]["parameter"],
+                            templateItems()["tplitem"]["boost"]["parameter"],
                         TPLITEM_BOOST_EXPECTED =
-                            templateItems["tplitem"]["boost"]["expected"],
+                            templateItems()["tplitem"]["boost"]["expected"],
                         TPLITEM_BOOST_ASSERT =
-                            templateItems["templating"]["boost"]["assert_pointer"],
+                            templateItems()["templating"]["boost"]["assert_pointer"],
                         TPLITEM_BOOST_ASSERT_LIST =
-                            templateItems["templating"]["boost"]["assert_pointer_list"],
+                            templateItems()["templating"]["boost"]["assert_pointer_list"],
                         TPLITEM_BOOST_ASSERT_MAP =
-                            templateItems["templating"]["boost"]["assert_pointer_map"];
+                            templateItems()["templating"]["boost"]["assert_pointer_map"];
 
     std::stringstream ss;
     for (const auto &param : parameters) {
@@ -154,16 +154,16 @@ string BoostGen::generateAssertForFunction(const string &function,
                                            const InfoType &returnType,
                                            bool isStatic) const {
     const static string TPLITEM_FUNC_LIST =
-                            templateItems["templating"]["boost"]["assert_function_list"],
+                            templateItems()["templating"]["boost"]["assert_function_list"],
                         TPLITEM_FUNC_MAP =
-                            templateItems["templating"]["boost"]["assert_function_map"];
+                            templateItems()["templating"]["boost"]["assert_function_map"];
     const auto invocationTokens = buildInvocationTokens(params, function, isStatic, returnType);
     const string paramsList = invocationTokens.second;
     string invocation = invocationTokens.first;
 
     const map<string, string> tokensToReplace = {
-        {templateItems["tplitem"]["boost"]["invocation"], invocation},
-        {templateItems["tplitem"]["boost"]["parameters"], paramsList}};
+        {templateItems()["tplitem"]["boost"]["invocation"], invocation},
+        {templateItems()["tplitem"]["boost"]["parameters"], paramsList}};
 
     string assertFunction;
     if (returnType.isList()) {

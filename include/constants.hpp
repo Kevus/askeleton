@@ -3,6 +3,7 @@
 
 namespace askeleton {
 const std::string ASKELETON_VARNAME = "ASKELETON_HOME";
+const std::string ASKELETON_VERSION = "1.0.0";
 
 namespace errors {
 const auto openFileError = [](const std::string &filename) {

@@ -430,11 +430,17 @@ bool hasExistingEqualityOperator(const InfoType &type) {
 } // namespace
 
 unsigned Generator::MAX_DEPTH;
-const json &Generator::config = getConfig();
-const nlohmann::json &Generator::templateItems = getTemplateItems();
 OracleMode Generator::oracleMode = OracleMode::Explicit;
 std::map<std::string, std::string> Generator::compileFlagsBySourcePath;
 std::map<std::string, std::vector<std::string>> Generator::companionSourcesBySourcePath;
+
+const json &Generator::config() {
+    return getConfig();
+}
+
+const nlohmann::json &Generator::templateItems() {
+    return getTemplateItems();
+}
 
 Generator::Generator(const string &targetName, const string &targetQualifiedName,
                      const string &filePath, bool isFromClass)
@@ -442,7 +448,7 @@ Generator::Generator(const string &targetName, const string &targetQualifiedName
       targetFileName(extractFileName(filePath)),
       targetQualifiedName(targetQualifiedName.empty() ? targetName : targetQualifiedName),
       isFromClass(isFromClass),
-      utPath(getAskeletonHome() / config["route"]["ut"] / targetName),
+      utPath(getAskeletonHome() / config()["route"]["ut"] / targetName),
       configGenerator{targetName} {
 
     setOutputFilesPath();
@@ -464,12 +470,12 @@ void Generator::appendTestCaseToTestFile(const std::string &testCase) const {
 
 void Generator::setOutputFilesPath() {
     const std::map<std::string, std::string> replacements = {
-        {templateItems["tplitem"]["target"], targetName}};
+        {templateItems()["tplitem"]["target"], targetName}};
 
-    string fixtureFileName = config["file"]["output"]["test_fixture"];
-    string makefileFileName = config["file"]["output"]["makefile"];
-    string testFileName = config["file"]["output"]["test_file"];
-    string supportedFileName = config["file"]["output"]["supported_types"];
+    string fixtureFileName = config()["file"]["output"]["test_fixture"];
+    string makefileFileName = config()["file"]["output"]["makefile"];
+    string testFileName = config()["file"]["output"]["test_file"];
+    string supportedFileName = config()["file"]["output"]["supported_types"];
 
     replaceTokensInText(fixtureFileName, replacements);
     replaceTokensInText(makefileFileName, replacements);
@@ -505,7 +511,7 @@ void Generator::setValuesToChange(std::map<std::string, std::string> &valuesToCh
         sourceObjectFiles.push_back(objectName);
         const char *compiler = isCSourceFile(sourcePath) ? "$(CC)" : "$(CXX)";
         const char *flags =
-            isCSourceFile(sourcePath) ? "$(CPPFLAGS) $(CFLAGS)" : "$(CPPFLAGS) $(CXXFLAGS)";
+            isCSourceFile(sourcePath) ? "$(CFLAGS) $(CPPFLAGS)" : "$(CXXFLAGS) $(CPPFLAGS)";
         sourceBuildRules << objectName << ": " << sourcePath
                          << "\n\t" << compiler << " " << flags << " -c $< -o $@\n";
     }
@@ -515,8 +521,8 @@ void Generator::setValuesToChange(std::map<std::string, std::string> &valuesToCh
         objectFiles.push_back(objectName);
         sourceObjectFiles.push_back(objectName);
         const char *compiler = isCSourceFile(companions[i]) ? "$(CC)" : "$(CXX)";
-        const char *flags = isCSourceFile(companions[i]) ? "$(CPPFLAGS) $(CFLAGS)"
-                                                         : "$(CPPFLAGS) $(CXXFLAGS)";
+        const char *flags = isCSourceFile(companions[i]) ? "$(CFLAGS) $(CPPFLAGS)"
+                                                         : "$(CXXFLAGS) $(CPPFLAGS)";
         sourceBuildRules << objectName << ": " << companions[i]
                          << "\n\t" << compiler << " " << flags << " -c $< -o $@\n";
     }
@@ -555,17 +561,17 @@ void Generator::setValuesToChange(std::map<std::string, std::string> &valuesToCh
     }
 
     valuesToChange = {
-        {templateItems["tplitem"]["file_path"], targetFilePath},
-        {templateItems["tplitem"]["target"], targetName},
-        {templateItems["tplitem"]["file_name"], targetFileName},
+        {templateItems()["tplitem"]["file_path"], targetFilePath},
+        {templateItems()["tplitem"]["target"], targetName},
+        {templateItems()["tplitem"]["file_name"], targetFileName},
 
-        {templateItems["tplitem"]["cpp_path"], sourcePath},
-        {templateItems["tplitem"]["header_path"], includePath},
+        {templateItems()["tplitem"]["cpp_path"], sourcePath},
+        {templateItems()["tplitem"]["header_path"], includePath},
 
-        {templateItems["tplitem"]["date_of_generation"], getTodayString()},
-        {templateItems["tplitem"]["includes"], ""},
-        {templateItems["tplitem"]["namespaces"], ""},
-        {templateItems["tplitem"]["new_methods"], ""},
+        {templateItems()["tplitem"]["date_of_generation"], getTodayString()},
+        {templateItems()["tplitem"]["includes"], ""},
+        {templateItems()["tplitem"]["namespaces"], ""},
+        {templateItems()["tplitem"]["new_methods"], ""},
         {"{classMemberDecl}", ""},
         {"{extraCompileFlags}", extraCompileFlags},
         {"{objectFiles}", objectFilesValue.str()},
@@ -586,7 +592,7 @@ void Generator::setCompanionSources(
 
 void Generator::setSupportedTypes() {
     fs::path supportedTypesPath =
-        getAskeletonHome() / config["file"]["data"]["supported_types_json"];
+        getAskeletonHome() / config()["file"]["data"]["supported_types_json"];
     std::ifstream file(supportedTypesPath);
     if (!file.is_open())
         exitWithError(errors::openFileError(supportedTypesPath));
@@ -603,48 +609,48 @@ void Generator::setSupportedTypes() {
 void Generator::setOutputFiles(const map<string, string> &tokensToReplace) const {
     const fs::path templatePath = this->templateFrameworkPath;
 
-    createFileFromTemplate(templatePath / config["file"]["template"]["test_tpl"],
+    createFileFromTemplate(templatePath / config()["file"]["template"]["test_tpl"],
                            testPath, tokensToReplace);
-    createFileFromTemplate(templatePath / config["file"]["template"]["fixture_tpl"],
+    createFileFromTemplate(templatePath / config()["file"]["template"]["fixture_tpl"],
                            fixturePath, tokensToReplace);
-    createFileFromTemplate(templatePath / config["file"]["template"]["makefile_tpl"],
+    createFileFromTemplate(templatePath / config()["file"]["template"]["makefile_tpl"],
                            makefilePath, tokensToReplace);
 }
 
 void Generator::appendReadMethodToFixture(const std::string &method) const {
     replaceTokensInFile(
         fixturePath, fixturePath,
-        {{templateItems["tplitem"]["read_object"],
-          "\n\n" + method + templateItems["tplitem"]["read_object"].get<string>()}});
+        {{templateItems()["tplitem"]["read_object"],
+          "\n\n" + method + templateItems()["tplitem"]["read_object"].get<string>()}});
 }
 
 void Generator::appendOverloadMethodsToFixture(const std::string &op) const {
     replaceTokensInFile(
         fixturePath, fixturePath,
-        {{templateItems["tplitem"]["overload_operator"],
-          "\n\n" + op + templateItems["tplitem"]["overload_operator"].get<string>()}});
+        {{templateItems()["tplitem"]["overload_operator"],
+          "\n\n" + op + templateItems()["tplitem"]["overload_operator"].get<string>()}});
 }
 
 void Generator::createPointerReadToFixture(const InfoType &type) const {
     InfoType underlying = type.getUnderlyingType();
     string method =
-        readFromFile(getMethodTemplatePath(config["file"]["method"]["pointer_read"]));
+        readFromFile(getMethodTemplatePath(config()["file"]["method"]["pointer_read"]));
     replaceTokensInText(
         method,
-        {{templateItems["tplitem"]["type"], type.original},
-         {templateItems["tplitem"]["formatted"], type.formatted},
-         {templateItems["tplitem"]["underlying"], underlying.original},
-         {templateItems["tplitem"]["underlying_formatted"], underlying.formatted}});
+        {{templateItems()["tplitem"]["type"], type.original},
+         {templateItems()["tplitem"]["formatted"], type.formatted},
+         {templateItems()["tplitem"]["underlying"], underlying.original},
+         {templateItems()["tplitem"]["underlying_formatted"], underlying.formatted}});
 
     appendReadMethodToFixture(method);
 }
 
 void Generator::createEnumReadToFixture(const InfoType &type) const {
     string method = readFromFile(
-        getMethodTemplatePath(config["file"]["template"]["method"]["enum_read"]));
+        getMethodTemplatePath(config()["file"]["template"]["method"]["enum_read"]));
     replaceTokensInText(method,
-                        {{templateItems["tplitem"]["type"], type.original},
-                         {templateItems["tplitem"]["formatted"], type.formatted}});
+                        {{templateItems()["tplitem"]["type"], type.original},
+                         {templateItems()["tplitem"]["formatted"], type.formatted}});
     appendReadMethodToFixture(method);
 }
 
@@ -656,29 +662,29 @@ void Generator::createRecordReadToFixture(const InfoType &type) const {
 
     stringstream assigns;
     string method = readFromFile(
-        getMethodTemplatePath(config["file"]["template"]["method"]["record_read"]));
+        getMethodTemplatePath(config()["file"]["template"]["method"]["record_read"]));
 
     for (const auto &field : type.getRecordFields()) {
-        string assignField = templateItems["templating"]["field_assign"];
+        string assignField = templateItems()["templating"]["field_assign"];
         replaceTokensInText(assignField,
-                            {{templateItems["tplitem"]["field"], field.name},
-                             {templateItems["tplitem"]["formatted"], field.formatted}});
+                            {{templateItems()["tplitem"]["field"], field.name},
+                             {templateItems()["tplitem"]["formatted"], field.formatted}});
         assigns << "\n\t\t" << assignField;
     }
 
-    replaceTokensInText(method, {{templateItems["tplitem"]["type"], type.original},
-                                 {templateItems["tplitem"]["formatted"], type.formatted},
-                                 {templateItems["tplitem"]["fields"], assigns.str()}});
+    replaceTokensInText(method, {{templateItems()["tplitem"]["type"], type.original},
+                                 {templateItems()["tplitem"]["formatted"], type.formatted},
+                                 {templateItems()["tplitem"]["fields"], assigns.str()}});
 
     appendReadMethodToFixture(method);
 }
 
 void Generator::createRecordOverloadToFixture(const InfoType &type) const {
-    const static string comparison = templateItems["templating"]["field_comparison"],
-                        insertion = templateItems["templating"]["field_insertion"],
-                        tplitemField = templateItems["tplitem"]["field"],
+    const static string comparison = templateItems()["templating"]["field_comparison"],
+                        insertion = templateItems()["templating"]["field_insertion"],
+                        tplitemField = templateItems()["tplitem"]["field"],
                         tplitemFieldFormatted =
-                            templateItems["tplitem"]["field_formatted"];
+                            templateItems()["tplitem"]["field_formatted"];
     const std::string enclosingNamespace = getEnclosingNamespace(type);
     const std::string overloadType =
         enclosingNamespace.empty() ? type.original : removeNamespaceQualifier(type.original);
@@ -935,7 +941,7 @@ std::string Generator::generateParameterInitialization(const InfoVariable &varia
                                                        const std::string &keyPrefix) const {
 
     std::string readInstructionContent =
-        templateItems["templating"]["assign_instruction"];
+        templateItems()["templating"]["assign_instruction"];
     if (const auto fullFactory =
             TypeFactoryRegistry::get().find(variable, function);
         fullFactory.has_value() &&
@@ -954,12 +960,12 @@ std::string Generator::generateParameterInitialization(const InfoVariable &varia
     }
 
     std::map<std::string, std::string> replacements = {
-        {templateItems["tplitem"]["underlying"], underlying.original},
-        {templateItems["tplitem"]["name"], variableName},
-        {templateItems["tplitem"]["target"], function},
-        {templateItems["tplitem"]["number"], to_string(invocation)},
-        {templateItems["tplitem"]["formatted"], readKeyName},
-        {templateItems["tplitem"]["underlying_formatted"], typeForReadMethod}};
+        {templateItems()["tplitem"]["underlying"], underlying.original},
+        {templateItems()["tplitem"]["name"], variableName},
+        {templateItems()["tplitem"]["target"], function},
+        {templateItems()["tplitem"]["number"], to_string(invocation)},
+        {templateItems()["tplitem"]["formatted"], readKeyName},
+        {templateItems()["tplitem"]["underlying_formatted"], typeForReadMethod}};
 
     replaceTokensInText(readInstructionContent, replacements);
     return readInstructionContent;
@@ -978,15 +984,15 @@ std::string Generator::generateParameterInitialization(const InfoType &type,
 std::string Generator::generateReadInvocation(const InfoVariable &type,
                                               const string &function,
                                               unsigned invocation) const {
-    string readInvocation = templateItems["templating"]["read_instruction"];
+    string readInvocation = templateItems()["templating"]["read_instruction"];
     replaceTokensInText(
         readInvocation,
         {
-            {templateItems["tplitem"]["underlying_formatted"],
+            {templateItems()["tplitem"]["underlying_formatted"],
              normalizeReadMethodType(type)},
-            {templateItems["tplitem"]["target"], function},
-            {templateItems["tplitem"]["name"], type.name},
-            {templateItems["tplitem"]["number"], to_string(invocation)},
+            {templateItems()["tplitem"]["target"], function},
+            {templateItems()["tplitem"]["name"], type.name},
+            {templateItems()["tplitem"]["number"], to_string(invocation)},
         });
 
     return readInvocation;
@@ -1384,8 +1390,8 @@ void Generator::generateConfigFileTestCase(const std::string &functionName,
 
 Generator::~Generator() {
     std::map<string, string> valuesToDelete = {
-        {templateItems["tplitem"]["read_object"], ""},
-        {templateItems["tplitem"]["overload_operator"], ""}};
+        {templateItems()["tplitem"]["read_object"], ""},
+        {templateItems()["tplitem"]["overload_operator"], ""}};
 
     std::ostringstream supportedTypesContent;
     for (const auto &type : supportedTypes)
@@ -1408,6 +1414,6 @@ void Generator::setStringRuleValues(
 
 std::string Generator::getMethodTemplatePath(const std::string &methodTemplate) {
     const static fs::path methodsTplPath =
-        getAskeletonHome() / config["route"]["templates"];
+        getAskeletonHome() / config()["route"]["templates"];
     return methodsTplPath / methodTemplate;
 }
