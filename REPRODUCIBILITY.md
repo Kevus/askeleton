@@ -171,13 +171,18 @@ The four `base_plus_coverage` subjects are evaluated with:
 - 1 baseline run: `random + balanced + explicit + rule-data on`
 - 2 coverage ablation runs: `strict` and `aggressive`
 
-By default, outputs are written under:
+The minimal workflow above writes a single `report.json` and `log.json` for
+the `examples/sut.cpp` run. The applicability evaluation uses a different
+layout: each ASkeleTon execution writes one per-run report JSON file and one
+text `*.log` file under the selected subject directory.
+
+By default, root-level evaluation outputs are written under:
 
 ```text
 analysis/eval_<timestamp>/
 ```
 
-including:
+including CSV, Markdown, metadata, and optional HTML files:
 
 - `raw_runs.csv`
 - `baseline_summary.csv`
@@ -187,7 +192,12 @@ including:
 - `evaluation_tables.md`
 - `run_metadata.json`
 - `viewer.html` when `--build-viewer` is used
-- per-run reports, logs, and generated outputs under `<subject>/`
+
+Per-run artifacts are written under `<subject>/`, including:
+
+- `reports/*.json`
+- `logs/*.log`
+- `generated/<run_id>/`
 
 The following repository files are part of the release reproducibility
 workflow:

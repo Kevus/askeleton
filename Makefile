@@ -1,5 +1,5 @@
-DEFAULT_CLANGXX := $(shell if command -v clang++ >/dev/null 2>&1; then printf '%s' clang++; elif command -v clang++-18 >/dev/null 2>&1; then printf '%s' clang++-18; else printf '%s' clang++; fi)
-DEFAULT_LLVM_CONFIG := $(shell if command -v llvm-config >/dev/null 2>&1; then printf '%s' llvm-config; elif command -v llvm-config-18 >/dev/null 2>&1; then printf '%s' llvm-config-18; else printf '%s' llvm-config; fi)
+DEFAULT_CLANGXX := $(shell if command -v clang++-18 >/dev/null 2>&1; then printf '%s' clang++-18; elif command -v clang++ >/dev/null 2>&1; then printf '%s' clang++; else printf '%s' clang++; fi)
+DEFAULT_LLVM_CONFIG := $(shell if command -v llvm-config-18 >/dev/null 2>&1; then printf '%s' llvm-config-18; elif command -v llvm-config >/dev/null 2>&1; then printf '%s' llvm-config; else printf '%s' llvm-config; fi)
 
 ifeq ($(origin CXX), default)
 CXX := $(DEFAULT_CLANGXX)
@@ -50,7 +50,8 @@ endif
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CXX) $(OBJS) $(CLANGLIBS) -o $(TARGET)
+	$(CXX) $(OBJS) $(CLANGLIBS) -o $(TARGET).tmp
+	mv $(TARGET).tmp $(TARGET)
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) $(DEPFLAGS) $(INCLUDES) $(DEBUG_FLAGS) $(OPTIMIZATION_FLAGS) -c $< -o $@
@@ -59,7 +60,7 @@ install: $(TARGET)
 	sudo cp $(TARGET) /usr/local/bin
 
 clean:
-	rm -f ${OBJS} $(DEPS) $(TARGET)
+	rm -f ${OBJS} $(DEPS) $(TARGET) $(TARGET).tmp
 
 -include $(DEPS)
 

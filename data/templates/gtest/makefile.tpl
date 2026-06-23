@@ -1,5 +1,5 @@
-DEFAULT_CLANGXX := $(shell if command -v clang++ >/dev/null 2>&1; then printf '%s' clang++; elif command -v clang++-18 >/dev/null 2>&1; then printf '%s' clang++-18; else printf '%s' clang++; fi)
-DEFAULT_CLANG := $(shell if command -v clang >/dev/null 2>&1; then printf '%s' clang; elif command -v clang-18 >/dev/null 2>&1; then printf '%s' clang-18; else printf '%s' clang; fi)
+DEFAULT_CLANGXX := $(shell if command -v clang++-18 >/dev/null 2>&1; then printf '%s' clang++-18; elif command -v clang++ >/dev/null 2>&1; then printf '%s' clang++; else printf '%s' clang++; fi)
+DEFAULT_CLANG := $(shell if command -v clang-18 >/dev/null 2>&1; then printf '%s' clang-18; elif command -v clang >/dev/null 2>&1; then printf '%s' clang; else printf '%s' clang; fi)
 ifeq ($(origin CXX), default)
 CXX := $(DEFAULT_CLANGXX)
 endif
@@ -27,7 +27,8 @@ all: $(TARGET)
 test: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS) $(EXTRA_LIBS)
+	$(CXX) $(LDFLAGS) -o $@.tmp $^ $(LIBS) $(EXTRA_LIBS)
+	mv $@.tmp $@
 
 {sourceBuildRule}
 
@@ -38,7 +39,7 @@ main.o: main.cpp
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(DEPFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(TARGET) $(OBJS) $(DEPS) *~
+	rm -rf $(TARGET) $(TARGET).tmp $(OBJS) $(DEPS) *~
 
 compilation: tests.o
 

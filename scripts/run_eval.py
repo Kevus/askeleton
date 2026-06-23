@@ -301,19 +301,22 @@ def create_compdb_dir(path: Path, entry: dict) -> Path:
     return path
 
 
-def prepare_compdbs(root: Path, out_dir: Path) -> dict[str, Path]:
+def prepare_compdbs(root: Path, out_dir: Path, subjects: list[Subject]) -> dict[str, Path]:
     compdb_root = out_dir / "_compdb"
     examples_dir = root / "examples"
-    return {
-        "sut_showcase": create_compdb_dir(
+    subject_keys = {subject.key for subject in subjects}
+    compdbs = {}
+    if "sut_showcase" in subject_keys:
+        compdbs["sut_showcase"] = create_compdb_dir(
             compdb_root / "examples",
             {
                 "directory": str(examples_dir),
                 "command": f"clang++-18 -std=c++20 -I{examples_dir} -c {examples_dir / 'sut_showcase.cpp'}",
                 "file": str(examples_dir / "sut_showcase.cpp"),
             },
-        ),
-        "openssl_ctype": create_compdb_dir(
+        )
+    if "openssl_ctype" in subject_keys:
+        compdbs["openssl_ctype"] = create_compdb_dir(
             compdb_root / "openssl",
             {
                 "directory": str(root / "examples" / "openssl"),
@@ -324,8 +327,9 @@ def prepare_compdbs(root: Path, out_dir: Path) -> dict[str, Path]:
                 ),
                 "file": str(root / "examples" / "openssl" / "crypto" / "ctype.c"),
             },
-        ),
-        "sqlite_util": create_compdb_dir(
+        )
+    if "sqlite_util" in subject_keys:
+        compdbs["sqlite_util"] = create_compdb_dir(
             compdb_root / "sqlite",
             {
                 "directory": str(root / "examples" / "sqlite"),
@@ -336,8 +340,8 @@ def prepare_compdbs(root: Path, out_dir: Path) -> dict[str, Path]:
                 ),
                 "file": str(root / "examples" / "sqlite" / "src" / "util.c"),
             },
-        ),
-    }
+        )
+    return compdbs
 
 
 def resolve_build_path(root: Path, out_dir: Path, subject: Subject, compdbs: dict[str, Path]) -> Path:
@@ -662,6 +666,8 @@ def update_latest_symlink(root: Path, out_dir: Path) -> None:
 
 
 def write_run_metadata(root: Path, out_dir: Path, subjects: list[Subject]) -> None:
+    selected_external_keys = required_external_subject_keys(subjects)
+    externals = external_subjects(root)
     build_path_map = {
         "sut_showcase": out_dir / "_compdb" / "examples",
         "tinyxml2_core": root / "examples" / "tinyxml2" / "build",
@@ -696,7 +702,8 @@ def write_run_metadata(root: Path, out_dir: Path, subjects: list[Subject]) -> No
                 "path": value.path,
                 "description": value.description,
             }
-            for key, value in external_subjects(root).items()
+            for key, value in externals.items()
+            if key in selected_external_keys
         },
     }
     write_json(out_dir / "run_metadata.json", metadata)
@@ -737,7 +744,7 @@ def main(argv: list[str] | None = None) -> int:
 
     subjects = select_subjects(evaluation_subjects(), args.subjects)
     ensure_subject_inputs(root, subjects, prepare_subjects=args.prepare_subjects)
-    compdbs = prepare_compdbs(root, out_dir)
+    compdbs = prepare_compdbs(root, out_dir, subjects)
     total_runs = sum(len(planned_runs(subject)) for subject in subjects)
 
     rows: list[dict] = []
