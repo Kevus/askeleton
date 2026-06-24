@@ -123,6 +123,9 @@ ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p . ./sut.cpp
 ./askeleton -p build --rule-data --rule-max-cases=5 src/foo.cpp
 ```
 
+Conceptual guide: [`InputGeneration.md`](InputGeneration.md). Detailed rule
+catalog: [`DataRules.md`](DataRules.md).
+
 ### Coverage and Oracle Strategy
 
 `--coverage-mode=<strict|balanced|aggressive>` (default: `balanced`)
@@ -205,6 +208,7 @@ ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p . ./sut.cpp
 ## Related Guides
 
 - Skip reasons: [`SkipReasons.md`](SkipReasons.md)
+- Input generation: [`InputGeneration.md`](InputGeneration.md)
 - Rule-based generation: [`DataRules.md`](DataRules.md)
 - Expected value strategies: [`ExpectedValues.md`](ExpectedValues.md)
 - Generated `.cfg` data format: [`CfgFormat.md`](CfgFormat.md)

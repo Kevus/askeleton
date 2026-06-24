@@ -3,6 +3,9 @@
 This guide describes the AST-derived rules used by ASkeleTon when rule-based
 generation is enabled.
 
+For the broader interaction between profiles, rule data, seeds, fallback values,
+and reproducibility, see [`InputGeneration.md`](InputGeneration.md).
+
 ## Activation
 
 - Basic AST-derived rules are enabled by default.
@@ -106,5 +109,6 @@ Generated candidates:
 
 ## Related Guides
 
+- Input generation overview: [`InputGeneration.md`](InputGeneration.md)
 - CLI options: [`CLI.md`](CLI.md)
 - Type customization: [`TypeFactories.md`](TypeFactories.md)

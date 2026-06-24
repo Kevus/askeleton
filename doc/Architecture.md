@@ -31,6 +31,7 @@ This document gives a high-level view of how ASkeleTon turns a
 ## Related Guides
 
 - CLI options: [`CLI.md`](CLI.md)
+- Input generation overview: [`InputGeneration.md`](InputGeneration.md)
 - Rule-based generation details: [`DataRules.md`](DataRules.md)
 - Skip reasons: [`SkipReasons.md`](SkipReasons.md)
 - Type customization: [`TypeFactories.md`](TypeFactories.md)

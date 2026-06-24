@@ -131,6 +131,9 @@ Key options:
 For exhaustive option semantics and examples, see:
 - [`doc/CLI.md`](doc/CLI.md)
 
+For input generation profiles, rule data, seeds, and reproducibility, see:
+- [`doc/InputGeneration.md`](doc/InputGeneration.md)
+
 For the editable generated test data format, see:
 - [`doc/CfgFormat.md`](doc/CfgFormat.md)
 
@@ -181,6 +184,8 @@ ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb --coverage-mode=strict -p e
 ```
 
 For more option combinations, see [`doc/CLI.md`](doc/CLI.md).
+For the full input generation model, see
+[`doc/InputGeneration.md`](doc/InputGeneration.md).
 
 **Coverage Modes**
 Coverage mode controls how selective ASkeleTon is when deciding whether to
@@ -264,10 +269,13 @@ For complete `.cfg` syntax, expected-value overrides, and troubleshooting, see
 **Reproducible Runs**
 Use `--seed` to make data generation deterministic. For fully reproducible
 outputs across machines, keep these inputs identical:
+- ASkeleTon version or commit.
 - LLVM/Clang major version (e.g., 18).
 - The exact `compile_commands.json`.
 - `data/type_factories.json` and `data/default_values.json`.
 - `data/system_files.json` (or disable auto-create with `--no-system-files-refresh`).
+For the complete reproducibility checklist, see
+[`doc/InputGeneration.md`](doc/InputGeneration.md).
 
 **Report JSON**
 Use `--report` or `--report-json` to generate a JSON summary of the run with:
@@ -315,6 +323,7 @@ Key capabilities map to repository artifacts as follows:
 **Docs**
 - CLI reference: [`doc/CLI.md`](doc/CLI.md)
 - Architecture overview: [`doc/Architecture.md`](doc/Architecture.md)
+- Input generation: [`doc/InputGeneration.md`](doc/InputGeneration.md)
 - Rule catalog: [`doc/DataRules.md`](doc/DataRules.md)
 - Expected value strategies: [`doc/ExpectedValues.md`](doc/ExpectedValues.md)
 - Generated `.cfg` format: [`doc/CfgFormat.md`](doc/CfgFormat.md)
