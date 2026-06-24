@@ -17,6 +17,7 @@ This document gives a high-level view of how ASkeleTon turns a
 
 - `src/askeleton.cpp`: CLI entry point, option parsing, and high-level orchestration.
 - `src/ASKGen.cpp`: callable discovery, skip decisions, and AST-derived rule extraction.
+- `src/Report.cpp`: generation report JSON assembly and aggregate diagnostics.
 - `src/framework/*Gen.cpp`: framework-specific test and fixture generation.
 - `src/ConfigGenerator.cpp`: `.cfg` generation and output layout.
 - `src/RandomValuesGenerator.cpp`: profile-based value generation (`random`,
@@ -33,6 +34,7 @@ This document gives a high-level view of how ASkeleTon turns a
 - CLI options: [`CLI.md`](CLI.md)
 - Input generation overview: [`InputGeneration.md`](InputGeneration.md)
 - Rule-based generation details: [`DataRules.md`](DataRules.md)
+- Report JSON schema: [`ReportSchema.md`](ReportSchema.md)
 - Skip reasons: [`SkipReasons.md`](SkipReasons.md)
 - Type customization: [`TypeFactories.md`](TypeFactories.md)
 - Method instance setup: [`InstanceStrategies.md`](InstanceStrategies.md)

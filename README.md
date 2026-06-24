@@ -293,7 +293,8 @@ Common `reason` values:
 - `coverage_policy_mutable_parameter`: skipped by strict coverage policy.
 - `unsupported_pointer_pointee`: pointee type is not auto-materializable.
 
-Full guide with didactic examples and fixes:
+Full guide with examples and fixes:
+- [`doc/ReportSchema.md`](doc/ReportSchema.md)
 - [`doc/SkipReasons.md`](doc/SkipReasons.md)
 
 **Repository Evidence**
@@ -330,6 +331,7 @@ Key capabilities map to repository artifacts as follows:
 - Release checklist: [`doc/ReleaseChecklist.md`](doc/ReleaseChecklist.md)
 - Known issues: [`doc/KnownIssues.md`](doc/KnownIssues.md)
 - Skip reasons guide: [`doc/SkipReasons.md`](doc/SkipReasons.md)
+- Report schema: [`doc/ReportSchema.md`](doc/ReportSchema.md)
 - Instance strategies: [`doc/InstanceStrategies.md`](doc/InstanceStrategies.md)
 - Type factories: [`doc/TypeFactories.md`](doc/TypeFactories.md)
 - Dependencies: [`doc/Dependencies.md`](doc/Dependencies.md)

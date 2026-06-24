@@ -159,6 +159,8 @@ catalog: [`DataRules.md`](DataRules.md).
 
 `--report=<path>`
 - Meaning: write generation report JSON to an explicit path.
+- Schema and skip guidance: [`ReportSchema.md`](ReportSchema.md),
+  [`SkipReasons.md`](SkipReasons.md).
 - Example:
 
 ```bash
@@ -167,6 +169,8 @@ catalog: [`DataRules.md`](DataRules.md).
 
 `--report-json`
 - Meaning: write the report to `<out-dir>/askeleton_report.json`.
+- Schema and skip guidance: [`ReportSchema.md`](ReportSchema.md),
+  [`SkipReasons.md`](SkipReasons.md).
 - Example:
 
 ```bash
@@ -208,6 +212,7 @@ catalog: [`DataRules.md`](DataRules.md).
 ## Related Guides
 
 - Skip reasons: [`SkipReasons.md`](SkipReasons.md)
+- Report schema: [`ReportSchema.md`](ReportSchema.md)
 - Input generation: [`InputGeneration.md`](InputGeneration.md)
 - Rule-based generation: [`DataRules.md`](DataRules.md)
 - Expected value strategies: [`ExpectedValues.md`](ExpectedValues.md)

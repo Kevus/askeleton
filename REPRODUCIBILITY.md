@@ -70,7 +70,7 @@ edits the generated `sut.cfg`, confirms that the rerun observes the edited
 expected value, and writes `report.json` plus `log.json`.
 
 This is the compact reproducibility subject used for clean-clone verification.
-The manuscript's illustrative walkthrough example uses `examples/sut_showcase.cpp`.
+The broader illustrative walkthrough example uses `examples/sut_showcase.cpp`.
 
 Manual equivalent:
 
@@ -199,6 +199,10 @@ Per-run artifacts are written under `<subject>/`, including:
 - `logs/*.log`
 - `generated/<run_id>/`
 
+Report JSON fields and skip reason guidance are documented in
+[`doc/ReportSchema.md`](doc/ReportSchema.md) and
+[`doc/SkipReasons.md`](doc/SkipReasons.md).
+
 The following repository files are part of the release reproducibility
 workflow:
 
@@ -276,8 +280,8 @@ The script also updates:
 
 - `analysis/eval_latest` as a symlink to the latest campaign output
 
-For archival publication, these external subjects and generated campaign
-outputs should also be provided by one of:
+For long-term archival reproducibility, these external subjects and generated
+campaign outputs should also be provided by one of:
 
 - A Zenodo dataset with exact source snapshots and generated artifacts.
 - The public repositories plus the exact commits above and this campaign script.
