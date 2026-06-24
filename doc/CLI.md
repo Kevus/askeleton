@@ -143,6 +143,8 @@ ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p . ./sut.cpp
   - `mirror`: isolated replay derives expected values.
   - `explicit`: `.cfg` expected override with mirror fallback.
   - `property`: repeatability-oriented replay oracle.
+- See also: [`CfgFormat.md`](CfgFormat.md) for adding `expected` entries to
+  generated data.
 - Example:
 
 ```bash
@@ -203,6 +205,7 @@ ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p . ./sut.cpp
 
 - Skip reasons: [`SkipReasons.md`](SkipReasons.md)
 - Rule-based generation: [`DataRules.md`](DataRules.md)
+- Generated `.cfg` data format: [`CfgFormat.md`](CfgFormat.md)
 - Type customization: [`TypeFactories.md`](TypeFactories.md)
 - Instance construction: [`InstanceStrategies.md`](InstanceStrategies.md)
 

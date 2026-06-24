@@ -23,6 +23,9 @@ Minimal end-to-end reproducibility workflow
 ./scripts/check_main_workflow.sh
 ```
 
+For the generated `.cfg` syntax and expected-value overrides, see
+[`../doc/CfgFormat.md`](../doc/CfgFormat.md).
+
 Showcase run (broader feature surface + intentional skips in report):
 ```bash
 ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p examples --report=/tmp/sut_showcase_report.json examples/sut_showcase.cpp

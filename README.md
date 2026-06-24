@@ -77,8 +77,7 @@ make CXX=clang++-18
 `--no-system-files-refresh` to skip this check.
 
 **Minimal End-to-End Reproducibility Workflow**
-For a compact end-to-end workflow aligned with the paper's
-generate-build-run-refine path, run:
+For a compact end-to-end generate-build-run-refine workflow, run:
 
 ```bash
 ./scripts/check_main_workflow.sh
@@ -93,8 +92,8 @@ usage path:
 - edit `sut.cfg` and confirm the rerun changes behavior
 - emit `report.json` and `log.json`
 
-The manuscript walkthrough example itself uses `examples/sut_showcase.cpp`; the
-script above is the smaller reproducibility check intended for clean clones.
+The broader walkthrough input is `examples/sut_showcase.cpp`; the script above
+is the smaller reproducibility check intended for clean clones.
 
 To inspect the generated files yourself, pass an explicit output directory:
 
@@ -131,6 +130,9 @@ Key options:
 
 For exhaustive option semantics and examples, see:
 - [`doc/CLI.md`](doc/CLI.md)
+
+For the editable generated test data format, see:
+- [`doc/CfgFormat.md`](doc/CfgFormat.md)
 
 **Console Output**
 By default you get a concise progress view plus a final summary. Use:
@@ -190,8 +192,8 @@ generate a test for a callable. This is separate from the data-generation
   that require mutable pointer/reference handling or non-default instance
   construction.
 - `aggressive`: accepted for compatibility and experimentation; currently close
-  to `balanced`, but kept explicit so repository workflows and paper tables can
-  reference it directly.
+  to `balanced`, but kept explicit so repository workflows can reference it
+  directly.
 
 If a callable is skipped, check the report for the recorded reason.
 
@@ -251,6 +253,9 @@ generate at least two cases when possible so the generated data covers both:
 - a present value (`has_value=true`)
 - an empty optional (`has_value=false`)
 
+For complete `.cfg` syntax, expected-value overrides, and troubleshooting, see
+[`doc/CfgFormat.md`](doc/CfgFormat.md).
+
 **Reproducible Runs**
 Use `--seed` to make data generation deterministic. For fully reproducible
 outputs across machines, keep these inputs identical:
@@ -279,7 +284,7 @@ Full guide with didactic examples and fixes:
 - [`doc/SkipReasons.md`](doc/SkipReasons.md)
 
 **Repository Evidence**
-The main manuscript claims map to repository artifacts as follows:
+Key capabilities map to repository artifacts as follows:
 - `compile_commands.json` + Clang AST analysis: [`src/askeleton.cpp`](src/askeleton.cpp), [`doc/Architecture.md`](doc/Architecture.md)
 - Supported backends (`gtest`, `boost`, `catch`): [`src/framework/`](src/framework), [`data/templates/`](data/templates)
 - Separate editable test data and test logic: [`scripts/check_main_workflow.sh`](scripts/check_main_workflow.sh)
@@ -306,6 +311,7 @@ The main manuscript claims map to repository artifacts as follows:
 - CLI reference: [`doc/CLI.md`](doc/CLI.md)
 - Architecture overview: [`doc/Architecture.md`](doc/Architecture.md)
 - Rule catalog: [`doc/DataRules.md`](doc/DataRules.md)
+- Generated `.cfg` format: [`doc/CfgFormat.md`](doc/CfgFormat.md)
 - Release checklist: [`doc/ReleaseChecklist.md`](doc/ReleaseChecklist.md)
 - Known issues: [`doc/KnownIssues.md`](doc/KnownIssues.md)
 - Skip reasons guide: [`doc/SkipReasons.md`](doc/SkipReasons.md)
@@ -316,10 +322,9 @@ The main manuscript claims map to repository artifacts as follows:
 - Reproducibility: [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md)
 
 **Citation**
-Use [`CITATION.cff`](CITATION.cff) to cite the software version used in the
-paper. Release metadata for archival deposition is tracked in
-[`.zenodo.json`](.zenodo.json) and should be updated with the final DOI when the
-archival record is minted.
+Use [`CITATION.cff`](CITATION.cff) to cite the software version in use. Release
+metadata for archival deposition is tracked in [`.zenodo.json`](.zenodo.json)
+and should be updated with the final DOI when the archival record is minted.
 
 **License**
 ASkeleTon is released under the Apache License 2.0. See
