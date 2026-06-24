@@ -198,7 +198,8 @@ generate a test for a callable. This is separate from the data-generation
 If a callable is skipped, check the report for the recorded reason.
 
 **Expected Value Strategy**
-ASkeleTon supports three oracle modes:
+ASkeleTon supports three expected-value strategies through the existing
+`--oracle-mode` compatibility flag:
 
 - `explicit`: default behavior. Generated tests first look for `expected` in the
   `.cfg`; if no override is present, they fall back to a mirrored execution.
@@ -210,7 +211,11 @@ ASkeleTon supports three oracle modes:
 In practice, the `.cfg` file stores the editable case data, and `explicit`
 lets users override expected values when needed. These modes help keep
 generated scaffolding stable and reproducible, but they are not an independent
-semantic oracle for the SUT.
+semantic correctness oracle for the SUT. Mirrored execution and property mode
+are characterization baselines unless users refine the generated tests with
+reviewed explicit expected values.
+
+For details and recommended usage, see [`doc/ExpectedValues.md`](doc/ExpectedValues.md).
 
 **Type Factories and Stubs**
 Use `data/type_factories.json` to customize how complex types are initialized
@@ -289,8 +294,8 @@ Key capabilities map to repository artifacts as follows:
 - Supported backends (`gtest`, `boost`, `catch`): [`src/framework/`](src/framework), [`data/templates/`](data/templates)
 - Separate editable test data and test logic: [`scripts/check_main_workflow.sh`](scripts/check_main_workflow.sh)
 - JSON report and execution log: [`src/Report.cpp`](src/Report.cpp), `--report`, `--log-json`
-- Explicit-oracle refinement in the minimal reproducibility workflow: [`scripts/check_main_workflow.sh`](scripts/check_main_workflow.sh), [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md)
-- Seeded generation and the available profiles/oracle modes: [`doc/CLI.md`](doc/CLI.md), `--seed`, `--profile`, `--oracle-mode`
+- Explicit expected-value refinement in the minimal reproducibility workflow: [`scripts/check_main_workflow.sh`](scripts/check_main_workflow.sh), [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md)
+- Seeded generation and the available profiles/expected-value modes: [`doc/CLI.md`](doc/CLI.md), `--seed`, `--profile`, `--oracle-mode`
 - Framework extensibility points: [`include/framework/Generator.hpp`](include/framework/Generator.hpp), [`doc/Architecture.md`](doc/Architecture.md)
 
 **Troubleshooting**
@@ -311,6 +316,7 @@ Key capabilities map to repository artifacts as follows:
 - CLI reference: [`doc/CLI.md`](doc/CLI.md)
 - Architecture overview: [`doc/Architecture.md`](doc/Architecture.md)
 - Rule catalog: [`doc/DataRules.md`](doc/DataRules.md)
+- Expected value strategies: [`doc/ExpectedValues.md`](doc/ExpectedValues.md)
 - Generated `.cfg` format: [`doc/CfgFormat.md`](doc/CfgFormat.md)
 - Release checklist: [`doc/ReleaseChecklist.md`](doc/ReleaseChecklist.md)
 - Known issues: [`doc/KnownIssues.md`](doc/KnownIssues.md)

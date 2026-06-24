@@ -140,11 +140,12 @@ ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p . ./sut.cpp
 `--oracle-mode=<mirror|explicit|property>` (default: `explicit`)
 - Meaning: expected-value strategy in generated tests.
 - Modes:
-  - `mirror`: isolated replay derives expected values.
+  - `mirror`: isolated replay derives characterization expected values.
   - `explicit`: `.cfg` expected override with mirror fallback.
-  - `property`: repeatability-oriented replay oracle.
+  - `property`: repeatability-oriented replay baseline.
 - See also: [`CfgFormat.md`](CfgFormat.md) for adding `expected` entries to
   generated data.
+- Detailed semantics: [`ExpectedValues.md`](ExpectedValues.md).
 - Example:
 
 ```bash
@@ -205,6 +206,7 @@ ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p . ./sut.cpp
 
 - Skip reasons: [`SkipReasons.md`](SkipReasons.md)
 - Rule-based generation: [`DataRules.md`](DataRules.md)
+- Expected value strategies: [`ExpectedValues.md`](ExpectedValues.md)
 - Generated `.cfg` data format: [`CfgFormat.md`](CfgFormat.md)
 - Type customization: [`TypeFactories.md`](TypeFactories.md)
 - Instance construction: [`InstanceStrategies.md`](InstanceStrategies.md)

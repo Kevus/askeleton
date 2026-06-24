@@ -578,7 +578,7 @@ Option details:
     Controls expected-value strategy:
       explicit -> read expected from cfg if present, otherwise mirror replay
       mirror   -> derive expected from isolated replay
-      property -> repeatability-oriented replay oracle
+      property -> repeatability-oriented replay baseline
 
   --rule-data / --no-rule-data  (default: enabled)
     Enable/disable AST-guided rule-based candidate values from comparisons.
@@ -668,7 +668,7 @@ cl::opt<std::string> CoverageModeOption(
     cl::init("balanced"), cl::cat(OptC));
 cl::opt<std::string> OracleModeOption(
     "oracle-mode",
-    cl::desc("Oracle strategy (mirror, explicit, property)"),
+    cl::desc("Expected-value strategy (mirror, explicit, property)"),
     cl::init("explicit"), cl::cat(OptC));
 cl::opt<std::string> OutDirOption(
     "out-dir",

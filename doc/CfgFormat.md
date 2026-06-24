@@ -206,11 +206,14 @@ assumed to work unless validated in the generated test.
 
 ## Expected Values
 
-In the default `explicit` oracle mode, generated tests first check whether the
-case has an `expected` entry for return types and generated tests that support
-that path. When the generated test checks `HasObject("<case>.expected")`, an
-`expected` entry can override the mirrored result. If it is absent, the test
-falls back to an isolated replay of the same callable with the same case data.
+In the default `explicit` expected-value strategy, generated tests first check
+whether the case has an `expected` entry for return types and generated tests
+that support that path. When the generated test checks
+`HasObject("<case>.expected")`, an `expected` entry can override the mirrored
+result. If it is absent, the test falls back to an isolated replay of the same
+callable with the same case data.
+This fallback is a characterization baseline, not an independent correctness
+oracle.
 
 Before manual refinement:
 
@@ -253,6 +256,8 @@ Notes:
   presence as `bool`.
 - For C string returns, generated explicit expected values are read as
   `std::string`.
+- For expected-value strategy details, see
+  [`ExpectedValues.md`](ExpectedValues.md).
 
 ## Invalid Or Unsupported Values
 
