@@ -1,8 +1,8 @@
 cff-version: 1.2.0
-message: "If you use ASkeleTon, please cite the software and the associated research article."
+message: "If you use ASkeleTon, please cite the software."
 title: "ASkeleTon"
-version: "1.0.0"
-date-released: "2026-05-08"
+version: "1.1.0"
+date-released: "2026-06-25"
 type: software
 license: "Apache-2.0"
 repository-code: "https://github.com/Kevus/askeleton"
