@@ -137,6 +137,9 @@ For input generation profiles, rule data, seeds, and reproducibility, see:
 For the editable generated test data format, see:
 - [`doc/CfgFormat.md`](doc/CfgFormat.md)
 
+For evaluation output tables and local validation, see:
+- [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md)
+
 **Console Output**
 By default you get a concise progress view plus a final summary. Use:
 - `--quiet` to print only errors.

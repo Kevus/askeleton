@@ -199,6 +199,28 @@ Per-run artifacts are written under `<subject>/`, including:
 - `logs/*.log`
 - `generated/<run_id>/`
 
+`raw_runs.csv` is the most detailed machine-readable table. In addition to the
+subject, profile, coverage mode, expected-value strategy, rule-data setting,
+entity counts, and generation rates, it records practical outcome fields:
+
+- `askeleton_exit_code`: ASkeleTon process exit code for that run.
+- `generation_success`: `true` when ASkeleTon exited successfully and wrote a
+  report JSON file.
+- `build_attempted` / `build_success`: whether the generated target was built
+  by the evaluation script and whether that build passed.
+- `execution_attempted` / `execution_success`: whether generated tests were run
+  by the evaluation script and whether execution passed.
+- `report_path`, `log_path`, `generated_output_path`: per-run artifact paths.
+
+The current evaluation script records generation outcomes and artifact paths.
+It does not build or execute generated tests, so the build and execution
+attempt columns are expected to be `false` unless a future workflow adds those
+steps.
+
+Build and execution validation are covered separately by
+`./scripts/check_main_workflow.sh`, `./scripts/check_all.sh`, and the documented
+manual showcase workflow in [`examples/README.md`](examples/README.md).
+
 Report JSON fields and skip reason guidance are documented in
 [`doc/ReportSchema.md`](doc/ReportSchema.md) and
 [`doc/SkipReasons.md`](doc/SkipReasons.md).
@@ -207,6 +229,7 @@ The following repository files are part of the release reproducibility
 workflow:
 
 - `scripts/run_eval.py`
+- `scripts/check_eval_outputs.py`
 - `scripts/reproduce_eval.sh`
 - `scripts/build_eval_viewer.py`
 
@@ -247,8 +270,20 @@ python3 scripts/run_eval.py \
   --force
 ```
 
-The `sut_showcase` subset above is the clean-clone-safe quick check. External
-subjects are only required when the selected subject list includes them.
+The `sut_showcase` subset above is the clean-clone-safe quick check for
+generation/report diagnostics. It does not build or execute generated tests.
+External subjects are only required when the selected subject list includes
+them.
+
+Validate an existing evaluation output directory:
+
+```bash
+python3 scripts/check_eval_outputs.py /tmp/askeleton_eval_subset
+```
+
+The validation helper checks that expected output files exist, verifies that
+`raw_runs.csv` contains the practical outcome columns, summarizes generation,
+build, and execution outcomes, and reports missing per-run report or log files.
 
 The evaluation uses external subject projects that are intentionally not
 versioned as part of the release branch. The script can clone missing subjects
