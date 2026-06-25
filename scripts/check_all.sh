@@ -33,4 +33,23 @@ echo "== Profiles =="
 "$ASKELETON_HOME/askeleton" --bootstrap-compdb --profile=safe -p "$ASKELETON_HOME/examples" "$ASKELETON_HOME/examples/sut.cpp"
 "$ASKELETON_HOME/askeleton" --bootstrap-compdb --profile=stress -p "$ASKELETON_HOME/examples" "$ASKELETON_HOME/examples/sut.cpp"
 
+echo "== Showcase diagnostics =="
+SHOWCASE_OUT="/tmp/askeleton_showcase_check"
+rm -rf "$SHOWCASE_OUT"
+"$ASKELETON_HOME/askeleton" \
+  --bootstrap-compdb \
+  -p "$ASKELETON_HOME/examples" \
+  --framework=gtest \
+  --profile=random \
+  --coverage-mode=balanced \
+  --oracle-mode=explicit \
+  --seed=123 \
+  --report="$SHOWCASE_OUT/report.json" \
+  --out-dir="$SHOWCASE_OUT/generated" \
+  "$ASKELETON_HOME/examples/sut_showcase.cpp"
+grep -q '"found": 24' "$SHOWCASE_OUT/report.json"
+grep -q '"generated": 16' "$SHOWCASE_OUT/report.json"
+grep -q '"skipped": 8' "$SHOWCASE_OUT/report.json"
+grep -q '"unusable_constructor": 3' "$SHOWCASE_OUT/report.json"
+
 echo "All checks completed."

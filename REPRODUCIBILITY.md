@@ -2,7 +2,7 @@
 
 This document describes how to reproduce the release smoke tests, the main
 clean-clone example workflow, and the applicability evaluation workflow for
-ASkeleTon 1.0.0.
+ASkeleTon 1.1.0.
 
 ## Tested Environment
 
@@ -47,7 +47,7 @@ make CXX=clang++-18
 Expected version output for this release:
 
 ```text
-ASkeleTon 1.0.0
+ASkeleTon 1.1.0
 Built with LLVM 18.x.y
 ```
 
@@ -70,7 +70,7 @@ edits the generated `sut.cfg`, confirms that the rerun observes the edited
 expected value, and writes `report.json` plus `log.json`.
 
 This is the compact reproducibility subject used for clean-clone verification.
-The manuscript's illustrative walkthrough example uses `examples/sut_showcase.cpp`.
+The broader illustrative walkthrough example uses `examples/sut_showcase.cpp`.
 
 Manual equivalent:
 
@@ -171,13 +171,18 @@ The four `base_plus_coverage` subjects are evaluated with:
 - 1 baseline run: `random + balanced + explicit + rule-data on`
 - 2 coverage ablation runs: `strict` and `aggressive`
 
-By default, outputs are written under:
+The minimal workflow above writes a single `report.json` and `log.json` for
+the `examples/sut.cpp` run. The applicability evaluation uses a different
+layout: each ASkeleTon execution writes one per-run report JSON file and one
+text `*.log` file under the selected subject directory.
+
+By default, root-level evaluation outputs are written under:
 
 ```text
 analysis/eval_<timestamp>/
 ```
 
-including:
+including CSV, Markdown, metadata, and optional HTML files:
 
 - `raw_runs.csv`
 - `baseline_summary.csv`
@@ -187,12 +192,44 @@ including:
 - `evaluation_tables.md`
 - `run_metadata.json`
 - `viewer.html` when `--build-viewer` is used
-- per-run reports, logs, and generated outputs under `<subject>/`
+
+Per-run artifacts are written under `<subject>/`, including:
+
+- `reports/*.json`
+- `logs/*.log`
+- `generated/<run_id>/`
+
+`raw_runs.csv` is the most detailed machine-readable table. In addition to the
+subject, profile, coverage mode, expected-value strategy, rule-data setting,
+entity counts, and generation rates, it records practical outcome fields:
+
+- `askeleton_exit_code`: ASkeleTon process exit code for that run.
+- `generation_success`: `true` when ASkeleTon exited successfully and wrote a
+  report JSON file.
+- `build_attempted` / `build_success`: whether the generated target was built
+  by the evaluation script and whether that build passed.
+- `execution_attempted` / `execution_success`: whether generated tests were run
+  by the evaluation script and whether execution passed.
+- `report_path`, `log_path`, `generated_output_path`: per-run artifact paths.
+
+The current evaluation script records generation outcomes and artifact paths.
+It does not build or execute generated tests, so the build and execution
+attempt columns are expected to be `false` unless a future workflow adds those
+steps.
+
+Build and execution validation are covered separately by
+`./scripts/check_main_workflow.sh`, `./scripts/check_all.sh`, and the documented
+manual showcase workflow in [`examples/README.md`](examples/README.md).
+
+Report JSON fields and skip reason guidance are documented in
+[`doc/ReportSchema.md`](doc/ReportSchema.md) and
+[`doc/SkipReasons.md`](doc/SkipReasons.md).
 
 The following repository files are part of the release reproducibility
 workflow:
 
 - `scripts/run_eval.py`
+- `scripts/check_eval_outputs.py`
 - `scripts/reproduce_eval.sh`
 - `scripts/build_eval_viewer.py`
 
@@ -233,8 +270,20 @@ python3 scripts/run_eval.py \
   --force
 ```
 
-The `sut_showcase` subset above is the clean-clone-safe quick check. External
-subjects are only required when the selected subject list includes them.
+The `sut_showcase` subset above is the clean-clone-safe quick check for
+generation/report diagnostics. It does not build or execute generated tests.
+External subjects are only required when the selected subject list includes
+them.
+
+Validate an existing evaluation output directory:
+
+```bash
+python3 scripts/check_eval_outputs.py /tmp/askeleton_eval_subset
+```
+
+The validation helper checks that expected output files exist, verifies that
+`raw_runs.csv` contains the practical outcome columns, summarizes generation,
+build, and execution outcomes, and reports missing per-run report or log files.
 
 The evaluation uses external subject projects that are intentionally not
 versioned as part of the release branch. The script can clone missing subjects
@@ -266,8 +315,8 @@ The script also updates:
 
 - `analysis/eval_latest` as a symlink to the latest campaign output
 
-For archival publication, these external subjects and generated campaign
-outputs should also be provided by one of:
+For long-term archival reproducibility, these external subjects and generated
+campaign outputs should also be provided by one of:
 
 - A Zenodo dataset with exact source snapshots and generated artifacts.
 - The public repositories plus the exact commits above and this campaign script.
@@ -304,7 +353,7 @@ make CXX=clang++-18
 
 Confirm that:
 
-- `./askeleton --version` reports `ASkeleTon 1.0.0`.
+- `./askeleton --version` reports `ASkeleTon 1.1.0`.
 - `LICENSE.txt` is present.
 - `CITATION.cff` is present and has the final repository URL.
 - `CITATION.cff` is updated with the final DOI once the archival record is minted.

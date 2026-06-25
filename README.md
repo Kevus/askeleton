@@ -77,8 +77,7 @@ make CXX=clang++-18
 `--no-system-files-refresh` to skip this check.
 
 **Minimal End-to-End Reproducibility Workflow**
-For a compact end-to-end workflow aligned with the paper's
-generate-build-run-refine path, run:
+For a compact end-to-end generate-build-run-refine workflow, run:
 
 ```bash
 ./scripts/check_main_workflow.sh
@@ -93,8 +92,8 @@ usage path:
 - edit `sut.cfg` and confirm the rerun changes behavior
 - emit `report.json` and `log.json`
 
-The manuscript walkthrough example itself uses `examples/sut_showcase.cpp`; the
-script above is the smaller reproducibility check intended for clean clones.
+The broader walkthrough input is `examples/sut_showcase.cpp`; the script above
+is the smaller reproducibility check intended for clean clones.
 
 To inspect the generated files yourself, pass an explicit output directory:
 
@@ -131,6 +130,15 @@ Key options:
 
 For exhaustive option semantics and examples, see:
 - [`doc/CLI.md`](doc/CLI.md)
+
+For input generation profiles, rule data, seeds, and reproducibility, see:
+- [`doc/InputGeneration.md`](doc/InputGeneration.md)
+
+For the editable generated test data format, see:
+- [`doc/CfgFormat.md`](doc/CfgFormat.md)
+
+For evaluation output tables and local validation, see:
+- [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md)
 
 **Console Output**
 By default you get a concise progress view plus a final summary. Use:
@@ -179,6 +187,8 @@ ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb --coverage-mode=strict -p e
 ```
 
 For more option combinations, see [`doc/CLI.md`](doc/CLI.md).
+For the full input generation model, see
+[`doc/InputGeneration.md`](doc/InputGeneration.md).
 
 **Coverage Modes**
 Coverage mode controls how selective ASkeleTon is when deciding whether to
@@ -190,13 +200,14 @@ generate a test for a callable. This is separate from the data-generation
   that require mutable pointer/reference handling or non-default instance
   construction.
 - `aggressive`: accepted for compatibility and experimentation; currently close
-  to `balanced`, but kept explicit so repository workflows and paper tables can
-  reference it directly.
+  to `balanced`, but kept explicit so repository workflows can reference it
+  directly.
 
 If a callable is skipped, check the report for the recorded reason.
 
 **Expected Value Strategy**
-ASkeleTon supports three oracle modes:
+ASkeleTon supports three expected-value strategies through the existing
+`--oracle-mode` compatibility flag:
 
 - `explicit`: default behavior. Generated tests first look for `expected` in the
   `.cfg`; if no override is present, they fall back to a mirrored execution.
@@ -208,7 +219,11 @@ ASkeleTon supports three oracle modes:
 In practice, the `.cfg` file stores the editable case data, and `explicit`
 lets users override expected values when needed. These modes help keep
 generated scaffolding stable and reproducible, but they are not an independent
-semantic oracle for the SUT.
+semantic correctness oracle for the SUT. Mirrored execution and property mode
+are characterization baselines unless users refine the generated tests with
+reviewed explicit expected values.
+
+For details and recommended usage, see [`doc/ExpectedValues.md`](doc/ExpectedValues.md).
 
 **Type Factories and Stubs**
 Use `data/type_factories.json` to customize how complex types are initialized
@@ -251,13 +266,19 @@ generate at least two cases when possible so the generated data covers both:
 - a present value (`has_value=true`)
 - an empty optional (`has_value=false`)
 
+For complete `.cfg` syntax, expected-value overrides, and troubleshooting, see
+[`doc/CfgFormat.md`](doc/CfgFormat.md).
+
 **Reproducible Runs**
 Use `--seed` to make data generation deterministic. For fully reproducible
 outputs across machines, keep these inputs identical:
+- ASkeleTon version or commit.
 - LLVM/Clang major version (e.g., 18).
 - The exact `compile_commands.json`.
 - `data/type_factories.json` and `data/default_values.json`.
 - `data/system_files.json` (or disable auto-create with `--no-system-files-refresh`).
+For the complete reproducibility checklist, see
+[`doc/InputGeneration.md`](doc/InputGeneration.md).
 
 **Report JSON**
 Use `--report` or `--report-json` to generate a JSON summary of the run with:
@@ -275,17 +296,18 @@ Common `reason` values:
 - `coverage_policy_mutable_parameter`: skipped by strict coverage policy.
 - `unsupported_pointer_pointee`: pointee type is not auto-materializable.
 
-Full guide with didactic examples and fixes:
+Full guide with examples and fixes:
+- [`doc/ReportSchema.md`](doc/ReportSchema.md)
 - [`doc/SkipReasons.md`](doc/SkipReasons.md)
 
 **Repository Evidence**
-The main manuscript claims map to repository artifacts as follows:
+Key capabilities map to repository artifacts as follows:
 - `compile_commands.json` + Clang AST analysis: [`src/askeleton.cpp`](src/askeleton.cpp), [`doc/Architecture.md`](doc/Architecture.md)
 - Supported backends (`gtest`, `boost`, `catch`): [`src/framework/`](src/framework), [`data/templates/`](data/templates)
 - Separate editable test data and test logic: [`scripts/check_main_workflow.sh`](scripts/check_main_workflow.sh)
 - JSON report and execution log: [`src/Report.cpp`](src/Report.cpp), `--report`, `--log-json`
-- Explicit-oracle refinement in the minimal reproducibility workflow: [`scripts/check_main_workflow.sh`](scripts/check_main_workflow.sh), [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md)
-- Seeded generation and the available profiles/oracle modes: [`doc/CLI.md`](doc/CLI.md), `--seed`, `--profile`, `--oracle-mode`
+- Explicit expected-value refinement in the minimal reproducibility workflow: [`scripts/check_main_workflow.sh`](scripts/check_main_workflow.sh), [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md)
+- Seeded generation and the available profiles/expected-value modes: [`doc/CLI.md`](doc/CLI.md), `--seed`, `--profile`, `--oracle-mode`
 - Framework extensibility points: [`include/framework/Generator.hpp`](include/framework/Generator.hpp), [`doc/Architecture.md`](doc/Architecture.md)
 
 **Troubleshooting**
@@ -305,10 +327,14 @@ The main manuscript claims map to repository artifacts as follows:
 **Docs**
 - CLI reference: [`doc/CLI.md`](doc/CLI.md)
 - Architecture overview: [`doc/Architecture.md`](doc/Architecture.md)
+- Input generation: [`doc/InputGeneration.md`](doc/InputGeneration.md)
 - Rule catalog: [`doc/DataRules.md`](doc/DataRules.md)
+- Expected value strategies: [`doc/ExpectedValues.md`](doc/ExpectedValues.md)
+- Generated `.cfg` format: [`doc/CfgFormat.md`](doc/CfgFormat.md)
 - Release checklist: [`doc/ReleaseChecklist.md`](doc/ReleaseChecklist.md)
 - Known issues: [`doc/KnownIssues.md`](doc/KnownIssues.md)
 - Skip reasons guide: [`doc/SkipReasons.md`](doc/SkipReasons.md)
+- Report schema: [`doc/ReportSchema.md`](doc/ReportSchema.md)
 - Instance strategies: [`doc/InstanceStrategies.md`](doc/InstanceStrategies.md)
 - Type factories: [`doc/TypeFactories.md`](doc/TypeFactories.md)
 - Dependencies: [`doc/Dependencies.md`](doc/Dependencies.md)
@@ -316,10 +342,9 @@ The main manuscript claims map to repository artifacts as follows:
 - Reproducibility: [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md)
 
 **Citation**
-Use [`CITATION.cff`](CITATION.cff) to cite the software version used in the
-paper. Release metadata for archival deposition is tracked in
-[`.zenodo.json`](.zenodo.json) and should be updated with the final DOI when the
-archival record is minted.
+Use [`CITATION.cff`](CITATION.cff) to cite the software version in use. Release
+metadata for archival deposition is tracked in [`.zenodo.json`](.zenodo.json)
+and should be updated with the final DOI when the archival record is minted.
 
 **License**
 ASkeleTon is released under the Apache License 2.0. See

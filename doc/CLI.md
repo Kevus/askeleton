@@ -123,6 +123,9 @@ ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p . ./sut.cpp
 ./askeleton -p build --rule-data --rule-max-cases=5 src/foo.cpp
 ```
 
+Conceptual guide: [`InputGeneration.md`](InputGeneration.md). Detailed rule
+catalog: [`DataRules.md`](DataRules.md).
+
 ### Coverage and Oracle Strategy
 
 `--coverage-mode=<strict|balanced|aggressive>` (default: `balanced`)
@@ -140,9 +143,12 @@ ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p . ./sut.cpp
 `--oracle-mode=<mirror|explicit|property>` (default: `explicit`)
 - Meaning: expected-value strategy in generated tests.
 - Modes:
-  - `mirror`: isolated replay derives expected values.
+  - `mirror`: isolated replay derives characterization expected values.
   - `explicit`: `.cfg` expected override with mirror fallback.
-  - `property`: repeatability-oriented replay oracle.
+  - `property`: repeatability-oriented replay baseline.
+- See also: [`CfgFormat.md`](CfgFormat.md) for adding `expected` entries to
+  generated data.
+- Detailed semantics: [`ExpectedValues.md`](ExpectedValues.md).
 - Example:
 
 ```bash
@@ -153,6 +159,8 @@ ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p . ./sut.cpp
 
 `--report=<path>`
 - Meaning: write generation report JSON to an explicit path.
+- Schema and skip guidance: [`ReportSchema.md`](ReportSchema.md),
+  [`SkipReasons.md`](SkipReasons.md).
 - Example:
 
 ```bash
@@ -161,6 +169,8 @@ ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p . ./sut.cpp
 
 `--report-json`
 - Meaning: write the report to `<out-dir>/askeleton_report.json`.
+- Schema and skip guidance: [`ReportSchema.md`](ReportSchema.md),
+  [`SkipReasons.md`](SkipReasons.md).
 - Example:
 
 ```bash
@@ -202,7 +212,11 @@ ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p . ./sut.cpp
 ## Related Guides
 
 - Skip reasons: [`SkipReasons.md`](SkipReasons.md)
+- Report schema: [`ReportSchema.md`](ReportSchema.md)
+- Input generation: [`InputGeneration.md`](InputGeneration.md)
 - Rule-based generation: [`DataRules.md`](DataRules.md)
+- Expected value strategies: [`ExpectedValues.md`](ExpectedValues.md)
+- Generated `.cfg` data format: [`CfgFormat.md`](CfgFormat.md)
 - Type customization: [`TypeFactories.md`](TypeFactories.md)
 - Instance construction: [`InstanceStrategies.md`](InstanceStrategies.md)
 

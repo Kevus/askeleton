@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Local release readiness checks for the ASkeleTon reproducible artifact.
 # Run this from a working tree to validate repository metadata, docs, and
-# the reproducibility workflows expected for the release/publication artifact.
+# the reproducibility workflows expected for the release artifact.
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
@@ -73,19 +73,19 @@ else
   echo ".gitignore broad-pattern check passed."
 fi
 
-if ! grep -Eq 'ASkeleTon.*\.zip|_.*ASkeleTon.*\.zip|\*ASkeleTon\*\.zip|manuscript.*\.zip|publication.*\.zip' .gitignore; then
-  warn ".gitignore may not explicitly ignore local manuscript/publication ZIPs."
+if ! grep -Eq 'ASkeleTon.*\.zip|_.*ASkeleTon.*\.zip|\*ASkeleTon\*\.zip|release.*\.zip|artifact.*\.zip' .gitignore; then
+  warn ".gitignore may not explicitly ignore local release artifact ZIPs."
 fi
 
 section "3. Documentation wording / overclaim scan"
 
 OVERCLAIMS=(
-  "fully reproduces the paper"
+  "fully reproduces every result"
   "complete evaluation"
   "deterministic in all cases"
   "all frameworks are validated"
-  "exact manuscript example"
-  "full .* claimed by the paper"
+  "exact external example"
+  "full .* release claim"
 )
 
 for file in README.md REPRODUCIBILITY.md examples/README.md; do
@@ -180,9 +180,9 @@ echo "Suggested next commands:"
 echo "  git diff --stat HEAD"
 echo "  git diff -- README.md REPRODUCIBILITY.md CITATION.cff .zenodo.json include/constants.hpp scripts/pre_release_check.sh"
 echo "  git add README.md REPRODUCIBILITY.md CITATION.cff .zenodo.json include/constants.hpp scripts/pre_release_check.sh"
-echo "  git commit -m \"Prepare ASkeleTon v1.0.0 release\""
+echo "  git commit -m \"Prepare ASkeleTon v1.1.0 release\""
 echo
 echo "After CI passes:"
-echo "  git tag -a v1.0.0 -m \"ASkeleTon v1.0.0 release/publication artifact\""
+echo "  git tag -a v1.1.0 -m \"ASkeleTon v1.1.0 release artifact\""
 echo "  git push origin master"
-echo "  git push origin v1.0.0"
+echo "  git push origin v1.1.0"

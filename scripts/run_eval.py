@@ -84,6 +84,19 @@ def percent(value: float | None) -> str:
     return f"{value * 100:.2f}%"
 
 
+def parse_float(value: str) -> float | None:
+    if value == "":
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def bool_text(value: bool) -> str:
+    return "true" if value else "false"
+
+
 def external_subjects(root: Path) -> dict[str, ExternalSubject]:
     return {
         "tinyxml2": ExternalSubject(
@@ -301,19 +314,22 @@ def create_compdb_dir(path: Path, entry: dict) -> Path:
     return path
 
 
-def prepare_compdbs(root: Path, out_dir: Path) -> dict[str, Path]:
+def prepare_compdbs(root: Path, out_dir: Path, subjects: list[Subject]) -> dict[str, Path]:
     compdb_root = out_dir / "_compdb"
     examples_dir = root / "examples"
-    return {
-        "sut_showcase": create_compdb_dir(
+    subject_keys = {subject.key for subject in subjects}
+    compdbs = {}
+    if "sut_showcase" in subject_keys:
+        compdbs["sut_showcase"] = create_compdb_dir(
             compdb_root / "examples",
             {
                 "directory": str(examples_dir),
                 "command": f"clang++-18 -std=c++20 -I{examples_dir} -c {examples_dir / 'sut_showcase.cpp'}",
                 "file": str(examples_dir / "sut_showcase.cpp"),
             },
-        ),
-        "openssl_ctype": create_compdb_dir(
+        )
+    if "openssl_ctype" in subject_keys:
+        compdbs["openssl_ctype"] = create_compdb_dir(
             compdb_root / "openssl",
             {
                 "directory": str(root / "examples" / "openssl"),
@@ -324,8 +340,9 @@ def prepare_compdbs(root: Path, out_dir: Path) -> dict[str, Path]:
                 ),
                 "file": str(root / "examples" / "openssl" / "crypto" / "ctype.c"),
             },
-        ),
-        "sqlite_util": create_compdb_dir(
+        )
+    if "sqlite_util" in subject_keys:
+        compdbs["sqlite_util"] = create_compdb_dir(
             compdb_root / "sqlite",
             {
                 "directory": str(root / "examples" / "sqlite"),
@@ -336,8 +353,8 @@ def prepare_compdbs(root: Path, out_dir: Path) -> dict[str, Path]:
                 ),
                 "file": str(root / "examples" / "sqlite" / "src" / "util.c"),
             },
-        ),
-    }
+        )
+    return compdbs
 
 
 def resolve_build_path(root: Path, out_dir: Path, subject: Subject, compdbs: dict[str, Path]) -> Path:
@@ -466,6 +483,7 @@ def run_one(root: Path, subject: Subject, build_path: Path, source_path: Path, o
     report = parse_report(report_path) or {}
     summary = report.get("summary", {})
     coverage = summary.get("coverage", {})
+    generation_success = completed.returncode == 0 and report_path.exists()
     row = {
         "run_id": plan["run_id"],
         "experiment_group": plan["experiment_group"],
@@ -481,6 +499,12 @@ def run_one(root: Path, subject: Subject, build_path: Path, source_path: Path, o
         "rule_data": plan["rule_data"],
         "rule_max_cases": str(RULE_MAX_CASES) if plan["rule_data"] == "on" else "",
         "exit_code": str(completed.returncode),
+        "askeleton_exit_code": str(completed.returncode),
+        "generation_success": bool_text(generation_success),
+        "build_attempted": "false",
+        "build_success": "",
+        "execution_attempted": "false",
+        "execution_success": "",
         "found": str(coverage.get("found", "")),
         "generated": str(coverage.get("generated", "")),
         "skipped": str(coverage.get("skipped", "")),
@@ -491,6 +515,7 @@ def run_one(root: Path, subject: Subject, build_path: Path, source_path: Path, o
         "report_path": str(report_path),
         "log_path": str(log_path),
         "generated_dir": str(generated_dir),
+        "generated_output_path": str(generated_dir),
     }
     return row
 
@@ -522,7 +547,7 @@ def baseline_summary_rows(subjects: list[Subject], rows: list[dict]) -> list[dic
                 "found": row["found"],
                 "generated": row["generated"],
                 "skipped": row["skipped"],
-                "generation_rate": percent(float(row["generation_rate"])),
+                "generation_rate": percent(parse_float(row["generation_rate"])),
             }
         )
     return result
@@ -539,9 +564,9 @@ def coverage_ablation_rows(subjects: list[Subject], rows: list[dict]) -> list[di
             {
                 "subject": subject.key,
                 "label": subject.label,
-                "strict_rate": percent(float(strict["generation_rate"])),
-                "balanced_rate": percent(float(balanced["generation_rate"])),
-                "aggressive_rate": percent(float(aggressive["generation_rate"])),
+                "strict_rate": percent(parse_float(strict["generation_rate"])),
+                "balanced_rate": percent(parse_float(balanced["generation_rate"])),
+                "aggressive_rate": percent(parse_float(aggressive["generation_rate"])),
                 "strict_generated": strict["generated"],
                 "balanced_generated": balanced["generated"],
                 "aggressive_generated": aggressive["generated"],
@@ -563,7 +588,26 @@ def full_factorial_sensitivity_rows(subjects: list[Subject], rows: list[dict]) -
         subject_rows = [row for row in rows if row["subject"] == subject.key and row["experiment_group"] == "full_factorial"]
         for dimension, levels in dimensions:
             for level in levels:
-                selected = [float(row["generation_rate"]) for row in subject_rows if row[dimension] == level]
+                selected = [
+                    value
+                    for row in subject_rows
+                    if row[dimension] == level
+                    for value in [parse_float(row["generation_rate"])]
+                    if value is not None
+                ]
+                if not selected:
+                    result.append(
+                        {
+                            "subject": subject.key,
+                            "dimension": dimension,
+                            "level": level,
+                            "avg_generation_rate": "",
+                            "min_generation_rate": "",
+                            "max_generation_rate": "",
+                            "runs": "0",
+                        }
+                    )
+                    continue
                 result.append(
                     {
                         "subject": subject.key,
@@ -587,8 +631,34 @@ def skip_reason_rows(rows: list[dict]) -> list[dict]:
     return [{"reason": reason, "count": str(count)} for reason, count in totals.most_common()]
 
 
+def practical_outcome_rows(subjects: list[Subject], rows: list[dict]) -> list[dict]:
+    result = []
+    for subject in subjects:
+        subject_rows = [row for row in rows if row["subject"] == subject.key]
+        build_attempted = [row for row in subject_rows if row.get("build_attempted") == "true"]
+        build_success = [row for row in build_attempted if row.get("build_success") == "true"]
+        execution_attempted = [row for row in subject_rows if row.get("execution_attempted") == "true"]
+        execution_success = [row for row in execution_attempted if row.get("execution_success") == "true"]
+        generation_success = [row for row in subject_rows if row.get("generation_success") == "true"]
+        result.append(
+            {
+                "subject": subject.key,
+                "label": subject.label,
+                "runs": str(len(subject_rows)),
+                "generation_success": str(len(generation_success)),
+                "generation_failure": str(len(subject_rows) - len(generation_success)),
+                "build_attempted": str(len(build_attempted)),
+                "build_success": str(len(build_success)),
+                "execution_attempted": str(len(execution_attempted)),
+                "execution_success": str(len(execution_success)),
+            }
+        )
+    return result
+
+
 def write_evaluation_tables(out_dir: Path, baseline: list[dict], coverage: list[dict],
-                            sensitivity: list[dict], skips: list[dict]) -> None:
+                            sensitivity: list[dict], skips: list[dict],
+                            practical: list[dict]) -> None:
     lines = [
         "# Evaluation Summary",
         "",
@@ -604,6 +674,22 @@ def write_evaluation_tables(out_dir: Path, baseline: list[dict], coverage: list[
     for row in baseline:
         lines.append(
             f"| {row['label']} | {row['found']} | {row['generated']} | {row['skipped']} | {row['generation_rate']} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Practical Outcomes",
+            "",
+            "| Subject | Runs | Generation ok | Generation failed | Build attempted | Build ok | Execution attempted | Execution ok |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        ]
+    )
+    for row in practical:
+        lines.append(
+            f"| {row['label']} | {row['runs']} | {row['generation_success']} | {row['generation_failure']} | "
+            f"{row['build_attempted']} | {row['build_success']} | "
+            f"{row['execution_attempted']} | {row['execution_success']} |"
         )
 
     lines.extend(
@@ -662,6 +748,8 @@ def update_latest_symlink(root: Path, out_dir: Path) -> None:
 
 
 def write_run_metadata(root: Path, out_dir: Path, subjects: list[Subject]) -> None:
+    selected_external_keys = required_external_subject_keys(subjects)
+    externals = external_subjects(root)
     build_path_map = {
         "sut_showcase": out_dir / "_compdb" / "examples",
         "tinyxml2_core": root / "examples" / "tinyxml2" / "build",
@@ -696,7 +784,8 @@ def write_run_metadata(root: Path, out_dir: Path, subjects: list[Subject]) -> No
                 "path": value.path,
                 "description": value.description,
             }
-            for key, value in external_subjects(root).items()
+            for key, value in externals.items()
+            if key in selected_external_keys
         },
     }
     write_json(out_dir / "run_metadata.json", metadata)
@@ -737,7 +826,7 @@ def main(argv: list[str] | None = None) -> int:
 
     subjects = select_subjects(evaluation_subjects(), args.subjects)
     ensure_subject_inputs(root, subjects, prepare_subjects=args.prepare_subjects)
-    compdbs = prepare_compdbs(root, out_dir)
+    compdbs = prepare_compdbs(root, out_dir, subjects)
     total_runs = sum(len(planned_runs(subject)) for subject in subjects)
 
     rows: list[dict] = []
@@ -766,6 +855,12 @@ def main(argv: list[str] | None = None) -> int:
             "rule_data",
             "rule_max_cases",
             "exit_code",
+            "askeleton_exit_code",
+            "generation_success",
+            "build_attempted",
+            "build_success",
+            "execution_attempted",
+            "execution_success",
             "found",
             "generated",
             "skipped",
@@ -776,6 +871,7 @@ def main(argv: list[str] | None = None) -> int:
             "report_path",
             "log_path",
             "generated_dir",
+            "generated_output_path",
         ],
         rows,
     )
@@ -787,6 +883,7 @@ def main(argv: list[str] | None = None) -> int:
         rows,
     )
     skips = skip_reason_rows(rows)
+    practical = practical_outcome_rows(subjects, rows)
 
     write_csv(
         out_dir / "baseline_summary.csv",
@@ -821,7 +918,7 @@ def main(argv: list[str] | None = None) -> int:
         sensitivity,
     )
     write_csv(out_dir / "skip_reason_summary.csv", ["reason", "count"], skips)
-    write_evaluation_tables(out_dir, baseline, coverage, sensitivity, skips)
+    write_evaluation_tables(out_dir, baseline, coverage, sensitivity, skips, practical)
     write_run_metadata(root, out_dir, subjects)
     update_latest_symlink(root, out_dir)
 
