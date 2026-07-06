@@ -114,7 +114,7 @@ This generated entry is based on the report written by
 ```json
 {
   "column": 1,
-  "file": "/home/kevus/askeleton-release-hardening-audit/examples/sut.cpp",
+  "file": "<repo>/examples/sut.cpp",
   "is_class": false,
   "kind": "function",
   "line": 11,
@@ -136,7 +136,7 @@ with `--coverage-mode=strict`:
 {
   "column": 1,
   "detail": "strict coverage mode skips mutable pointer/reference parameters: showcase::sum_ptrs",
-  "file": "/home/kevus/askeleton-release-hardening-audit/examples/sut_showcase.cpp",
+  "file": "<repo>/examples/sut_showcase.cpp",
   "is_class": false,
   "kind": "function",
   "line": 103,
