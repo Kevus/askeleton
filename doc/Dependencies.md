@@ -15,8 +15,11 @@ systems:
 
 ## Build Toolchain
 
-- `g++-12` and `gcc-12` are the preferred GCC toolchain for this setup.
-- GCC 11 is not supported by the current build configuration.
+- A C++20-capable Clang compiler is required to build ASkeleTon; the documented
+  release command uses `clang++-18`.
+- GNU Make and a standard C/C++ build toolchain are required.
+- The `Makefile` rejects a non-Clang `CXX` unless the unsupported
+  `ALLOW_NON_CLANG=1` override is supplied.
 
 ## Test Framework Packages
 

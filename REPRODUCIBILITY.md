@@ -306,11 +306,6 @@ Recorded external snapshots:
 The generated tables provide the reference applicability counts and omission
 category totals for this evaluation workflow.
 
-The helper script `scripts/run_mode_matrix.py` is not part of the release
-reproduction path described here. It can still be useful for
-exploratory local analyses, but the evaluation-focused entry points are the three
-scripts listed above.
-
 The script also updates:
 
 - `analysis/eval_latest` as a symlink to the latest campaign output
