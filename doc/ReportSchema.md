@@ -5,6 +5,9 @@ ASkeleTon can write a generation report with `--report=<path>` or
 run configuration, every discovered entity, aggregate counts, and skip reason
 summaries.
 
+These fields are scaffolding-generation diagnostics. They do not measure code
+coverage, fault detection, semantic adequacy, or test quality.
+
 This document describes the current report shape emitted by `src/Report.cpp`.
 Fields are stable JSON keys, but consumers should tolerate extra fields in
 future ASkeleTon versions.
@@ -30,8 +33,8 @@ ASKELETON_HOME=$(pwd) ./askeleton \
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `generated_at` | string | Local timestamp for the ASkeleTon run. |
-| `profile` | string | Input generation profile, such as `random`, `boundary`, `safe`, or `stress`. |
-| `coverage_mode` | string | Coverage policy: `strict`, `balanced`, or `aggressive`. |
+| `profile` | string | Fallback input-data profile, such as `random`, `boundary`, `safe`, or `stress`. |
+| `coverage_mode` | string | Generation eligibility policy: `strict`, `balanced`, or `aggressive`. |
 | `oracle_mode` | string | Expected-value strategy selected by `--oracle-mode`. |
 | `seed` | number | Present only when a non-negative `--seed` was supplied. |
 | `rule_data` | boolean | Whether AST-guided rule data was enabled for the run. |
@@ -76,7 +79,7 @@ triage; it may include a type, callable, or policy-specific explanation.
 | `by_target` | object | Counts by generated target group. |
 | `by_reason` | object | Counts by skip reason. Empty when there are no skips. |
 | `by_file` | object | Per-source status counts. |
-| `coverage` | object | Found/generated/skipped counts and rates. |
+| `coverage` | object | Found/generated/skipped scaffolding counts and rates. The key name is retained for compatibility. |
 | `top_skip_reasons` | array | Up to five most frequent skip reasons, sorted by count then name. |
 | `targets_with_most_skips` | array | Up to five targets with skipped entities. |
 
@@ -87,6 +90,10 @@ triage; it may include a type, callable, or policy-specific explanation.
 `1.0`; console output formats the same ratio as a percentage.
 `coverage.skip_rate` is `skipped / found`.
 
+Despite the `coverage` key name, these values describe scaffolding-generation
+outcomes. They are not line, branch, or path coverage measurements and do not
+evaluate test quality.
+
 ## Summary-Level Vs Entity-Level Diagnostics
 
 Use summary fields to answer broad questions:
@@ -94,7 +101,7 @@ Use summary fields to answer broad questions:
 - How many entities were generated?
 - Which skip reasons are most common?
 - Which target has the most skipped entities?
-- Did a coverage mode change affect generation rate?
+- Did a generation eligibility mode change affect scaffolding generation rate?
 
 Use `items` to decide what to do next for a specific callable:
 

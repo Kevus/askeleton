@@ -9,9 +9,9 @@ This document gives a high-level view of how ASkeleTon turns a
 2. `ASKGen` discovers functions, methods, constructors, and AST-derived rule data.
 3. A framework generator (`gtest`, `boost`, or `catch`) emits tests and fixtures.
 4. `ConfigGenerator` writes the `.cfg` input data consumed by generated tests.
-5. `RandomValuesGenerator` fills inputs using the selected profile.
-6. Optional rule-based data augments generated cases with values inferred from
-   comparisons, ranges, literals, and similar AST patterns.
+5. For each emitted value, `ConfigGenerator` considers rule-derived candidates,
+   configured factories, and default initializers before using
+   `RandomValuesGenerator` for profile-based fallback data.
 
 ## Main Components
 

@@ -85,12 +85,15 @@ ASKELETON_HOME=$(pwd) ./askeleton --bootstrap-compdb -p . ./sut.cpp
 ### Data Generation
 
 `--profile=<random|boundary|safe|stress>` (default: `random`)
-- Meaning: how input values are produced.
+- Meaning: fallback input-data profile used when no higher-priority
+  rule-derived, configured factory, or default value supplies a parameter.
 - Modes:
-  - `random`: broad random coverage.
-  - `boundary`: edge-oriented values.
-  - `safe`: conservative values.
-  - `stress`: more extreme values.
+  - `random`: broad fallback sampling.
+  - `boundary`: edge-oriented fallback values.
+  - `safe`: conservative fallback values.
+  - `stress`: larger strings and containers; numeric ranges remain moderate.
+- Because higher-priority sources are considered first, `--profile=random` does
+  not imply that every emitted value is randomly sampled.
 - Example:
 
 ```bash
@@ -129,7 +132,8 @@ catalog: [`DataRules.md`](DataRules.md).
 ### Coverage and Oracle Strategy
 
 `--coverage-mode=<strict|balanced|aggressive>` (default: `balanced`)
-- Meaning: policy controlling how selective generation should be.
+- Meaning: generation eligibility policy controlling how selective generation
+  should be. It does not measure or target line, branch, or path coverage.
 - Modes:
   - `balanced`: practical default.
   - `strict`: conservative; skips mutable parameters and non-default instance construction paths.

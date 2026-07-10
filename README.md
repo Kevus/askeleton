@@ -11,9 +11,9 @@ Outputs fixtures, tests, Makefiles, and `.cfg` data files with deterministic or 
 
 **Highlights**
 - AST-driven discovery of functions, methods, and constructors.
-- Profiles for data generation: `random`, `boundary`, `safe`, `stress`.
-- Coverage policies: `strict`, `balanced`, `aggressive`.
-- Rule-based values extracted from comparisons.
+- Fallback data profiles: `random`, `boundary`, `safe`, `stress`.
+- Generation eligibility policies: `strict`, `balanced`, `aggressive`.
+- Rule-derived candidate values extracted from comparisons.
 - Structured skip reasons in reports (`abstract_record`, `missing_instance_strategy`, etc.).
 - Structured input support for `std::optional`, `std::pair`, and `std::tuple`.
 - JSON report with per-target summary.
@@ -112,8 +112,8 @@ Key options:
 - `-p <build-path>`: path to `compile_commands.json`.
 - `--bootstrap-compdb`: auto-create/append minimal compile commands for missing source entries.
 - `--framework=<gtest|boost|catch>`: select test framework.
-- `--profile=<random|boundary|safe|stress>`: data generation profile.
-- `--coverage-mode=<strict|balanced|aggressive>`: generation coverage policy.
+- `--profile=<random|boundary|safe|stress>`: fallback input-data profile.
+- `--coverage-mode=<strict|balanced|aggressive>`: generation eligibility policy.
 - `--oracle-mode=<mirror|explicit|property>`: expected-value strategy.
 - `--seed=<N>`: deterministic data generation.
 - `--rule-data`: explicitly enable the default AST-guided rule-based values.
@@ -191,9 +191,10 @@ For the full input generation model, see
 [`doc/InputGeneration.md`](doc/InputGeneration.md).
 
 **Coverage Modes**
-Coverage mode controls how selective ASkeleTon is when deciding whether to
-generate a test for a callable. This is separate from the data-generation
-`--profile`.
+`--coverage-mode` is a generation eligibility policy: it controls how selective
+ASkeleTon is when deciding whether to generate scaffolding for a callable. It
+does not measure code coverage or set line, branch, or path coverage targets.
+This policy is separate from the data-generation `--profile`.
 
 - `balanced`: default behavior and the recommended starting point.
 - `strict`: favors conservative, easy-to-review scaffolding and skips callables
@@ -286,7 +287,8 @@ Use `--report` or `--report-json` to generate a JSON summary of the run with:
 - Skip reasons and related type details when generation is not possible.
 - The selected `coverage_mode`.
 - The selected `oracle_mode`.
-- Aggregate counts and coverage metrics.
+- Aggregate scaffolding-generation counts and rates. These are generation
+  diagnostics, not code-coverage or test-quality metrics.
 
 Common `reason` values:
 - `abstract_record`: type is abstract and cannot be instantiated for fixture setup.
